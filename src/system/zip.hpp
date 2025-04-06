@@ -1,0 +1,86 @@
+#ifndef __SYSTEM_COMPRESSION_ZIP_HPP__
+#define __SYSTEM_COMPRESSION_ZIP_HPP__
+
+#include <stdint.h>
+
+#include <list>
+#include <string>
+
+namespace sandvik {
+	class ZipReader {
+		public:
+			ZipReader();
+			~ZipReader();
+
+			/** @return true if the open file is a valid zip archive
+			 * (ie check the magic number of the zip file */
+			static bool isValidArchive(const std::string& zipfile_);
+			/** open an existing zip archive
+			 * @param zipfile_ zip archive name
+			 * @throw std::exception */
+			void open(const std::string& zipfile_);
+			/** finalize and close the zip file
+			 * @throw std::exception */
+			void close();
+			/** extract file into the given path
+			 * @param path_ path for zip extraction
+			 * @throw std::exception */
+			void extract(const std::string& file_, const std::string& path_);
+			/** extract file into memory
+			 * @param path_ path for zip extraction
+			 * @return extracted data. Ptr must be deleted with free()
+			 * @throw std::exception */
+			char* extractToMemory(const std::string& file_, uint64_t& size_);
+			/** extract all into the given path
+			 * @param path_ path for zip extraction
+			 * @throw std::exception */
+			void extractAll(const std::string& path_);
+			/** @return list of files in the zip file
+			 * @param prefix_ add prefix to each file
+			 * @throw std::exception */
+			std::list<std::string> getList(const std::string& prefix_ = "");
+
+		protected:
+			/** @return the number of entry in the zip file */
+			uint64_t getNumberOfFiles();
+
+		private:
+			ZipReader(ZipReader& that);
+			void operator=(ZipReader& that);
+
+			void* _zip;
+	};
+
+	class ZipWriter {
+		public:
+			ZipWriter();
+			~ZipWriter();
+
+			/** open a new zip archive
+			 * @param zipfile_ zip archive name
+			 * @throw std::exception */
+			void open(const std::string& zipfile_);
+			/** add file to zip archive
+			 * @param archivename_ filename in the zip archive
+			 * @param filename_ real filename
+			 * @throw std::exception */
+			void add(const std::string& archivename_, const std::string& filename_);
+			/** add file to zip archive
+			 * @param archivename_ filename in the zip archive
+			 * @param data_ data buffer
+			 * @param size_ size of buffer
+			 * @throw std::exception */
+			void addFromMemory(const std::string& archivename_, const char* data_, uint64_t size_);
+			/** finalize and close the zip file
+			 * @throw std::exception */
+			void close();
+
+		private:
+			ZipWriter(ZipWriter& that);
+			void operator=(ZipWriter& that);
+
+			void* _zip;
+	};
+};  // namespace sandvik
+
+#endif  // __SYSTEM_COMPRESSION_ZIP_HPP__
