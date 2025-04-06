@@ -1,0 +1,215 @@
+#include "logger.hpp"
+
+#include <fmt/color.h>
+#include <fmt/format.h>
+
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <string>
+
+using namespace sandvik;
+
+Logger::Logger() : _stdout(true), _time(false), _level(Logger::LogLevel::DEBUG) {
+}
+
+Logger::~Logger() {
+	if (_file.is_open()) {
+		_file.flush();
+		_file.close();
+	}
+}
+
+void Logger::logToConsole(bool enable_) {
+	_stdout = enable_;
+}
+
+void Logger::logToFile(const std::string &filename_) {
+	if (_file.is_open()) {
+		_file.flush();
+		_file.close();
+	}
+	_file.open(filename_.c_str(), std::ofstream::out | std::ofstream::app);
+	if (!_file.is_open()) {
+		throw std::runtime_error("Can't open log file :" + filename_ + "!");
+	}
+}
+
+Logger::LogLevel Logger::getLevel() const {
+	return _level;
+}
+void Logger::setLevel(Logger::LogLevel level) {
+	_level = level;
+}
+
+bool Logger::isDisplayingTime() const {
+	return _time;
+}
+
+void Logger::displayTime(bool enable) {
+	_time = enable;
+}
+
+void Logger::info(const std::string &msg) {
+	log(LogLevel::INFO, msg);
+}
+
+void Logger::debug(const std::string &msg) {
+	log(LogLevel::DEBUG, msg);
+}
+
+void Logger::warning(const std::string &msg) {
+	log(LogLevel::WARNING, msg);
+}
+
+void Logger::error(const std::string &msg) {
+	log(LogLevel::ERROR, msg);
+}
+
+void Logger::ok(const std::string &msg) {
+	log(LogLevel::OK, msg);
+}
+
+void Logger::debug(const char *msg_, ...) {
+	char msg[1024] = {'\0'};
+	va_list args;
+	va_start(args, msg_);
+	vsprintf((char *)&msg, msg_, args);
+	va_end(args);
+	debug(std::string(msg));
+}
+
+void Logger::info(const char *msg_, ...) {
+	char msg[1024] = {'\0'};
+	va_list args;
+	va_start(args, msg_);
+	vsprintf((char *)&msg, msg_, args);
+	va_end(args);
+	info(std::string(msg));
+}
+
+void Logger::warning(const char *msg_, ...) {
+	char msg[1024] = {'\0'};
+	va_list args;
+	va_start(args, msg_);
+	vsprintf((char *)&msg, msg_, args);
+	va_end(args);
+	warning(std::string(msg));
+}
+
+void Logger::error(const char *msg_, ...) {
+	char msg[1024] = {'\0'};
+	va_list args;
+	va_start(args, msg_);
+	vsprintf((char *)&msg, msg_, args);
+	va_end(args);
+	error(std::string(msg));
+}
+
+void Logger::ok(const char *msg_, ...) {
+	char msg[1024] = {'\0'};
+	va_list args;
+	va_start(args, msg_);
+	vsprintf((char *)&msg, msg_, args);
+	va_end(args);
+	ok(std::string(msg));
+}
+
+void Logger::color(uint32_t color_, char marker_, const char *msg_, ...) {
+	char msg[1024] = {'\0'};
+	va_list args;
+	va_start(args, msg_);
+	vsprintf((char *)&msg, msg_, args);
+	va_end(args);
+	color(color_, marker_, std::string(msg));
+}
+
+void Logger::color(uint32_t color_, char marker_, const std::string &msg) {
+	if (LogLevel::INFO > _level) {
+		return;
+	}
+
+	if (_file.is_open()) {
+		std::string rawlog;
+		if (_time) {
+			rawlog += fmt::format("[{}] ", getTime());
+		}
+		rawlog += fmt::format("[{}] {}", marker_, msg);
+		_file << rawlog << std::endl;
+	}
+
+	if (_stdout) {
+		if (_time) {
+			fmt::print(fmt::fg(fmt::color::white), "[{}] ", getTime());
+		}
+		fmt::print(fmt::fg(fmt::rgb(color_)), "[{}] {}", marker_, msg);
+		fmt::print(fmt::fg(fmt::color::white), "\n");
+	}
+}
+
+std::string Logger::getTime() const {
+	auto now = std::chrono::system_clock::now();
+	std::time_t timestamp = std::chrono::system_clock::to_time_t(now);
+	std::string timeStr = std::ctime(&timestamp);
+	timeStr.pop_back();  // Remove newline character from the time string
+	return timeStr;
+}
+
+void Logger::log(LogLevel level, const std::string &msg) {
+	if (level > _level) {
+		return;
+	}
+
+	if (_file.is_open()) {
+		std::string rawlog;
+		if (_time) {
+			rawlog += fmt::format("[{}] ", getTime());
+		}
+		switch (level) {
+			case LogLevel::INFO:
+				rawlog += fmt::format("[*] {}", msg);
+				break;
+			case LogLevel::DEBUG:
+				rawlog += fmt::format("{}", msg);
+				break;
+			case LogLevel::WARNING:
+				rawlog += fmt::format("[w] {}", msg);
+				break;
+			case LogLevel::ERROR:
+				rawlog += fmt::format("[!] {}", msg);
+				break;
+			case LogLevel::OK:
+				rawlog += fmt::format("[+] {}", msg);
+				break;
+			default:
+				break;
+		}
+		_file << rawlog << std::endl;
+	}
+
+	if (_stdout) {
+		if (_time) {
+			fmt::print(fmt::fg(fmt::color::white), "[{}] ", getTime());
+		}
+		switch (level) {
+			case LogLevel::INFO:
+				fmt::print(fmt::fg(fmt::color::white), "[*] {}", msg);
+				break;
+			case LogLevel::DEBUG:
+				fmt::print(fmt::fg(fmt::color::deep_pink), "{}", msg);
+				break;
+			case LogLevel::WARNING:
+				fmt::print(fmt::fg(fmt::color::yellow), "[w] {}", msg);
+				break;
+			case LogLevel::ERROR:
+				fmt::print(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "[!] {}", msg);
+				break;
+			case LogLevel::OK:
+				fmt::print(fmt::fg(fmt::color::lawn_green), "[+] {}", msg);
+				break;
+			default:
+				break;
+		}
+		fmt::print(fmt::fg(fmt::color::white), "\n");
+	}
+}

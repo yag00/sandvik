@@ -1,0 +1,6 @@
+.lock*
+.waf3*
+wbuild
+ext
+**/*.pyc
+__pycache__
