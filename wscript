@@ -43,8 +43,8 @@ def configure(conf):
 	cflags = ['-fPIC', '-Wall', '-Werror', '-O3', '-Wno-unused-parameter', '-fno-strict-aliasing', '-fomit-frame-pointer', '-march=native']
 	cxxflags = cflags + []
 
+	conf.env.DEFINES.clear()
 	if Options.options.debug:
-		#cflags.append('-g') #todo llvm module won't be happy todo support llvm.dbg...
 		cxxflags.append('-g')
 		conf.env.DEFINES.append('__debug__')
 
@@ -64,7 +64,6 @@ def configure(conf):
 	conf.env.CXXFLAGS = cxxflags
 
 	#code formater
-	#conf.find_program('clang-format', mandatory=True)
 	conf.load('checkstyle', tooldir='wtools')
 	#git use to clone dependencies and get the current version/commit
 	conf.find_program('git', mandatory=True)
@@ -79,7 +78,10 @@ def configure(conf):
 	#-------------------------------------------------
 	conf.check_dependencies_tools()
 	conf.check_fmt()
+	conf.check_args()
+	conf.check_lief()
 	conf.check_ffi()
+	conf.check_axml()
 
 	#-------------------------------------------------
 	#check for test libraries
@@ -98,7 +100,7 @@ def build(bld):
 	)
 	bld.add_group() #make sure formatting is done before going further
 	#-------------------------------------------------
-	# build sandvik shared library
+	# build sandvik static/shared library
 	#-------------------------------------------------
 	sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c'], excl=['src/main.cpp'])
 	bld.shlib(
@@ -106,9 +108,18 @@ def build(bld):
 		name            = APPNAME,
 		target          = APPNAME,
 		includes        = ['src'],
-		use             = ['FMT', 'FFI', 'PTHREAD'],
+		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
 		linkflags       = ["-Wl,-z,defs"],
 	)
+	bld.stlib(
+		source          = sources,
+		name            = APPNAME + '_static',
+		target          = APPNAME,
+		includes        = ['src'],
+		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
+		linkflags       = ["-Wl,-z,defs"],
+	)
+
 	#-------------------------------------------------
 	# build sandvik runtime environment
 	#-------------------------------------------------
@@ -117,7 +128,7 @@ def build(bld):
 		name            = "vm_sandvik",
 		target          = "sandvik",
 		includes        = ['src'],
-		use             = [APPNAME],
+		use             = [APPNAME + '_static', 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
 		install_path    = '${PREFIX}',
 	)
 

@@ -47,7 +47,7 @@ class UnitTest:
 			source		= tests,
 			defines		= ['__unit_test__'],
 			includes	= ['.', 'src', 'ext/googletest/googletest/include', 'ext/fmt/include'],
-			use			= ['jim', 'googletest', 'PTHREAD', 'FMT'],
+			use			= ['sandvik', 'googletest', 'PTHREAD', 'FMT'],
 			install     = None,
 		)
 
@@ -66,7 +66,7 @@ class UnitTest:
 				source		= [test],
 				defines		= ['__unit_test__'],
 				includes	= ['.', 'src', 'ext/googletest/googletest/include'],
-				use			= ['jim', 'googletest', 'PTHREAD', 'FMT'],
+				use			= ['sandvik', 'googletest', 'PTHREAD', 'FMT'],
 				install     = None,
 			)
 

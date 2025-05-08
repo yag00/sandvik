@@ -114,6 +114,101 @@ def check_ffi(conf):
 		conf.msg('Checking for library ffi version', v.strip())
 
 @conf
+def check_lief(conf):
+	includes = os.path.abspath('ext/LIEF-bin/include/')
+	libs = os.path.abspath('ext/LIEF-bin/lib/')
+
+	version_code = "\n".join([
+		'#include <iostream>',
+		'#include <LIEF/version.h>',
+		'int main() {',
+		'	std::cout << LIEF_TAG << std::endl;',
+		'	return 0;',
+		'}',
+		])
+	try:
+		v = conf.check(stlib='LIEF', stlibpath=[libs], includes=[includes], uselib_store='LIEF', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library LIEF version', v.strip())
+	except Exception as e:
+		clone_repository('ext/LIEF', 'https://github.com/lief-project/LIEF.git', 'main')
+		installdir = os.path.abspath('ext/LIEF-bin/')
+		conf.msg('Building local LIEF', installdir)
+		if not os.path.exists('ext/LIEF/build'):
+			os.mkdir('ext/LIEF/build')
+		# needs to be built with -fPIC in order to work
+		cwd = os.path.abspath('ext/LIEF/build')
+		execute('cmake -DCMAKE_POSITION_INDEPENDENT_CODE=True -DCMAKE_INSTALL_PREFIX={} ../'.format(installdir), cwd)
+		execute('make -j{}'.format(multiprocessing.cpu_count()), cwd)
+		execute('make install', cwd)
+
+		v = conf.check(stlib='LIEF', stlibpath=[libs], includes=[includes], uselib_store='LIEF', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library LIEF version', v.strip())
+
+@conf
+def check_axml(conf):
+	includes = os.path.abspath('ext/axml-parser-bin/include/')
+	libs = os.path.abspath('ext/axml-parser-bin/lib/')
+
+	version_code = "\n".join([
+		'#include <iostream>',
+		'#include <axml/axml_file.h>',
+		'int main() {',
+		'	std::cout << "master" << std::endl;',
+		'	return 0;',
+		'}',
+		])
+	try:
+		v = conf.check(stlib='axml_parser', stlibpath=[libs], includes=[includes], uselib_store='AXML', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library axml-parser version', v.strip())
+	except Exception as e:
+		clone_repository('ext/axml-parser', 'https://github.com/MCMrARM/axml-parser.git', 'master')
+		installdir = os.path.abspath('ext/axml-parser-bin/')
+		conf.msg('Building local axml-parser', installdir)
+		if not os.path.exists('ext/axml-parser/build'):
+			os.mkdir('ext/axml-parser/build')
+		# needs to be built with -fPIC in order to work
+		cwd = os.path.abspath('ext/axml-parser/build')
+		execute('cmake -DCMAKE_POSITION_INDEPENDENT_CODE=True -DCMAKE_INSTALL_PREFIX={} ../'.format(installdir), cwd)
+		execute('make -j{}'.format(multiprocessing.cpu_count()), cwd)
+		# Manually install libaxml_parser.a and includes
+		lib_file = os.path.join(cwd, 'libaxml_parser.a')
+		install_lib_dir = os.path.join(installdir, 'lib')
+		install_include_dir = os.path.join(installdir, 'include')
+
+		if not os.path.exists(install_lib_dir):
+			os.makedirs(install_lib_dir)
+		if not os.path.exists(install_include_dir):
+			os.makedirs(install_include_dir)
+
+		shutil.copy2(lib_file, install_lib_dir)
+		copytree(os.path.join(cwd, '../include'), install_include_dir)
+
+		v = conf.check(stlib='axml_parser', stlibpath=[libs], includes=[includes], uselib_store='AXML', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library axml version', v.strip())
+
+@conf
+def check_args(conf):
+	includes = os.path.abspath('ext/args/')
+
+	version_code = "\n".join([
+		'#include <iostream>',
+		'#include <args.hxx>',
+		'int main() {',
+		'	std::cout << ARGS_VERSION;',
+		'	return 0;',
+		'}',
+		])
+	try:
+		v = conf.check(header_name='args.hxx', includes=[includes], uselib_store='ARGS', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library args version', v.strip())
+	except Exception as e:
+		clone_repository('ext/args', 'https://github.com/Taywee/args.git', '6.4.7')
+		v = conf.check(header_name='args.hxx', includes=[includes], uselib_store='ARGS', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library args version', v.strip())
+	conf.undefine('HAVE_ARGS_HXX')
+
+
+@conf
 def check_googletest(conf):
 	Logs.pprint('BLUE', 'Checking for test dependencies')
 	includes = os.path.abspath('ext/googletest-bin/include/')

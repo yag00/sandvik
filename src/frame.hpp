@@ -1,0 +1,67 @@
+#ifndef __FRAME_HPP__
+#define __FRAME_HPP__
+
+#include <stdint.h>
+
+#include <memory>
+#include <stack>
+#include <vector>
+
+#include "object.hpp"
+
+namespace sandvik {
+	class Method;
+	class Object;
+	class Frame {
+		public:
+			Frame(Method& method_);
+			~Frame() = default;
+
+			void setIntRegister(uint32_t reg, int32_t value);
+			int32_t getIntRegister(uint32_t reg);
+			void setLongRegister(uint32_t reg, int64_t value);
+			int64_t getLongRegister(uint32_t reg);
+			void setFloatRegister(uint32_t reg, float value);
+			float getFloatRegister(uint32_t reg);
+			void setDoubleRegister(uint32_t reg, double value);
+			double getDoubleRegister(uint32_t reg);
+
+			// void setObjRegister(uint32_t reg, std::shared_ptr<Object>&& value);
+			void setObjRegister(uint32_t reg, std::shared_ptr<Object> value);
+			std::shared_ptr<Object> getObjRegister(uint32_t reg);
+
+			std::shared_ptr<Object> getReturnObject() const;
+			std::shared_ptr<Object> getException() const;
+			int32_t getReturnValue() const;
+			int64_t getReturnDoubleValue() const;
+			void setReturnObject(std::shared_ptr<Object> ret_);
+			void setReturnValue(int32_t ret_);
+			void setReturnDoubleValue(int64_t ret_);
+			void setException(std::shared_ptr<Object> ret_);
+
+			uint16_t pc() const;
+			uint16_t& pc();
+			void setPc(uint16_t pc_);
+
+			Method& getMethod() const;
+
+			void debug() const;
+
+		protected:
+			void increaseRegSize(uint32_t size_);
+
+		private:
+			Method& _method;
+			std::vector<std::string> _args;
+
+			std::vector<std::shared_ptr<Object>> _registers;
+
+			uint16_t _pc;
+
+			std::shared_ptr<Object> _null;
+			std::shared_ptr<Object> _objectReturn;
+			std::shared_ptr<Object> _exception;
+	};
+}  // namespace sandvik
+
+#endif
