@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Google Test Report</title>
+</head>
+<body>
+  <div>
+    {{test_overview}}
+    <h1>Google Test Report</h1>
+    <h2>Test Summary</h2>
+    <p>Total tests: {{ test_overview.tests }}</p>
+    <p>Passed: {{ test_overview.tests - test_overview.failures }}</p>
+    <p>Failed: {{ test_overview.failures }}</p>
+
+    <h2>Test Details</h2>
+    <p>todo</p>
+  </div>
+</body>
+</html>

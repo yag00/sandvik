@@ -2,6 +2,8 @@
 # encoding: utf-8
 
 import os, platform
+import json
+from jinja2 import FileSystemLoader, Environment
 
 from waflib import Options
 from waflib import Utils, Context
@@ -10,6 +12,7 @@ from waflib.TaskGen import feature, extension
 from waflib.Configure import conf
 from waflib.Errors import WafError
 from waflib import Logs
+from termcolor import colored
 
 class gtest(Task.Task):
     color = "BLUE"
@@ -107,5 +110,78 @@ def process_test(self):
 @conf
 def runGoogleTest(ctx, *k, **kw):
     kw["features"] = "gtest"
+    return ctx(*k, **kw)
+
+class gtestreport(Task.Task):
+    color = "BLUE"
+    always_run = True
+
+    def __str__(self):
+        # display suitename testname
+        return "%s" % (self.__class__.__name__)
+
+    def run(self):
+        data = {
+            'disabled': 0,
+            'errors': 0,
+            'failures': 0,
+            'name': 'AllTests',
+            'tests': 0,
+            'testsuites': []
+        }
+        for report in self.inputs:
+            with open(report.abspath()) as report_file:
+                report_data = json.load(report_file)
+                data['disabled'] += report_data['disabled']
+                data['errors'] += report_data['errors']
+                data['failures'] += report_data['failures']
+                data['tests'] += report_data['tests']
+                data['testsuites'] += report_data['testsuites']
+
+        with open(self.outputs[0].abspath(), "w") as outfile:
+            templateLoader = FileSystemLoader(searchpath=".")
+            templateEnv = Environment(loader=templateLoader)
+            template = templateEnv.get_template("wtools/gtest_template.html")
+            outfile.write(template.render(test_overview=data, test_suites=data['testsuites']))
+
+        Logs.info(colored("Test Report Summary:", "cyan", attrs=["bold"]))
+        for suite in data['testsuites']:
+            Logs.info(colored("Test Suite: %s" % suite['name'], "blue", attrs=["bold"]))
+            for case in suite['testsuite']:
+                status = "PASS" if case['status'] == "RUN" and case['result'] == "COMPLETED" else "FAIL"
+                color = "green" if status == "PASS" else "red"
+                Logs.info(colored(f"  {status} - Test: {case['name']}", color))
+        Logs.info(colored("Total tests: %d" % data['tests'], "green"))
+        if data['disabled'] > 0:
+            Logs.info(colored("Disabled tests: %d" % data['disabled'], "yellow"))
+        if data['errors'] > 0:
+            Logs.info(colored("Errors: %d" % data['errors'], "red"))
+        if data['failures'] > 0:
+            Logs.info(colored("Failures: %d" % data['failures'], "red"))
+
+        if data['failures'] == 0 and data['errors'] == 0:
+            Logs.info(colored("All tests passed successfully!", "green", attrs=["bold"]))
+        else:
+            Logs.error(colored("Some tests failed. Please check the report for details.", "red", attrs=["bold"]))
+            raise WafError("Test failures detected. Build failed.")
+
+
+@feature("gtest-report")
+def process_report(self):
+    html_report = self.path.find_or_declare("report.html")
+    tsk = self.create_task("gtestreport", self.reports, [html_report])
+    tsk.name = "run_gtest_report"
+    tsk.reports = self.reports
+
+    # Ensure this task runs after all gtest tasks
+    for tgen in self.bld.task_gen_cache_names.values():
+        if "gtest" in getattr(tgen, "features", []):
+            for gtest_task in tgen.tasks:
+                print(gtest_task)
+                tsk.set_run_after(gtest_task)
+
+@conf
+def runGoogleTestReport(ctx, *k, **kw):
+    kw["features"] = "gtest-report"
     return ctx(*k, **kw)
 

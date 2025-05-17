@@ -52,13 +52,15 @@ class UnitTest:
 		)
 
 		xxx = []
+		reports = []
 		for test in tests:
 			testName = os.path.splitext(os.path.basename(test.abspath()))[0]
-
 			#check  duplicate tests (same name)
 			if testName in xxx:
 				bld.fatal("error %s already exists" % testName)
 			xxx += [testName]
+			report = bld.path.find_or_declare('report_{}.json'.format(testName))
+			reports += [report]
 
 			bld.program(
 				name		= testName,
@@ -71,3 +73,6 @@ class UnitTest:
 			)
 
 			bld.runGoogleTest(program = testName)
+
+		bld.add_group()
+		bld.runGoogleTestReport(reports = reports)

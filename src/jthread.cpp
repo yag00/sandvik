@@ -87,8 +87,7 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			if (method_ == "println" && sig_ == "(I)V") {
 				auto i = std::dynamic_pointer_cast<NumberObject>(args_[1]);
 				if (i != nullptr) {
-					auto style = fmt::fg(fmt::color::medium_spring_green) | fmt::emphasis::bold;
-					fmt::print(style, "{}\n", i->getValue());
+					fmt::print("{}\n", i->getValue());
 					fflush(stdout);
 					return true;
 				}
@@ -96,8 +95,7 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			if (method_ == "println" && sig_ == "(J)V") {
 				auto i = std::dynamic_pointer_cast<NumberObject>(args_[1]);
 				if (i != nullptr) {
-					auto style = fmt::fg(fmt::color::medium_spring_green) | fmt::emphasis::bold;
-					fmt::print(style, "{}\n", i->getLongValue());
+					fmt::print("{}\n", i->getLongValue());
 					fflush(stdout);
 					return true;
 				}
@@ -105,8 +103,7 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			if (method_ == "println" && sig_ == "(Ljava/lang/String;)V") {
 				auto str = std::dynamic_pointer_cast<StringObject>(args_[1]);
 				if (str != nullptr) {
-					auto style = fmt::fg(fmt::color::medium_spring_green) | fmt::emphasis::bold;
-					fmt::print(style, "{}\n", str->str());
+					fmt::print("{}\n", str->str());
 					fflush(stdout);
 					return true;
 				}
@@ -114,8 +111,7 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			if (method_ == "print" && sig_ == "(Ljava/lang/String;)V") {
 				auto str = std::dynamic_pointer_cast<StringObject>(args_[1]);
 				if (str != nullptr) {
-					auto style = fmt::fg(fmt::color::medium_spring_green) | fmt::emphasis::bold;
-					fmt::print(style, "{}", str->str());
+					fmt::print("{}", str->str());
 					fflush(stdout);
 					return true;
 				}

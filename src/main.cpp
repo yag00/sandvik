@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	logger.setLevel(Logger::LogLevel::ERROR);
+	logger.setLevel(Logger::LogLevel::INFO);
 	if (logLevel) {
 		std::string level = args::get(logLevel);
 		if (level == "NONE") {
