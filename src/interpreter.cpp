@@ -1957,18 +1957,42 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	}
 	method_str += ")";
 
-	if (method.getBytecode() == nullptr) {
-		// handle by vm
-		if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
-			throw std::runtime_error(
-			    fmt::format("invoke_virtual: method {}->{}.{} not found", method.getClass().getFullname(), method.getName(), method.getSignature()));
+	auto this_ptr = frame.getObjRegister(regs[0]);
+	if (this_ptr->isNull()) {
+		throw NullPointerException("invoke_virtual on null object");
+	}
+
+	if (method.isVirtual()) {
+		auto this_ptr_class = std::dynamic_pointer_cast<ObjectClass>(this_ptr);
+		if (this_ptr_class != nullptr) {
+			// Resolve the actual method from the runtime type of the object
+			try {
+				auto& runtimeClass = this_ptr_class->getClass();
+				auto& vmethod = runtimeClass.getMethod(method.getName(), method.getSignature());
+				logger.ok(fmt::format("invoke_virtual call method {}->{}{}", runtimeClass.getFullname(), vmethod.getName(), vmethod.getSignature()));
+				auto& newframe = _rt.newFrame(vmethod);
+				// When a method is invoked, the parameters to the method are placed into the last n registers.
+				for (uint32_t i = 0; i < vA; i++) {
+					newframe.setObjRegister(vmethod.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+				}
+			} catch (std::exception& e) {
+				throw std::runtime_error(fmt::format("invoke_virtual: method {} not found", method_str));
+			}
 		}
 	} else {
-		logger.ok(fmt::format("invoke_virtual call method {}", method_str));
-		auto& newframe = _rt.newFrame(method);
-		// When a method is invoked, the parameters to the method are placed into the last n registers.
-		for (uint32_t i = 0; i < vA; i++) {
-			newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+		if (method.getBytecode() == nullptr) {
+			// handle by vm
+			if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
+				throw std::runtime_error(
+				    fmt::format("invoke_virtual: method {}->{}{} not found", method.getClass().getFullname(), method.getName(), method.getSignature()));
+			}
+		} else {
+			logger.ok(fmt::format("invoke_virtual call method {}", method_str));
+			auto& newframe = _rt.newFrame(method);
+			// When a method is invoked, the parameters to the method are placed into the last n registers.
+			for (uint32_t i = 0; i < vA; i++) {
+				newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			}
 		}
 	}
 	frame.pc() += 5;
