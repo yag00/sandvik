@@ -1,0 +1,130 @@
+Running Dalvik tests...
+Running branching tests...
+[OK] Positive branch
+[OK] Positive branch
+[OK] Positive branch
+[OK] Zero branch
+[OK] Negative branch
+[OK] Negative branch
+[OK] Negative branch
+[OK] Float compare
+[OK] Float compare
+[OK] Double compare
+[OK] Double compare
+Running arithmetic tests...
+[OK] Integer arithmetic
+[OK] Long arithmetic
+[OK] Float arithmetic
+[OK] Double arithmetic
+[OK] Integer Literal8 arithmetic
+[OK] Integer Literal16 arithmetic
+[OK] Integer add
+[OK] Integer sub
+[OK] Integer mul
+[OK] Integer div
+[OK] Integer rem
+[OK] Integer and
+[OK] Integer or
+[OK] Integer xor
+[OK] Integer shl
+[OK] Integer shr
+[OK] Integer ushr
+[OK] Long add
+[OK] Long sub
+[OK] Long mul
+[OK] Long div
+[OK] Long rem
+[OK] Long and
+[OK] Long or
+[OK] Long xor
+[OK] Long shl
+[OK] Long shr
+[OK] Long ushr
+[OK] Float add
+[OK] Float sub
+[OK] Float mul
+[OK] Float div
+[OK] Float rem
+[OK] Double add
+[OK] Double sub
+[OK] Double mul
+[OK] Double div
+[OK] Double rem
+Running logical tests...
+[OK] Integer logical
+[OK] Long logical
+[OK] Negation test
+[OK] Not test
+[OK] and integer test
+[OK] or integer test
+[OK] xor integer test
+[OK] shift left integer test
+[OK] shift right integer test
+[OK] unsigned shift right integer test
+[OK] and long test
+[OK] or long test
+[OK] xor long test
+[OK] shift left long test
+[OK] shift right long test
+[OK] unsigned shift right long test
+Running cast operation tests...
+[OK] cast int-to-long
+[OK] cast int-to-long
+[OK] cast int-to-float
+[OK] cast int-to-float
+[OK] cast int-to-double
+[OK] cast int-to-double
+[OK] cast long-to-int
+[OK] cast long-to-int
+[OK] cast long-to-float
+[OK] cast long-to-float
+[OK] cast long-to-double
+[OK] cast long-to-double
+[OK] cast float-to-int
+[OK] cast float-to-int
+[OK] cast float-to-long
+[OK] cast float-to-long
+[OK] cast double-to-int
+[OK] cast double-to-int
+[OK] cast double-to-long
+[OK] cast double-to-long
+[OK] cast double-to-float
+[OK] cast double-to-float
+[OK] cast int-to-byte
+[OK] cast int-to-byte
+[OK] cast int-to-char
+[OK] cast int-to-short
+[OK] cast int-to-short
+[OK] cast object-to-string
+Running switch tests...
+[OK] Switch test
+Running field and static operation tests...
+[OK] iget-int
+[OK] iget-wide
+[OK] iget-boolean
+[OK] iget-byte
+[OK] iget-char
+[OK] iget-short
+[OK] iget-object
+[OK] sget-int
+[OK] sget-wide
+[OK] sget-boolean
+[OK] sget-byte
+[OK] sget-char
+[OK] sget-short
+[OK] sget-object
+Running string operation tests...
+[OK] string ops
+[OK] const-class
+[OK] instance-of
+Running array operation tests...
+[OK] string array
+[OK] array ops
+[OK] invoke
+[OK] invoke-super
+[OK] invoke-interface
+Running exception tests...
+[OK] RuntimeException Exception caught
+[OK] IllegalArgumentException Exception caught
+Tests passed: 118
+Tests failed: 0

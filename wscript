@@ -110,6 +110,7 @@ def build(bld):
 		includes        = ['src'],
 		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
 		linkflags       = ["-Wl,-z,defs"],
+		install_path    = '${PREFIX}/lib',
 	)
 	bld.stlib(
 		source          = sources,
@@ -118,6 +119,7 @@ def build(bld):
 		includes        = ['src'],
 		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
 		linkflags       = ["-Wl,-z,defs"],
+		install_path    = '${PREFIX}/lib',
 	)
 
 	#-------------------------------------------------
@@ -131,6 +133,12 @@ def build(bld):
 		use             = [APPNAME + '_static', 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
 		install_path    = '${PREFIX}',
 	)
+
+	#-------------------------------------------------
+	# install include files
+	#-------------------------------------------------
+	include_files = bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h'])
+	bld.install_files('${PREFIX}/include', include_files, cwd=bld.path.find_dir('src'))
 
 	#-------------------------------------------------
 	# tests
