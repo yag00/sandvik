@@ -1,6 +1,8 @@
 .lock*
 .waf3*
 wbuild
+delivery
 ext
 **/*.pyc
 __pycache__
+**/*.class
