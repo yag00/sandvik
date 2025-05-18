@@ -34,6 +34,20 @@ uint32_t Method::getNbRegisters() const {
 	return c.nb_registers();
 }
 
+std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t pc_, uint32_t& catchAllAddr_) const {
+	uint16_t pc = pc_ >> 1;
+	logger.debug(fmt::format("getExceptionHandler: pc={:x} size={}", pc, _method.code_info().exceptions().size()));
+	for (const auto& exc : _method.code_info().exceptions()) {
+		logger.debug(fmt::format("{}: Exception handler: start_addr: {:x}, insn_count: {:x}, catch_all_addr: {:x}", getName(), exc.start_addr, exc.insn_count,
+		                         exc.catch_all_addr));
+		if (pc >= exc.start_addr && pc < exc.start_addr + exc.insn_count) {
+			catchAllAddr_ = exc.catch_all_addr;
+			return exc.handlers;
+		}
+	}
+	throw std::runtime_error(fmt::format("No exception handler found for pc: {}", pc_));
+}
+
 const uint8_t* const Method::getBytecode() const {
 	return _method.bytecode().data();
 }

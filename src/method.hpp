@@ -23,6 +23,7 @@ namespace sandvik {
 			std::string getName() const;
 			std::string getSignature() const;
 			uint32_t getNbRegisters() const;
+			std::vector<std::pair<uint32_t, uint32_t>> getExceptionHandler(uint16_t pc_, uint32_t& catchAllAddr_) const;
 
 			const uint8_t* const getBytecode() const;
 

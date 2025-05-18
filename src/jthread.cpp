@@ -49,6 +49,28 @@ bool JThread::handleConstructor(const std::string& class_, const std::string& me
 }
 bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, const std::string& method_, const std::string& sig_,
                                    std::vector<std::shared_ptr<Object>> args_) {
+	if (class_ == "java.lang.RuntimeException") {
+		if (method_ == "getMessage" && sig_ == "()Ljava/lang/String;") {
+			logger.debug(args_[0]->debug());
+			auto clazz = std::dynamic_pointer_cast<ObjectClass>(args_[0]);
+			if (clazz != nullptr) {
+				logger.warning(fmt::format("java.lang.RuntimeException -> Not initialized"));
+				frame_.setReturnObject(StringObject::make("Test"));
+				return true;
+			}
+		}
+	}
+	if (class_ == "java.lang.IllegalArgumentException") {
+		if (method_ == "getMessage" && sig_ == "()Ljava/lang/String;") {
+			logger.debug(args_[0]->debug());
+			auto clazz = std::dynamic_pointer_cast<ObjectClass>(args_[0]);
+			if (clazz != nullptr) {
+				logger.warning(fmt::format("java.lang.IllegalArgumentException -> Not initialized"));
+				frame_.setReturnObject(StringObject::make("Invalid"));
+				return true;
+			}
+		}
+	}
 	if (class_ == "java.lang.Class") {
 		if (method_ == "getName" && sig_ == "()Ljava/lang/String;") {
 			logger.debug(args_[0]->debug());

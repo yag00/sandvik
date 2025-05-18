@@ -624,38 +624,45 @@ void Interpreter::fill_array_data(const uint8_t* operand_) {
 // throw vAA
 void Interpreter::throw_(const uint8_t* operand_) {
 	uint8_t reg = operand_[0];
-	auto& frame = _rt.currentFrame();
-	auto obj = frame.getObjRegister(reg);
+	auto obj = _rt.currentFrame().getObjRegister(reg);
 	if (obj->isNull()) {
 		throw NullPointerException("throw on null object");
 	}
 
-	// Search for exception handler in the current method
-	/*auto& method = frame.getMethod();
-	auto exceptionTable = method.getExceptionTable();
-	auto pc = frame.pc() - 1; // Adjust for the incremented PC
-
-	for (const auto& handler : exceptionTable) {
-	    if (pc >= handler.startPc && pc < handler.endPc) {
-	        auto& classLoader = _rt.getClassLoader();
-	        auto& exceptionType = classLoader.resolveClass(handler.catchType);
-
-	        if (exceptionType.isInstanceOf(*obj)) {
-	            // Found a matching handler
-	            frame.pc() = handler.handlerPc;
-	            frame.setException(nullptr); // Clear the exception
-	            return;
-	        }
-	    }
-	}*/
-
-	// No handler found - propagate to caller
-	_rt.popFrame();
-	try {
-		_rt.currentFrame().setException(obj);
-	} catch (const std::exception& e) {
-		// Unhandled exception, terminate execution
-		throw std::runtime_error(fmt::format("Unhandled exception: {}", obj->debug()));
+	while (1) {
+		try {
+			auto& frame = _rt.currentFrame();
+			auto& method = frame.getMethod();
+			uint32_t catchAllAddrress = 0;
+			auto exceptionHandler = method.getExceptionHandler(frame.pc() - 1, catchAllAddrress);
+			for (auto& exc : exceptionHandler) {
+				auto& classLoader = _rt.getClassLoader();
+				auto& exceptionType = classLoader.resolveClass(exc.first);
+				if (exceptionType.isInstanceOf(obj)) {
+					logger.debug(fmt::format("Catch exception {} at {:x}", exceptionType.getName(), exc.second));
+					frame.pc() = exc.second << 1;
+					frame.setException(obj);
+					return;
+				}
+			}
+			if (catchAllAddrress != 0) {
+				logger.debug(fmt::format("Catch all exception at {:x}", catchAllAddrress));
+				frame.pc() = catchAllAddrress << 1;
+				frame.setException(obj);
+				return;
+			}
+			// No handler found - propagate to caller
+			_rt.popFrame();
+			_rt.currentFrame().setException(obj);
+		} catch (const std::exception& e) {
+			try {
+				_rt.popFrame();
+				_rt.currentFrame().setException(obj);
+				continue;
+			} catch (const std::exception& e) {
+				throw std::runtime_error(fmt::format("Unhandled exception {}", obj->debug()));
+			}
+		}
 	}
 }
 // goto +AA

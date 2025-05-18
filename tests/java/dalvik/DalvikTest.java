@@ -404,8 +404,15 @@ public class DalvikTest {
     }
 
     // Test exceptions (throw, try-catch)
-    public static int testExceptions() {
-        throw new RuntimeException("Test");
+    public static int testExceptions(int x) {
+        if (x > 0) {
+            if (x >10) {
+                throw new RuntimeException("Test");
+            }
+            return x;
+        } else {
+            throw new IllegalArgumentException("Invalid");
+        }
     }
 
 
@@ -682,18 +689,25 @@ public class DalvikTest {
             }
         }
         Parent o = new Child();
-        check(o.method() == 10, "invoke");
+        check(o.method() == 11, "invoke");
         check(new Child().method() == 11, "invoke-super");
         MyInterface obj = new Impl();
         check(obj.interfaceMethod() == 22, "invoke-interface");
     }
     public static void runTestExceptions() {
         System.out.println("Running exception tests...");
+        testExceptions(5);
         try {
-            testExceptions();
+            testExceptions(16);
             check(false, "Exception not thrown");
         } catch (RuntimeException e) {
-            check(e.getMessage().equals("Test"), "Exception caught");
+            check(e.getMessage().equals("Test"), "RuntimeException Exception caught");
+        }
+        try {
+            testExceptions(-1);
+            check(false, "Exception not thrown");
+        } catch (IllegalArgumentException e) {
+            check(e.getMessage().equals("Invalid"), "IllegalArgumentException Exception caught");
         }
     }
 
@@ -709,7 +723,7 @@ public class DalvikTest {
         runTestStringOps();
         runTestArrayOps();
         runTestInheritance();
-        //runTestExceptions();
+        runTestExceptions();
         System.out.println("Tests passed: " + testsPassed);
         System.out.println("Tests failed: " + testsFailed);
     }
