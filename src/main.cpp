@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
 	args::ValueFlag<std::string> dexFile(parser, "file", "Specify the DEX file to load", {"dex"}, "");
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
+	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
 
 	try {
 		parser.ParseCLI(argc, argv);
@@ -94,8 +95,9 @@ int main(int argc, char** argv) {
 		logger.error("Main class not specified");
 		return 1;
 	}
-	logger.info("Running main class: {}", mainClassValue);
-	vm.run(mainClassValue, {});
+	logger.info(fmt::format("Running main class: {}", mainClassValue));
+	std::vector<std::string> args = args::get(positionalArgs);
+	vm.run(mainClassValue, args);
 
 	logger.info(" === end ===");
 	return 0;

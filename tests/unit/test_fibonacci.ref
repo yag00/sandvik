@@ -1,0 +1,9 @@
+Fibonacci sequence using recursive method:
+0 1 1 2 3 5 8 13 21 34 55 
+
+Fibonacci sequence using iterative method:
+0 1 1 2 3 5 8 13 21 34 55 
+
+Fibonacci number at position 15:
+Recursive: 610
+Iterative: 610

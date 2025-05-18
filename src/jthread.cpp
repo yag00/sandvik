@@ -104,6 +104,29 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			}
 		}
 	}
+	if (class_ == "java.lang.Integer") {
+		if (method_ == "parseInt" && sig_ == "(Ljava/lang/String;)I") {
+			auto str = std::dynamic_pointer_cast<StringObject>(args_[0]);
+			try {
+				int value = std::stoi(str->str());
+				frame_.setReturnValue(value);
+			} catch (const std::invalid_argument& e) {
+				logger.error(fmt::format("Invalid argument for parseInt: {}", str->str()));
+				throw std::runtime_error("Invalid argument for parseInt");
+			} catch (const std::out_of_range& e) {
+				logger.error(fmt::format("Out of range value for parseInt: {}", str->str()));
+				throw std::runtime_error("Out of range value for parseInt");
+			}
+			return true;
+		}
+		if (method_ == "length" && sig_ == "()I") {
+			auto str0 = std::dynamic_pointer_cast<StringObject>(args_[0]);
+			if (str0 != nullptr) {
+				frame_.setReturnValue(str0->str().length());
+				return true;
+			}
+		}
+	}
 	if (class_ == "java.io.PrintStream") {
 		if (args_[0]->isInstanceOf("java.lang.System.out")) {
 			if (method_ == "println" && sig_ == "(I)V") {

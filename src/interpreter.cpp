@@ -571,7 +571,6 @@ void Interpreter::array_length(const uint8_t* operand_) {
 		throw NullPointerException("array_length on null object");
 	}
 	uint32_t length = obj->getArrayLength();
-	logger.warning(fmt::format("array_length not implemented! return 0"));
 	frame.setIntRegister(dest, length);
 	frame.pc()++;
 }

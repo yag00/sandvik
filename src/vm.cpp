@@ -2,12 +2,14 @@
 
 #include <iostream>
 
+#include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
+#include "object.hpp"
 #include "system/logger.hpp"
 
 using namespace sandvik;
@@ -40,8 +42,20 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	logger.info("Running class: " + clazz_.getFullname());
 	JThread mainThread(*this, *_classloader, "main");
 	// Create a new frame for the main method
-	mainThread.newFrame(clazz_.getMethod("main", "([Ljava/lang/String;)V"));
-	mainThread.newFrame(clazz_.getMethod("<clinit>", "()V"));
+	auto& method = clazz_.getMethod("main", "([Ljava/lang/String;)V");
+	mainThread.newFrame(method);
+	// Set the arguments for the main method
+	auto args = Array::make("String", args_.size());
+	for (size_t i = 0; i < args_.size(); ++i) {
+		auto strObj = StringObject::make(args_[i]);
+		std::static_pointer_cast<Array>(args)->setArrayElement(i, strObj);
+	}
+	mainThread.currentFrame().setObjRegister(method.getNbRegisters() - 1, args);
+	try {
+		mainThread.newFrame(clazz_.getMethod("<clinit>", "()V"));
+	} catch (const std::exception& e) {
+		logger.debug(e.what());
+	}
 	while (!mainThread.end()) {
 		mainThread.execute();
 	}
