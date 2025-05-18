@@ -30,9 +30,12 @@ def copytree(src, dst, symlinks=False, ignore=None):
 
 @conf
 def git_submodule_update(conf):
-	# Initialize and update git submodules
-	conf.cmd_and_log(['git', 'submodule', 'init'])
-	conf.cmd_and_log(['git', 'submodule', 'update'])
+	try:
+		# Initialize and update git submodules
+		conf.cmd_and_log(['git', 'submodule', 'init'])
+		conf.cmd_and_log(['git', 'submodule', 'update'])
+	except Exception as e:
+		Logs.pprint('RED', 'Error updating git submodules: {}'.format(e))
 
 @conf
 def check_fmt(conf):
@@ -225,5 +228,4 @@ def check_dependencies_tools(conf):
 	Logs.pprint('BLUE', 'Checking for system dependencies tools and libraries')
 	conf.find_program('pkg-config', mandatory=True)
 	conf.find_program('cmake', mandatory=True)
-	conf.check(lib="z")
 	Logs.pprint('BLUE', 'Checking for local dependencies tools and libraries')

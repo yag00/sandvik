@@ -1,0 +1,59 @@
+image: ubuntu:24.04
+
+stages:
+  - configure
+  - build
+
+default:
+  before_script:
+    - apt-get update && apt-get install -y git doxygen graphviz gcc g++ pkg-config cmake clang-format python3 python-is-python3 python3-jinja2 autoconf automake libtool autotools-dev texinfo
+
+variables:
+  WAF_CONFIG_CACHE_KEY: "waf-config"
+  BUILD_DIR: "wbuild"
+  INSTALL_DIR: "delivery"
+
+configure:
+  stage: configure
+  script:
+    - ./waf configure
+  cache:
+    key: "${WAF_CONFIG_CACHE_KEY}"
+    paths:
+      - "ext"
+      - "${BUILD_DIR}"
+      - .lock-waf_linux_build
+    policy: pull-push
+
+
+package:
+  stage: build
+  script:
+    - ./waf build
+    - ./waf install
+  dependencies:
+    - configure
+  cache:
+    key: "${WAF_CONFIG_CACHE_KEY}"
+    paths:
+      - "ext"
+      - "${BUILD_DIR}"
+      - .lock-waf_linux_build
+    policy: pull
+  artifacts:
+    paths:
+      - "${INSTALL_DIR}/"
+
+tests:
+  stage: build
+  script:
+    - ./waf build --tests
+  dependencies:
+    - configure
+  cache:
+    key: "${WAF_CONFIG_CACHE_KEY}"
+    paths:
+      - "ext"
+      - "${BUILD_DIR}"
+      - .lock-waf_linux_build
+    policy: pull
