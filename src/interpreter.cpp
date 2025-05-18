@@ -1941,20 +1941,20 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
 	auto& method = classloader.resolveMethod(methodRef);
-	auto method_str = fmt::format("{}.{}{}(", method.getClass().getName(), method.getName(), method.getSignature());
+	std::string args_str = "(";
 	std::vector<std::shared_ptr<Object>> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
 		auto obj = frame.getObjRegister(regs[i]);
 		if (i == 0) {
-			method_str += "this=";
+			args_str += "this=";
 		}
-		method_str += obj->debug();
+		args_str += obj->debug();
 		if (i < vA - 1) {
-			method_str += ", ";
+			args_str += ", ";
 		}
 		args.push_back(obj);
 	}
-	method_str += ")";
+	args_str += ")";
 
 	auto this_ptr = frame.getObjRegister(regs[0]);
 	if (this_ptr->isNull()) {
@@ -1968,25 +1968,27 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			try {
 				auto& runtimeClass = this_ptr_class->getClass();
 				auto& vmethod = runtimeClass.getMethod(method.getName(), method.getSignature());
-				logger.ok(fmt::format("invoke_virtual call method {}->{}{}", runtimeClass.getFullname(), vmethod.getName(), vmethod.getSignature()));
+				logger.ok(
+				    fmt::format("invoke_virtual call method {}->{}{}{}", runtimeClass.getFullname(), vmethod.getName(), vmethod.getSignature(), args_str));
 				auto& newframe = _rt.newFrame(vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
 				for (uint32_t i = 0; i < vA; i++) {
 					newframe.setObjRegister(vmethod.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
 				}
 			} catch (std::exception& e) {
-				throw std::runtime_error(fmt::format("invoke_virtual: method {} not found", method_str));
+				throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
+				                                     method.getSignature(), args_str));
 			}
 		}
 	} else {
 		if (method.getBytecode() == nullptr) {
 			// handle by vm
 			if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
-				throw std::runtime_error(
-				    fmt::format("invoke_virtual: method {}->{}{} not found", method.getClass().getFullname(), method.getName(), method.getSignature()));
+				throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
+				                                     method.getSignature(), args_str));
 			}
 		} else {
-			logger.ok(fmt::format("invoke_virtual call method {}", method_str));
+			logger.ok(fmt::format("invoke_virtual call method {}->{}{}{}", method.getClass().getFullname(), method.getName(), method.getSignature(), args_str));
 			auto& newframe = _rt.newFrame(method);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
 			for (uint32_t i = 0; i < vA; i++) {
@@ -2034,7 +2036,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("Cannot invoke abstract class or interface: {}", method.getClass().getName()));
 	}
 	if (method.getBytecode() == nullptr) {
-		logger.ok(fmt::format("invoke_direct call method {} handle by vm??", method_str));
+		logger.warning(fmt::format("invoke_direct call method {} handled by vm", method_str));
 		if (method.getName() == "<init>") {
 			_rt.handleConstructor(method.getClass().getFullname(), method.getName(), method.getSignature(), args);
 		} else if (method.getName() == "<clinit>") {
@@ -2043,7 +2045,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 			_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args);
 		}
 	} else {
-		logger.ok(fmt::format("invoke_direct call method {}  static={}", method_str, method.isStatic()));
+		logger.ok(fmt::format("invoke_direct call method {} static={}", method_str, method.isStatic()));
 		auto& newframe = _rt.newFrame(method);
 		// set args on new frame
 		// When a method is invoked, the parameters to the method are placed into the last n registers.
