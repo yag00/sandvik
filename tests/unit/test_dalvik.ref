@@ -113,6 +113,18 @@ Running field and static operation tests...
 [OK] sget-char
 [OK] sget-short
 [OK] sget-object
+[OK] object-ref-parameter
+[OK] object-ref-parameter
+[OK] object-ref-parameter
+[OK] object-ref-parameter
+[OK] object-ref-parameter
+[OK] object-ref-parameter
+[OK] object-ref-return
+[OK] object-ref-return
+[OK] object-ref-return
+[OK] object-ref-return
+[OK] object-ref-return
+[OK] object-ref-return
 Running string operation tests...
 [OK] string ops
 [OK] const-class
@@ -126,5 +138,5 @@ Running array operation tests...
 Running exception tests...
 [OK] RuntimeException Exception caught
 [OK] IllegalArgumentException Exception caught
-Tests passed: 118
+Tests passed: 130
 Tests failed: 0

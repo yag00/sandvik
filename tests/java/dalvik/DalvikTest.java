@@ -346,6 +346,16 @@ public class DalvikTest {
         void setStr(String val) { fstr = val; }
     }
 
+    public static TestObject testObjectRefParameter(TestObject obj) {
+        obj.setFint(66);
+        obj.setFlong(67L);
+        obj.setFbool(true);
+        obj.setFbyte((byte) 2);
+        obj.setFchar((char)'B');
+        obj.setFshort((short)0x0100);
+        return obj;
+    }
+
     // Test branches
     public static int testBranches(int x) {
         if (x > 0) {
@@ -644,6 +654,20 @@ public class DalvikTest {
         check(TestObject.getSfshort() == (short)0x0B00, "sget-short");
         TestObject.setSfstr("Static Test String");
         check(TestObject.getSfstr().equals("Static Test String"), "sget-object");
+
+        TestObject obj2 = testObjectRefParameter(obj);
+        check(obj.getFint() == 66, "object-ref-parameter");
+        check(obj.getFlong() == 67L, "object-ref-parameter");
+        check(obj.getFbool() == true, "object-ref-parameter");
+        check(obj.getFbyte() == (byte) 2, "object-ref-parameter");
+        check(obj.getFchar() == (char)'B', "object-ref-parameter");
+        check(obj.getFshort() == (short)0x0100, "object-ref-parameter");
+        check(obj2.getFint() == 66, "object-ref-return");
+        check(obj2.getFlong() == 67L, "object-ref-return");
+        check(obj2.getFbool() == true, "object-ref-return");
+        check(obj2.getFbyte() == (byte) 2, "object-ref-return");
+        check(obj2.getFchar() == (char)'B', "object-ref-return");
+        check(obj2.getFshort() == (short)0x0100, "object-ref-return");
     }
     public static void runTestStringOps() {
         System.out.println("Running string operation tests...");
