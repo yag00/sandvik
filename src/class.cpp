@@ -17,10 +17,10 @@
 
 using namespace sandvik;
 
-Class::Class(const LIEF::DEX::Class& class_) : _class(class_) {
+Class::Class(const uint32_t dexIdx_, const LIEF::DEX::Class& class_) : _dexIdx(dexIdx_), _class(class_) {
 }
 
-Class::Class(const Class& other) : _class(other._class) {
+Class::Class(const Class& other) : _dexIdx(other._dexIdx), _class(other._class) {
 	// Deep copy of methods
 	for (const auto& [key, method] : other._methods) {
 		_methods.emplace(key, std::make_unique<Method>(*method));
@@ -30,6 +30,10 @@ Class::Class(const Class& other) : _class(other._class) {
 	for (const auto& [key, field] : other._fields) {
 		_fields.emplace(key, std::make_unique<Field>(*field));
 	}
+}
+
+uint32_t Class::getDexIdx() const {
+	return _dexIdx;
 }
 
 std::string Class::getName() const {
@@ -145,7 +149,7 @@ Field& Class::getField(uint32_t idx_) {
 
 void Class::debug() const {
 	for (auto& method : _class.methods()) {
-		logger.debug("Bytecode for method " + method.name() + ":");
+		logger.debug("Bytecode for method " + method.name() + get_method_descriptor(method) + ":");
 		std::ostringstream oss;
 		size_t count = 0;
 		for (const auto& byte : method.bytecode()) {

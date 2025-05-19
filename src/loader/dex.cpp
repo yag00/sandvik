@@ -17,25 +17,17 @@
 using namespace sandvik;
 using namespace LIEF::DEX;
 
-Dex::Dex(const std::string& path_) : _path(path_) {
+Dex::Dex(const uint32_t idx_, const std::string& path_) : _idx(idx_), _path(path_) {
 	load(path_);
 }
+Dex::Dex(const uint32_t idx_) : _idx(idx_) {
+}
 
-Dex::Dex(std::vector<uint8_t>& buffer, const std::string& name) {
+Dex::Dex(const uint32_t idx_, std::vector<uint8_t>& buffer, const std::string& name) : _idx(idx_) {
 	load(buffer);
 }
 
 Dex::~Dex() = default;
-
-Dex::Dex(Dex&& other) noexcept : _dex(std::move(other._dex)) {
-}
-
-Dex& Dex::operator=(Dex&& other) noexcept {
-	if (this != &other) {
-		_dex = std::move(other._dex);
-	}
-	return *this;
-}
 
 std::string Dex::getPath() const {
 	return _path;
@@ -90,7 +82,7 @@ std::unique_ptr<::sandvik::Class> Dex::findClass(const std::string& name) const 
 
 	for (const auto& cls : _dex->classes()) {
 		if (cls.pretty_name() == name) {
-			return std::make_unique<::sandvik::Class>(cls);
+			return std::make_unique<::sandvik::Class>(_idx, cls);
 		}
 	}
 	throw DexLoaderException(fmt::format("Class '{}' not found in DEX file", name));

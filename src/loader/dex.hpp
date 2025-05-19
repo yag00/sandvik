@@ -23,18 +23,14 @@ namespace sandvik {
 					using std::runtime_error::runtime_error;
 			};
 
-			Dex() = default;
-			explicit Dex(const std::string& path);
-			Dex(std::vector<uint8_t>& buffer, const std::string& name = "");
+			explicit Dex(const uint32_t idx_, const std::string& path_);
+			Dex(const uint32_t idx_);
+			Dex(const uint32_t idx_, std::vector<uint8_t>& buffer, const std::string& name = "");
 			~Dex();
 
 			// Prevent copying
 			Dex(const Dex&) = delete;
 			Dex& operator=(const Dex&) = delete;
-
-			// Allow moving
-			Dex(Dex&&) noexcept;
-			Dex& operator=(Dex&&) noexcept;
 
 			std::string getPath() const;
 
@@ -52,6 +48,7 @@ namespace sandvik {
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint16_t idx);
 
 		private:
+			const uint32_t _idx;
 			std::string _path;
 			std::unique_ptr<const LIEF::DEX::File> _dex;
 	};

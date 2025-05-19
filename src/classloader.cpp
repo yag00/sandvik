@@ -25,7 +25,7 @@ ClassLoader::~ClassLoader() {
 void ClassLoader::loadDex(const std::string& dex_) {
 	try {
 		// Load the DEX file
-		auto dex = std::make_unique<Dex>(dex_);  // Assuming Apk can handle DEX files as well
+		auto dex = std::make_unique<Dex>(_dexs.size(), dex_);  // Assuming Apk can handle DEX files as well
 		logger.debug(fmt::format("DEX loaded: {}", dex->getPath()));
 		_dexs.push_back(std::move(dex));
 	} catch (const std::exception& e) {

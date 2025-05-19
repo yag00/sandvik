@@ -24,7 +24,7 @@ Apk::Apk(const std::string& path_) : _path(path_) {
 		throw std::runtime_error(fmt::format("Invalid APK file: {}", _path));
 	}
 
-	_classes_dex = std::make_unique<Dex>();
+	_classes_dex = std::make_unique<Dex>(0);
 	_zipReader = std::make_unique<ZipReader>();
 	_zipReader->open(_path);
 	std::list<std::string> files = _zipReader->getList();

@@ -21,12 +21,13 @@ namespace sandvik {
 	class Field;
 	class Class {
 		public:
-			explicit Class(const LIEF::DEX::Class& class_);
+			explicit Class(const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
 			~Class() = default;
 			Class(const Class& other);
 
 			void debug() const;
 
+			uint32_t getDexIdx() const;
 			std::string getName() const;
 			std::string getFullname() const;
 
@@ -43,6 +44,7 @@ namespace sandvik {
 			bool hasSuperClass() const;
 
 		private:
+			const uint32_t _dexIdx;
 			const LIEF::DEX::Class& _class;
 			std::map<std::string, std::unique_ptr<Method>> _methods;
 			std::map<std::string, std::unique_ptr<Field>> _fields;
