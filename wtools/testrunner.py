@@ -12,7 +12,6 @@ from waflib.TaskGen import feature, extension
 from waflib.Configure import conf
 from waflib.Errors import WafError
 from waflib import Logs
-from termcolor import colored
 
 class gtest(Task.Task):
     color = "BLUE"
@@ -144,25 +143,27 @@ class gtestreport(Task.Task):
             template = templateEnv.get_template("wtools/gtest_template.html")
             outfile.write(template.render(test_overview=data, test_suites=data['testsuites']))
 
-        Logs.info(colored("Test Report Summary:", "cyan", attrs=["bold"]))
+        Logs.pprint('BLUE', "Test Report Summary:")
         for suite in data['testsuites']:
-            Logs.info(colored("Test Suite: %s" % suite['name'], "blue", attrs=["bold"]))
+            Logs.pprint('CYAN', "Test Suite: %s" % suite['name'])
             for case in suite['testsuite']:
-                status = "PASS" if case['status'] == "RUN" and case['result'] == "COMPLETED" else "FAIL"
-                color = "green" if status == "PASS" else "red"
-                Logs.info(colored(f"  {status} - Test: {case['name']}", color))
-        Logs.info(colored("Total tests: %d" % data['tests'], "green"))
+                status = "PASS" if case['status'] == "RUN" and case['result'] == "COMPLETED" and not 'failures' in case else "FAIL"
+                if status == "FAIL":
+                    Logs.pprint('RED', f"  {status} - Test: {case['name']}")
+                else:
+                    Logs.info(f"  {status} - Test: {case['name']}")
+        Logs.info("Total tests: %d" % data['tests'])
         if data['disabled'] > 0:
-            Logs.info(colored("Disabled tests: %d" % data['disabled'], "yellow"))
+            Logs.info("Disabled tests: %d" % data['disabled'])
         if data['errors'] > 0:
-            Logs.info(colored("Errors: %d" % data['errors'], "red"))
+            Logs.info("Errors: %d" % data['errors'])
         if data['failures'] > 0:
-            Logs.info(colored("Failures: %d" % data['failures'], "red"))
+            Logs.pprint('RED', "Failures: %d" % data['failures'])
 
         if data['failures'] == 0 and data['errors'] == 0:
-            Logs.info(colored("All tests passed successfully!", "green", attrs=["bold"]))
+            Logs.info("All tests passed successfully!")
         else:
-            Logs.error(colored("Some tests failed. Please check the report for details.", "red", attrs=["bold"]))
+            Logs.error("Some tests failed. Please check the report for details.")
             raise WafError("Test failures detected. Build failed.")
 
 
