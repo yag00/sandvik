@@ -109,6 +109,9 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	for (const auto& dex : _dexs) {
 		try {
 			auto classPtr = dex->findClass(classname_);
+			if (classPtr->isExternal()) {
+				continue;
+			}
 			_classes[classname_] = std::move(classPtr);
 			return *(_classes[classname_]);
 		} catch (std::exception& e) {
@@ -119,74 +122,59 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	throw std::runtime_error(fmt::format("ClassNotFoundError: {}", classname_));
 }
 
-Method& ClassLoader::resolveMethod(uint16_t idx, std::string& classname_, std::string& methodname_, std::string& sig_) {
-	for (const auto& dex : _dexs) {
-		try {
-			dex->resolveMethod(idx, classname_, methodname_, sig_);
-			auto& cls = getOrLoad(classname_);
-			return cls.getMethod(methodname_, sig_);
-		} catch (std::exception& e) {
-			logger.error(fmt::format("Failed to resolve method {}: {}", idx, e.what()));
-		}
+Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& methodname_, std::string& sig_) {
+	try {
+		_dexs[dex_]->resolveMethod(idx_, classname_, methodname_, sig_);
+		auto& cls = getOrLoad(classname_);
+		return cls.getMethod(methodname_, sig_);
+	} catch (std::exception& e) {
+		throw std::runtime_error(fmt::format("Method {}.{}{} not found: {} ({})", classname_, methodname_, sig_, idx_, e.what()));
 	}
-	throw std::runtime_error(fmt::format("Method not found: {}", idx));
 }
-Method& ClassLoader::resolveMethod(uint16_t idx) {
+Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_) {
 	std::string classname;
 	std::string method;
 	std::string sig;
-	return resolveMethod(idx, classname, method, sig);
+	return resolveMethod(dex_, idx_, classname, method, sig);
 }
 
-Class& ClassLoader::resolveClass(uint16_t idx, std::string& classname_) {
-	for (const auto& dex : _dexs) {
-		try {
-			dex->resolveClass(idx, classname_);
-			return getOrLoad(classname_);
-		} catch (std::exception& e) {
-			logger.error(fmt::format("Failed to resolve class {}: {}", idx, e.what()));
-		}
+Class& ClassLoader::resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_) {
+	try {
+		_dexs[dex_]->resolveClass(idx_, classname_);
+		return getOrLoad(classname_);
+	} catch (std::exception& e) {
+		throw std::runtime_error(fmt::format("Class not found: {} ({})", idx_, e.what()));
 	}
-	throw std::runtime_error(fmt::format("Class not found: {}", idx));
 }
-Class& ClassLoader::resolveClass(uint16_t idx) {
+Class& ClassLoader::resolveClass(uint32_t dex_, uint16_t idx_) {
 	std::string classname;
-	return resolveClass(idx, classname);
+	return resolveClass(dex_, idx_, classname);
 }
 
-Field& ClassLoader::resolveField(uint16_t idx) {
-	for (const auto& dex : _dexs) {
-		try {
-			std::string classname;
-			std::string field;
-			dex->resolveField(idx, classname, field);
-			auto& cls = getOrLoad(classname);
-			return cls.getField(field);
-		} catch (std::exception& e) {
-			logger.error(fmt::format("Failed to resolve field {}: {}", idx, e.what()));
-		}
+Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_) {
+	try {
+		std::string classname;
+		std::string field;
+		_dexs[dex_]->resolveField(idx_, classname, field);
+		auto& cls = getOrLoad(classname);
+		return cls.getField(field);
+	} catch (std::exception& e) {
+		throw std::runtime_error(fmt::format("Field not found: {} ({})", idx_, e.what()));
 	}
-	throw std::runtime_error(fmt::format("Field not found: {}", idx));
 }
 
-std::string ClassLoader::resolveString(uint16_t idx) {
-	for (const auto& dex : _dexs) {
-		try {
-			return dex->resolveString(idx);
-		} catch (const std::exception& e) {
-			logger.error(fmt::format("Failed to resolve string {}: {}", idx, e.what()));
-		}
+std::string ClassLoader::resolveString(uint32_t dex_, uint16_t idx_) {
+	try {
+		return _dexs[dex_]->resolveString(idx_);
+	} catch (const std::exception& e) {
+		throw std::runtime_error(fmt::format("String not found: {} ({})", idx_, e.what()));
 	}
-	throw std::runtime_error(fmt::format("String not found: {}", idx));
 }
 
-std::vector<std::pair<std::string, uint32_t>> ClassLoader::resolveArray(uint16_t idx) {
-	for (const auto& dex : _dexs) {
-		try {
-			return dex->resolveArray(idx);
-		} catch (const std::exception& e) {
-			logger.error(fmt::format("Failed to resolve array {}: {}", idx, e.what()));
-		}
+std::vector<std::pair<std::string, uint32_t>> ClassLoader::resolveArray(uint32_t dex_, uint16_t idx_) {
+	try {
+		return _dexs[dex_]->resolveArray(idx_);
+	} catch (const std::exception& e) {
+		throw std::runtime_error(fmt::format("Array not found: {} ({})", idx_, e.what()));
 	}
-	throw std::runtime_error(fmt::format("Array not found: {}", idx));
 }

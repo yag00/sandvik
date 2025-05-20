@@ -17,6 +17,8 @@ namespace sandvik {
 			Frame(Method& method_);
 			~Frame() = default;
 
+			uint32_t getDexIdx() const;
+
 			void setIntRegister(uint32_t reg, int32_t value);
 			int32_t getIntRegister(uint32_t reg);
 			void setLongRegister(uint32_t reg, int64_t value);

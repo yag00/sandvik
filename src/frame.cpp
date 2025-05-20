@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "class.hpp"
 #include "method.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -25,6 +26,10 @@ void Frame::increaseRegSize(uint32_t size_) {
 		_registers.resize(size_);
 		std::generate(_registers.begin() + oldSize, _registers.end(), []() { return Object::makeNull(); });
 	}
+}
+
+uint32_t Frame::getDexIdx() const {
+	return _method.getClass().getDexIdx();
 }
 
 Method& Frame::getMethod() const {

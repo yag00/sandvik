@@ -44,6 +44,18 @@ std::string Class::getFullname() const {
 	return _class.pretty_name();
 }
 
+bool Class::isExternal() const {
+	if (isAbstract()) {
+		return false;
+	}
+	for (const auto& method : _class.methods()) {
+		if (!method.bytecode().empty()) {
+			return false;
+		}
+	}
+	return true;
+}
+
 bool Class::isInterface() const {
 	return _class.has(LIEF::DEX::ACC_INTERFACE);
 }

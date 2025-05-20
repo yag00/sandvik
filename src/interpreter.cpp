@@ -484,8 +484,8 @@ void Interpreter::const_string(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t stringIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
-	auto str = classLoader.resolveString(stringIndex);
+	auto& classloader = _rt.getClassLoader();
+	auto str = classloader.resolveString(frame.getDexIdx(), stringIndex);
 	frame.setObjRegister(dest, Object::make(str));
 	frame.pc() += 3;
 }
@@ -494,8 +494,8 @@ void Interpreter::const_string_jumbo(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint32_t stringIndex = *(uint32_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
-	auto str = classLoader.resolveString(stringIndex);
+	auto& classloader = _rt.getClassLoader();
+	auto str = classloader.resolveString(frame.getDexIdx(), stringIndex);
 	frame.setObjRegister(dest, Object::make(str));
 	frame.pc() += 5;
 }
@@ -504,8 +504,8 @@ void Interpreter::const_class(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t typeIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
-	auto& cls = classLoader.resolveClass(typeIndex);
+	auto& classloader = _rt.getClassLoader();
+	auto& cls = classloader.resolveClass(frame.getDexIdx(), typeIndex);
 	frame.setObjRegister(dest, Object::make(cls));
 	frame.pc() += 3;
 }
@@ -542,8 +542,8 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("check_cast on null object");
 	}
-	auto& classLoader = _rt.getClassLoader();
-	auto& targetClass = classLoader.resolveClass(typeIndex);
+	auto& classloader = _rt.getClassLoader();
+	auto& targetClass = classloader.resolveClass(frame.getDexIdx(), typeIndex);
 	if (!targetClass.isInstanceOf(obj)) {
 		throw std::runtime_error(fmt::format("Cannot cast object to {}", targetClass.getName()));
 	}
@@ -556,8 +556,8 @@ void Interpreter::instance_of(const uint8_t* operand_) {
 	uint16_t typeIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(src);
-	auto& classLoader = _rt.getClassLoader();
-	auto& targetClass = classLoader.resolveClass(typeIndex);
+	auto& classloader = _rt.getClassLoader();
+	auto& targetClass = classloader.resolveClass(frame.getDexIdx(), typeIndex);
 	frame.setIntRegister(dest, !obj->isNull() && targetClass.isInstanceOf(obj) ? 1 : 0);
 	frame.pc() += 3;
 }
@@ -579,8 +579,8 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t typeIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
-	auto& cls = classLoader.resolveClass(typeIndex);
+	auto& classloader = _rt.getClassLoader();
+	auto& cls = classloader.resolveClass(frame.getDexIdx(), typeIndex);
 
 	if (cls.isAbstract() || cls.isInterface()) {
 		throw std::runtime_error(fmt::format("Cannot instantiate abstract class or interface: {}", cls.getName()));
@@ -596,8 +596,8 @@ void Interpreter::new_array(const uint8_t* operand_) {
 	uint16_t typeIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 
-	auto& classLoader = _rt.getClassLoader();
-	auto arrayType = classLoader.resolveArray(typeIndex);
+	auto& classloader = _rt.getClassLoader();
+	auto arrayType = classloader.resolveArray(frame.getDexIdx(), typeIndex);
 
 	// Get the array size from the source register
 	int32_t size = frame.getIntRegister(src);
@@ -635,8 +635,8 @@ void Interpreter::throw_(const uint8_t* operand_) {
 			uint32_t catchAllAddrress = 0;
 			auto exceptionHandler = method.getExceptionHandler(frame.pc() - 1, catchAllAddrress);
 			for (auto& exc : exceptionHandler) {
-				auto& classLoader = _rt.getClassLoader();
-				auto& exceptionType = classLoader.resolveClass(exc.first);
+				auto& classloader = _rt.getClassLoader();
+				auto& exceptionType = classloader.resolveClass(frame.getDexIdx(), exc.first);
 				if (exceptionType.isInstanceOf(obj)) {
 					logger.debug(fmt::format("Catch exception {} at {:x}", exceptionType.getName(), exc.second));
 					frame.pc() = exc.second << 1;
@@ -1315,14 +1315,14 @@ void Interpreter::iget(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iget on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I") {
 		throw std::runtime_error(fmt::format("iget: Field type mismatch, expected int but got {}", field.getType()));
 	}
@@ -1342,14 +1342,14 @@ void Interpreter::iget_wide(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iget_wide on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "J" && field.getType() != "D") {
 		throw std::runtime_error(fmt::format("iget_wide: Field type mismatch, expected long or double but got {}", field.getType()));
 	}
@@ -1369,14 +1369,14 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iget_object on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
 		throw std::runtime_error(fmt::format("iget_object: Field type mismatch, expected object or array but got {}", field.getType()));
 	}
@@ -1392,14 +1392,14 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iget_boolean on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
 		throw std::runtime_error(fmt::format("iget_boolean: Field type mismatch, expected boolean but got {}", field.getType()));
 	}
@@ -1419,14 +1419,14 @@ void Interpreter::iget_byte(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iget_byte on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
 		throw std::runtime_error(fmt::format("iget_byte: Field type mismatch, expected byte but got {}", field.getType()));
 	}
@@ -1446,14 +1446,14 @@ void Interpreter::iget_char(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iget_char on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
 		throw std::runtime_error(fmt::format("iget_char: Field type mismatch, expected char but got {}", field.getType()));
 	}
@@ -1473,14 +1473,14 @@ void Interpreter::iget_short(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iget_short on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
 		throw std::runtime_error(fmt::format("iget_short: Field type mismatch, expected short but got {}", field.getType()));
 	}
@@ -1500,14 +1500,14 @@ void Interpreter::iput(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iput on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I") {
 		throw std::runtime_error(fmt::format("iput_boolean: Field type mismatch, expected int but got {}", field.getType()));
 	}
@@ -1522,14 +1522,14 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iput_wide on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.isStatic()) {
 		throw std::runtime_error("iput_wide: Cannot use iput_wide on a static field");
 	}
@@ -1549,14 +1549,14 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iput_object on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.isStatic()) {
 		throw std::runtime_error("iput_object: Cannot use iput_object on a static field");
 	}
@@ -1576,14 +1576,14 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iput_boolean on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
 		throw std::runtime_error(fmt::format("iput_boolean: Field type mismatch, expected boolean but got {}", field.getType()));
 	}
@@ -1599,14 +1599,14 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iput_byte on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
 		throw std::runtime_error(fmt::format("iput_byte: Field type mismatch, expected byte but got {}", field.getType()));
 	}
@@ -1622,14 +1622,14 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iput_char on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
 		throw std::runtime_error(fmt::format("iput_char: Field type mismatch, expected char but got {}", field.getType()));
 	}
@@ -1645,14 +1645,14 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
 	auto obj = frame.getObjRegister(objReg);
 	if (obj->isNull()) {
 		throw NullPointerException("iput_short on null object");
 	}
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
 		throw std::runtime_error(fmt::format("iput_short: Field type mismatch, expected short but got {}", field.getType()));
 	}
@@ -1667,9 +1667,9 @@ void Interpreter::sget(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I") {
 		throw std::runtime_error(fmt::format("sget: Field type mismatch, expected int but got {}", field.getType()));
 	}
@@ -1683,9 +1683,9 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "J" && field.getType() != "D") {
 		throw std::runtime_error(fmt::format("sget_wide: Field type mismatch, expected long or double but got {}", field.getType()));
 	}
@@ -1699,9 +1699,9 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (_rt.handleClassFieldGetter(field.getClass().getFullname(), field.getName())) {
 		// handle by vm
 		logger.debug(
@@ -1720,9 +1720,9 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
 		throw std::runtime_error(fmt::format("sget_boolean: Field type mismatch, expected boolean but got {}", field.getType()));
 	}
@@ -1736,9 +1736,9 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
 		throw std::runtime_error(fmt::format("sget_byte: Field type mismatch, expected byte but got {}", field.getType()));
 	}
@@ -1752,9 +1752,9 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
 		throw std::runtime_error(fmt::format("sget_char: Field type mismatch, expected char but got {}", field.getType()));
 	}
@@ -1768,9 +1768,9 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
 		throw std::runtime_error(fmt::format("sget_short: Field type mismatch, expected short but got {}", field.getType()));
 	}
@@ -1784,9 +1784,9 @@ void Interpreter::sput(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw std::runtime_error("sput: Cannot use sput on a non-static field");
 	}
@@ -1805,9 +1805,9 @@ void Interpreter::sput_wide(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw std::runtime_error("sput_wide: Cannot use sput_wide on a non-static field");
 	}
@@ -1826,9 +1826,9 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw std::runtime_error("sput_object: Cannot use sput_object on a non-static field");
 	}
@@ -1847,9 +1847,9 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw std::runtime_error("sput_boolean: Cannot use sput_boolean on a non-static field");
 	}
@@ -1868,9 +1868,9 @@ void Interpreter::sput_byte(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw std::runtime_error("sput_byte: Cannot use sput_byte on a non-static field");
 	}
@@ -1889,9 +1889,9 @@ void Interpreter::sput_char(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw std::runtime_error("sput_char: Cannot use sput_char on a non-static field");
 	}
@@ -1910,9 +1910,9 @@ void Interpreter::sput_short(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
 	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
-	auto& classLoader = _rt.getClassLoader();
+	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classLoader.resolveField(fieldIndex);
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw std::runtime_error("sput_short: Cannot use sput_short on a non-static field");
 	}
@@ -1940,7 +1940,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	auto& method = classloader.resolveMethod(methodRef);
+	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
 	std::string args_str = "(";
 	std::vector<std::shared_ptr<Object>> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
@@ -2016,7 +2016,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	auto& method = classloader.resolveMethod(methodRef);
+	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
 	auto method_str = fmt::format("{}.{}{}(", method.getClass().getName(), method.getName(), method.getSignature());
 	std::vector<std::shared_ptr<Object>> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
@@ -2073,7 +2073,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	auto& interface = classloader.resolveMethod(methodRef);
+	auto& interface = classloader.resolveMethod(frame.getDexIdx(), methodRef);
 	auto interface_str = fmt::format("{}.{}{}(", interface.getClass().getName(), interface.getName(), interface.getSignature());
 
 	auto this_ptr = std::dynamic_pointer_cast<ObjectClass>(frame.getObjRegister(regs[0]));

@@ -38,6 +38,7 @@ namespace sandvik {
 
 			bool inheritsFrom(Class& class_) const;
 			bool isInstanceOf(std::shared_ptr<Object>& class_) const;
+			bool isExternal() const;
 			bool isAbstract() const;
 			bool isPrimitive() const;
 			bool isInterface() const;
