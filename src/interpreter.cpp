@@ -267,7 +267,7 @@ void Interpreter::execute() {
 	auto& frame = _rt.currentFrame();
 	auto& method = frame.getMethod();
 	auto code = method.getBytecode();
-	auto func = fmt::format("{}::{}{}", method.getClass().getName(), method.getName(), method.getSignature());
+	auto func = fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature());
 	if (code == nullptr) {
 		throw std::runtime_error(fmt::format("Method {} has no bytecode!", func));
 	}
@@ -2017,7 +2017,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
 	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
-	auto method_str = fmt::format("{}.{}{}(", method.getClass().getName(), method.getName(), method.getSignature());
+	auto method_str = fmt::format("{}.{}{}(", method.getClass().getFullname(), method.getName(), method.getSignature());
 	std::vector<std::shared_ptr<Object>> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
 		auto obj = frame.getObjRegister(regs[i]);
@@ -2033,14 +2033,14 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	method_str += ")";
 
 	if (method.getClass().isAbstract() || method.getClass().isInterface()) {
-		throw std::runtime_error(fmt::format("Cannot invoke abstract class or interface: {}", method.getClass().getName()));
+		throw std::runtime_error(fmt::format("Cannot invoke abstract class or interface: {}", method.getClass().getFullname()));
 	}
 	if (method.getBytecode() == nullptr) {
 		logger.warning(fmt::format("invoke_direct call method {} handled by vm", method_str));
 		if (method.getName() == "<init>") {
 			_rt.handleConstructor(method.getClass().getFullname(), method.getName(), method.getSignature(), args);
 		} else if (method.getName() == "<clinit>") {
-			throw std::runtime_error(fmt::format("Cannot invoke <clinit> method: {} Not implemented", method.getClass().getName()));
+			throw std::runtime_error(fmt::format("Cannot invoke <clinit> method: {} Not implemented", method.getClass().getFullname()));
 		} else {
 			_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args);
 		}
@@ -2074,14 +2074,14 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
 	auto& interface = classloader.resolveMethod(frame.getDexIdx(), methodRef);
-	auto interface_str = fmt::format("{}.{}{}(", interface.getClass().getName(), interface.getName(), interface.getSignature());
+	auto interface_str = fmt::format("{}.{}{}(", interface.getClass().getFullname(), interface.getName(), interface.getSignature());
 
 	auto this_ptr = std::dynamic_pointer_cast<ObjectClass>(frame.getObjRegister(regs[0]));
 	if (this_ptr->isNull()) {
 		throw NullPointerException("invoke_interface on null object");
 	}
 	if (!interface.getClass().isInterface()) {
-		throw std::runtime_error(fmt::format("Not an interface: {}", interface.getClass().getName()));
+		throw std::runtime_error(fmt::format("Not an interface: {}", interface.getClass().getFullname()));
 	}
 
 	auto& method = this_ptr->getClass().getMethod(interface.getName(), interface.getSignature());
