@@ -585,6 +585,14 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 	if (cls.isAbstract() || cls.isInterface()) {
 		throw std::runtime_error(fmt::format("Cannot instantiate abstract class or interface: {}", cls.getName()));
 	}
+
+	if (!cls.isStaticInitialized()) {
+		frame.pc()--;
+		auto& clinitMethod = cls.getMethod("<clinit>", "()V");
+		_rt.newFrame(clinitMethod);
+		return;
+	}
+
 	logger.debug(fmt::format("new {}", cls.getFullname()));
 	frame.setObjRegister(dest, Object::make(cls));
 	frame.pc() += 3;
@@ -1376,6 +1384,7 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 		throw NullPointerException("iget_object on null object");
 	}
 
+	// class should have been loaded if trying to access an instance field. resolveField should not fail.
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
 		throw std::runtime_error(fmt::format("iget_object: Field type mismatch, expected object or array but got {}", field.getType()));
@@ -1556,6 +1565,7 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 		throw NullPointerException("iput_object on null object");
 	}
 
+	// class should have been loaded if trying to access an instance field. resolveField should not fail.
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.isStatic()) {
 		throw std::runtime_error("iput_object: Cannot use iput_object on a static field");
@@ -1701,17 +1711,39 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
-	if (_rt.handleClassFieldGetter(field.getClass().getFullname(), field.getName())) {
-		// handle by vm
-		logger.debug(
-		    fmt::format("TODO sget_object handle field getter : class {} field {} {}!", field.getClass().getFullname(), field.getName(), field.getType()));
-		frame.setObjRegister(dest, Object::makeVmObject(field.getClass().getFullname() + "." + field.getName()));
-	} else {
+	std::string classname, fieldname;
+	try {
+		auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname);
+		if (!field.isStatic()) {
+			throw std::runtime_error("sget_object: Cannot use sget_object on a non-static field");
+		}
 		if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
 			throw std::runtime_error(fmt::format("sget_object: Field type mismatch, expected object but got {}", field.getType()));
 		}
+		// static field access, class instance may not be instantiated yet
+		auto& clazz = field.getClass();
+		if (!clazz.isStaticInitialized()) {
+			// cancel the current instruction
+			frame.pc()--;
+			// push new frame with <clinit> method
+			try {
+				auto& clinitMethod = clazz.getMethod("<clinit>", "()V");
+				_rt.newFrame(clinitMethod);
+			} catch (std::exception& e) {
+				logger.debug(fmt::format("sget_object: No <clinit> method for class {}: {}", field.getClass().getFullname(), e.what()));
+			}
+			return;
+		}
+		// set result of the sget-object to the destination register
 		frame.setObjRegister(dest, field.getObjectValue());
+	} catch (const std::exception& e) {
+		if (_rt.handleClassFieldGetter(classname, fieldname)) {
+			// handle by vm
+			logger.warning(fmt::format("sget_object handle static field getter by vm for {}->{}!", classname, fieldname));
+			frame.setObjRegister(dest, Object::makeVmObject(classname + "." + fieldname));
+		} else {
+			throw std::runtime_error(fmt::format("sget_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what()));
+		}
 	}
 	frame.pc() += 3;
 }
@@ -1828,18 +1860,36 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
-	if (!field.isStatic()) {
-		throw std::runtime_error("sput_object: Cannot use sput_object on a non-static field");
+	std::string classname, fieldname;
+	try {
+		auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname);
+		if (!field.isStatic()) {
+			throw std::runtime_error("sput_object: Cannot use sput_object on a non-static field");
+		}
+		if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
+			throw std::runtime_error(fmt::format("sput_object: Field type mismatch, expected object but got {}", field.getType()));
+		}
+		// static field access, class instance may not be instantiated yet
+		auto& clazz = field.getClass();
+		if (!clazz.isStaticInitialized()) {
+			// cancel the current instruction
+			frame.pc()--;
+			// push new frame with <clinit> method
+			try {
+				auto& clinitMethod = clazz.getMethod("<clinit>", "()V");
+				_rt.newFrame(clinitMethod);
+			} catch (std::exception& e) {
+				logger.debug(fmt::format("sput_object: No <clinit> method for class {}: {}", field.getClass().getFullname(), e.what()));
+			}
+			return;
+		}
+		// set result of the sput-object
+		auto value = frame.getObjRegister(src);
+		logger.debug(fmt::format("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug()));
+		field.setObjectValue(value);
+	} catch (const std::exception& e) {
+		throw std::runtime_error(fmt::format("sput_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what()));
 	}
-
-	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
-		throw std::runtime_error(fmt::format("sput_object: Field type mismatch, expected object or array but got {}", field.getType()));
-	}
-
-	auto value = frame.getObjRegister(src);
-	logger.debug(fmt::format("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug()));
-	field.setObjectValue(value);
 	frame.pc() += 3;
 }
 // sput-boolean vA, field@BBBB
@@ -1941,6 +1991,14 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
 	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
+	auto& cls = method.getClass();
+	if (!cls.isStaticInitialized()) {
+		frame.pc()--;
+		auto& clinitMethod = cls.getMethod("<clinit>", "()V");
+		_rt.newFrame(clinitMethod);
+		return;
+	}
+
 	std::string args_str = "(";
 	std::vector<std::shared_ptr<Object>> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
@@ -1968,6 +2026,13 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			try {
 				auto& runtimeClass = this_ptr_class->getClass();
 				auto& vmethod = runtimeClass.getMethod(method.getName(), method.getSignature());
+				auto& cls = vmethod.getClass();
+				if (!cls.isStaticInitialized()) {
+					frame.pc()--;
+					auto& clinitMethod = cls.getMethod("<clinit>", "()V");
+					_rt.newFrame(clinitMethod);
+					return;
+				}
 				if (vmethod.isNative()) {
 					throw std::runtime_error(fmt::format("invoke native method: {}.{}{} not implemented", vmethod.getClass().getFullname(), vmethod.getName(),
 					                                     vmethod.getSignature()));
@@ -2023,6 +2088,13 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
 	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
+	auto& cls = method.getClass();
+	if (!cls.isStaticInitialized()) {
+		frame.pc()--;
+		auto& clinitMethod = cls.getMethod("<clinit>", "()V");
+		_rt.newFrame(clinitMethod);
+		return;
+	}
 	auto method_str = fmt::format("{}.{}{}(", method.getClass().getFullname(), method.getName(), method.getSignature());
 	std::vector<std::shared_ptr<Object>> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
