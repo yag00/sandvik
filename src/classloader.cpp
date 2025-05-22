@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <sstream>
 
 #include "class.hpp"
@@ -15,11 +16,9 @@
 using namespace sandvik;
 
 ClassLoader::ClassLoader() {
-	// Constructor implementation
 }
 
 ClassLoader::~ClassLoader() {
-	// Destructor implementation
 }
 
 void ClassLoader::loadDex(const std::string& dex_) {
@@ -118,6 +117,26 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			// pass
 		}
 	}
+	for (auto& classpath : _classpath) {
+		try {
+			auto classname = classname_;
+			std::replace(classname.begin(), classname.end(), '.', '/');
+			std::string fullPath = classpath;
+			if (fullPath.back() != '/') {
+				fullPath += '/';
+			}
+			fullPath += classname + ".dex";
+			if (std::filesystem::exists(fullPath)) {
+				auto dex = std::make_unique<Dex>(_dexs.size(), fullPath);
+				_classes[classname_] = dex->findClass(classname_);
+				_dexs.push_back(std::move(dex));
+				logger.ok(fmt::format("class {} loaded", classname_));
+				return *(_classes[classname_]);
+			}
+		} catch (std::exception& e) {
+			// pass
+		}
+	}
 	// If the class is not found, throw an exception
 	throw std::runtime_error(fmt::format("ClassNotFoundError: {}", classname_));
 }
@@ -152,9 +171,13 @@ Class& ClassLoader::resolveClass(uint32_t dex_, uint16_t idx_) {
 }
 
 Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_) {
+	std::string classname;
+	std::string field;
+	return resolveField(dex_, idx_, classname, field);
+}
+
+Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_, std::string& classname, std::string& field) {
 	try {
-		std::string classname;
-		std::string field;
 		_dexs[dex_]->resolveField(idx_, classname, field);
 		auto& cls = getOrLoad(classname);
 		return cls.getField(field);

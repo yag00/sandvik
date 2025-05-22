@@ -33,6 +33,7 @@ namespace sandvik {
 			Class& resolveClass(uint32_t dex_, uint16_t idx_);
 			Class& resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_);
 			Field& resolveField(uint32_t dex_, uint16_t idx_);
+			Field& resolveField(uint32_t dex_, uint16_t idx_, std::string& classname, std::string& field);
 			std::string resolveString(uint32_t dex_, uint16_t idx_);
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint32_t dex_, uint16_t idx_);
 

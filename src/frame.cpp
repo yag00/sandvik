@@ -13,7 +13,7 @@
 using namespace sandvik;
 
 Frame::Frame(Method& method_) : _method(method_), _pc(0) {
-	logger.debug(fmt::format("new Frame for method = {} registers ={}", method_.getName(), method_.getNbRegisters()));
+	logger.debug(fmt::format("new Frame for method = {}.{} registers ={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters()));
 	_null = Object::makeNull();
 	_exception = Object::makeNull();
 	_objectReturn = Object::makeNull();
