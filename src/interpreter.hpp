@@ -11,6 +11,8 @@
 
 namespace sandvik {
 	class Disassembler;
+	class Method;
+	class Object;
 	class JThread;
 	/** @brief Interpreter class
 	 */
@@ -463,6 +465,8 @@ namespace sandvik {
 			void ushr_int_lit8(const uint8_t* operand);
 
 			std::vector<std::function<void(const uint8_t* operand_)>> _dispatch;
+
+			void executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_);
 
 		private:
 			JThread& _rt;

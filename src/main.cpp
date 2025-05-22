@@ -4,9 +4,11 @@
 
 #include "class.hpp"
 #include "classloader.hpp"
+#include "jni.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
 #include "system/logger.hpp"
+#include "system/sharedlibrary.hpp"
 #include "vm.hpp"
 
 using namespace sandvik;

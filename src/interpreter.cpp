@@ -3,6 +3,8 @@
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <functional>
+#include <regex>
 
 #include "array.hpp"
 #include "class.hpp"
@@ -10,10 +12,13 @@
 #include "disassembler.hpp"
 #include "exceptions.hpp"
 #include "frame.hpp"
+#include "jni.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
+#include "native_call.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
 
@@ -277,6 +282,30 @@ void Interpreter::execute() {
 	frame.pc()++;
 	_instcoverage[*bytecode]++;
 	_dispatch[*bytecode](bytecode + 1);
+}
+
+void Interpreter::executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_) {
+	// Construct the JNI symbol name
+	std::string symbolName = "Java_" + std::regex_replace(method_.getClass().getFullname(), std::regex("\\."), "_") + "_" + method_.getName();
+	logger.debug(fmt::format("call native jni function {}", symbolName));
+	void* symbol = _rt.vm().findNativeSymbol(symbolName);
+	if (!symbol) {
+		throw std::runtime_error(fmt::format("Native method {} is not available!", symbolName));
+	}
+
+	const auto& desc = method_.getSignature();
+	std::regex descriptorRegex(R"(\((.*?)\)(.*))");
+	std::smatch match;
+	if (!std::regex_match(desc, match, descriptorRegex)) {
+		throw std::runtime_error(fmt::format("Invalid method descriptor: {}", desc));
+	}
+	std::string params = match[1];
+	std::string returnType = match[2];
+	logger.debug(fmt::format("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(),
+	                         symbolName, (uintptr_t)symbol));
+	auto caller = std::make_unique<NativeCallHelper>();
+	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params);
+	_rt.currentFrame().setReturnObject(ret);
 }
 
 // nop
@@ -2034,36 +2063,41 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 					return;
 				}
 				if (vmethod.isNative()) {
-					throw std::runtime_error(fmt::format("invoke native method: {}.{}{} not implemented", vmethod.getClass().getFullname(), vmethod.getName(),
-					                                     vmethod.getSignature()));
-				}
-				logger.ok(
-				    fmt::format("invoke_virtual call method {}->{}{}{}", runtimeClass.getFullname(), vmethod.getName(), vmethod.getSignature(), args_str));
-				auto& newframe = _rt.newFrame(vmethod);
-				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (uint32_t i = 0; i < vA; i++) {
-					newframe.setObjRegister(vmethod.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+					executeNativeMethod(vmethod, args);
+				} else {
+					logger.ok(
+					    fmt::format("invoke_virtual call method {}->{}{}{}", runtimeClass.getFullname(), vmethod.getName(), vmethod.getSignature(), args_str));
+					auto& newframe = _rt.newFrame(vmethod);
+					// When a method is invoked, the parameters to the method are placed into the last n registers.
+					for (uint32_t i = 0; i < vA; i++) {
+						newframe.setObjRegister(vmethod.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+					}
 				}
 			} catch (std::exception& e) {
-				throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
-				                                     method.getSignature(), args_str));
+				throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} {}", method.getClass().getFullname(), method.getName(),
+				                                     method.getSignature(), args_str, e.what()));
 			}
 		} else {
 			throw NullPointerException("invoke_virtual on null object");
 		}
 	} else {
-		if (method.getBytecode() == nullptr) {
-			// handle by vm
-			if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
-				throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
-				                                     method.getSignature(), args_str));
-			}
+		if (method.isNative()) {
+			executeNativeMethod(method, args);
 		} else {
-			logger.ok(fmt::format("invoke_virtual call method {}->{}{}{}", method.getClass().getFullname(), method.getName(), method.getSignature(), args_str));
-			auto& newframe = _rt.newFrame(method);
-			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < vA; i++) {
-				newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			if (method.getBytecode() == nullptr) {
+				// handle by vm
+				if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
+					throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
+					                                     method.getSignature(), args_str));
+				}
+			} else {
+				logger.ok(
+				    fmt::format("invoke_virtual call method {}->{}{}{}", method.getClass().getFullname(), method.getName(), method.getSignature(), args_str));
+				auto& newframe = _rt.newFrame(method);
+				// When a method is invoked, the parameters to the method are placed into the last n registers.
+				for (uint32_t i = 0; i < vA; i++) {
+					newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+				}
 			}
 		}
 	}
@@ -2114,8 +2148,8 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("Cannot invoke abstract class or interface: {}", method.getClass().getFullname()));
 	}
 	if (method.isNative()) {
-		throw std::runtime_error(
-		    fmt::format("invoke native method: {}.{}{} not implemented", method.getClass().getFullname(), method.getName(), method.getSignature()));
+		throw std::runtime_error(fmt::format("invoke_direct native method call : {}.{}{} not implemented", method.getClass().getFullname(), method.getName(),
+		                                     method.getSignature()));
 	}
 	if (method.getBytecode() == nullptr) {
 		logger.warning(fmt::format("invoke_direct call method {} handled by vm", method_str));

@@ -1,21 +1,26 @@
 #include "vm.hpp"
 
+#include <fmt/format.h>
+
 #include <iostream>
+
+#include "jni/jni.h"
 
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
+#include "jni.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "system/sharedlibrary.hpp"
 
 using namespace sandvik;
 
-Vm::Vm() : _classloader(std::make_unique<ClassLoader>()) {
-	// Constructor logic if needed
+Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>()) {
 	logger.info("VM instance created.");
 }
 
@@ -25,6 +30,42 @@ void Vm::loadDex(const std::string& path) {
 
 void Vm::loadApk(const std::string& path) {
 	_classloader->loadApk(path);
+}
+
+void Vm::loadLibrary(const std::string& libName_) {
+	// Load the shared library
+	auto lib = std::make_unique<SharedLibrary>(libName_);
+	lib->load();
+	if (lib->isLoaded()) {
+		logger.debug(fmt::format("Loaded shared library {}", lib->getFullPath()));
+		// Call JNI_OnLoad if it exists
+		void* JNI_onLoad = lib->getAddressOfSymbol("JNI_OnLoad");
+		if (!JNI_onLoad) {
+			logger.debug(fmt::format("JNI_OnLoad not found in {}", lib->getFullPath()));
+		} else {
+			// jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
+			auto jniOnLoad = reinterpret_cast<void (*)(JavaVM*, void*)>(JNI_onLoad);
+			logger.debug(fmt::format("Executing native function JNI_OnLoad@{:#x} ", (uintptr_t)jniOnLoad));
+			jniOnLoad(nullptr, nullptr);  // todo pass actual JavaVM
+		}
+		_sharedlibs.push_back(std::move(lib));
+	} else {
+		throw std::runtime_error(fmt::format("Failed to load shared library {}", libName_));
+	}
+}
+
+void* Vm::findNativeSymbol(const std::string& symbolName_) {
+	for (const auto& lib : _sharedlibs) {
+		void* symbol = lib->getAddressOfSymbol(symbolName_);
+		if (symbol) {
+			return symbol;
+		}
+	}
+	return nullptr;
+}
+
+NativeInterface* Vm::getJNIEnv() const {
+	return _jnienv.get();
 }
 
 void Vm::run() {

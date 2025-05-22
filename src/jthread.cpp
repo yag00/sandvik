@@ -8,11 +8,16 @@
 #include "interpreter.hpp"
 #include "method.hpp"
 #include "system/logger.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
     : _vm(vm_), _classloader(classloader_), _name(name_), _interpreter(std::make_unique<Interpreter>(*this)) {
+}
+
+Vm& JThread::vm() const {
+	return _vm;
 }
 
 ClassLoader& JThread::getClassLoader() const {
@@ -76,6 +81,17 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			if (clazz != nullptr) {
 				logger.warning(fmt::format("java.lang.IllegalArgumentException -> Not initialized"));
 				frame_.setReturnObject(StringObject::make("Invalid"));
+				return true;
+			}
+		}
+	}
+	if (class_ == "java.lang.System") {
+		if (method_ == "loadLibrary" && sig_ == "(Ljava/lang/String;)V") {
+			auto lib = std::dynamic_pointer_cast<StringObject>(args_[0]);
+			if (lib != nullptr) {
+				auto libName = fmt::format("lib{}.so", lib->str());
+				logger.debug(fmt::format("java.lang.System.loadLibrary -> {}", libName));
+				_vm.loadLibrary(libName);
 				return true;
 			}
 		}

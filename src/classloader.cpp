@@ -109,7 +109,8 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 		try {
 			auto classPtr = dex->findClass(classname_);
 			if (classPtr->isExternal()) {
-				continue;
+				logger.debug(fmt::format("Class {} is external, we should skip", classname_));
+				// continue;
 			}
 			_classes[classname_] = std::move(classPtr);
 			return *(_classes[classname_]);

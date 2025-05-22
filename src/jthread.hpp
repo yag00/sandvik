@@ -17,6 +17,7 @@ namespace sandvik {
 			explicit JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_);
 			~JThread() = default;
 
+			Vm& vm() const;
 			ClassLoader& getClassLoader() const;
 			bool end() const;
 
