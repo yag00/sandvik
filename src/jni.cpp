@@ -8,6 +8,7 @@
 
 #include "jni/jni.h"
 
+#include "object.hpp"
 #include "system/logger.hpp"
 
 using namespace sandvik;
@@ -786,8 +787,11 @@ jsize NativeInterface::GetStringUTFLength(JNIEnv *env, jstring str) {
 }
 
 const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolean *isCopy) {
-	// throw std::runtime_error("GetStringUTFChars not implemented");
-	return "Not implemented";
+	StringObject *obj = (StringObject *)str;
+	if (obj == nullptr) {
+		throw std::runtime_error("NullPointerException");
+	}
+	return obj->str().c_str();
 }
 void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char *chars) {
 	// throw std::runtime_error("ReleaseStringUTFChars not implemented");
