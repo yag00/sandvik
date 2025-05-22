@@ -1968,6 +1968,10 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			try {
 				auto& runtimeClass = this_ptr_class->getClass();
 				auto& vmethod = runtimeClass.getMethod(method.getName(), method.getSignature());
+				if (vmethod.isNative()) {
+					throw std::runtime_error(fmt::format("invoke native method: {}.{}{} not implemented", vmethod.getClass().getFullname(), vmethod.getName(),
+					                                     vmethod.getSignature()));
+				}
 				logger.ok(
 				    fmt::format("invoke_virtual call method {}->{}{}{}", runtimeClass.getFullname(), vmethod.getName(), vmethod.getSignature(), args_str));
 				auto& newframe = _rt.newFrame(vmethod);
@@ -1979,6 +1983,8 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 				throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
 				                                     method.getSignature(), args_str));
 			}
+		} else {
+			throw NullPointerException("invoke_virtual on null object");
 		}
 	} else {
 		if (method.getBytecode() == nullptr) {
@@ -2034,6 +2040,10 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 
 	if (method.getClass().isAbstract() || method.getClass().isInterface()) {
 		throw std::runtime_error(fmt::format("Cannot invoke abstract class or interface: {}", method.getClass().getFullname()));
+	}
+	if (method.isNative()) {
+		throw std::runtime_error(
+		    fmt::format("invoke native method: {}.{}{} not implemented", method.getClass().getFullname(), method.getName(), method.getSignature()));
 	}
 	if (method.getBytecode() == nullptr) {
 		logger.warning(fmt::format("invoke_direct call method {} handled by vm", method_str));
