@@ -53,6 +53,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	mainThread.currentFrame().setObjRegister(method.getNbRegisters() - 1, args);
 	try {
 		mainThread.newFrame(clazz_.getMethod("<clinit>", "()V"));
+		clazz_.setStaticInitialized();
 	} catch (const std::exception& e) {
 		logger.debug(e.what());
 	}

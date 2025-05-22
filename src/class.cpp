@@ -17,10 +17,10 @@
 
 using namespace sandvik;
 
-Class::Class(const uint32_t dexIdx_, const LIEF::DEX::Class& class_) : _dexIdx(dexIdx_), _class(class_) {
+Class::Class(const uint32_t dexIdx_, const LIEF::DEX::Class& class_) : _dexIdx(dexIdx_), _class(class_), _isStaticInitialized(false) {
 }
 
-Class::Class(const Class& other) : _dexIdx(other._dexIdx), _class(other._class) {
+Class::Class(const Class& other) : _dexIdx(other._dexIdx), _class(other._class), _isStaticInitialized(false) {
 	// Deep copy of methods
 	for (const auto& [key, method] : other._methods) {
 		_methods.emplace(key, std::make_unique<Method>(*method));
@@ -42,6 +42,25 @@ std::string Class::getName() const {
 
 std::string Class::getFullname() const {
 	return _class.pretty_name();
+}
+
+bool Class::isStaticInitialized() {
+	if (_isStaticInitialized) {
+		return true;
+	}
+	// Check if the class has a static initializer
+	for (const auto& method : _class.methods()) {
+		if (method.has(LIEF::DEX::ACC_STATIC) && method.name() == "<clinit>") {
+			return _isStaticInitialized;
+		}
+	}
+	// no static initializer found, mark as initialized
+	_isStaticInitialized = true;
+	return _isStaticInitialized;
+}
+
+void Class::setStaticInitialized() {
+	_isStaticInitialized = true;
 }
 
 bool Class::isExternal() const {

@@ -27,6 +27,9 @@ namespace sandvik {
 
 			void debug() const;
 
+			bool isStaticInitialized();
+			void setStaticInitialized();
+
 			uint32_t getDexIdx() const;
 			std::string getName() const;
 			std::string getFullname() const;
@@ -47,6 +50,7 @@ namespace sandvik {
 		private:
 			const uint32_t _dexIdx;
 			const LIEF::DEX::Class& _class;
+			bool _isStaticInitialized;
 			std::map<std::string, std::unique_ptr<Method>> _methods;
 			std::map<std::string, std::unique_ptr<Field>> _fields;
 	};
