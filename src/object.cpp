@@ -52,8 +52,18 @@ bool Object::operator==(const Object& other) const {
 	if (typeid(*this) != typeid(other)) {
 		return false;
 	}
-	// todo: compare the actual content of the objects
-	return false;
+	for (const auto& field : _fields) {
+		auto it = other._fields.find(field.first);
+		if (it == other._fields.end() || *(field.second) != *(it->second)) {
+			return false;
+		}
+	}
+	for (const auto& field : other._fields) {
+		if (_fields.find(field.first) == _fields.end()) {
+			return false;
+		}
+	}
+	return true;
 }
 bool Object::operator==(std::nullptr_t) const {
 	return false;
@@ -117,6 +127,17 @@ NumberObject& NumberObject::operator=(const NumberObject& other) {
 	return *this;
 }
 
+bool NumberObject::operator==(const Object& other) const {
+	if (this == &other) {
+		return true;
+	}
+	if (!other.isNumberObject()) {
+		return false;
+	}
+	const auto& otherNumber = static_cast<const NumberObject&>(other);
+	return _value == otherNumber._value;
+}
+
 std::shared_ptr<Object> NumberObject::clone() const {
 	return std::make_shared<NumberObject>(*this);
 }
@@ -152,6 +173,17 @@ StringObject& StringObject::operator=(const StringObject& other) {
 }
 StringObject::StringObject(const StringObject& other) : Object(other), _value(other._value) {
 }
+bool StringObject::operator==(const Object& other) const {
+	if (this == &other) {
+		return true;
+	}
+	const auto* otherString = dynamic_cast<const StringObject*>(&other);
+	if (otherString == nullptr) {
+		return false;
+	}
+	return _value == otherString->_value;
+}
+
 std::shared_ptr<Object> StringObject::clone() const {
 	return std::make_shared<StringObject>(*this);
 }

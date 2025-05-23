@@ -65,6 +65,8 @@ namespace sandvik {
 			double getDoubleValue() const;
 			std::string debug() const override;
 
+			bool operator==(const Object& other) const override;
+
 		private:
 			uint64_t _value;
 	};
@@ -80,6 +82,8 @@ namespace sandvik {
 
 			std::string str() const;
 			std::string debug() const override;
+
+			bool operator==(const Object& other) const override;
 
 		private:
 			std::string _value;
