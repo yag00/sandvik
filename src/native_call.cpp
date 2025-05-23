@@ -160,27 +160,45 @@ std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, cons
 }
 
 std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::vector<std::shared_ptr<Object>>& args,
-                                                 const std::string& returnType, const std::string& paramTypes) {
+                                                 const std::string& returnType, const std::string& paramTypes, bool isStatic) {
 	// Create a temporary call context
 	std::vector<std::string> argTypes;
 	CallContext context;
 	prepareCallContext(context, paramTypes, returnType, argTypes);
 	// Prepare the arguments
-	uintptr_t* args_array = new uintptr_t[args.size()];
-	for (size_t i = 1; i < args.size(); i++) {
-		args_array[i - 1] = getArgValue(args[i], argTypes[i - 1][0]);
+	uintptr_t* args_array = nullptr;
+	if (args.size()) {
+		args_array = new uintptr_t[args.size()];
+		if (isStatic == false) {
+			// if not static, first argument is this => skip it
+			for (size_t i = 1; i < args.size(); i++) {
+				args_array[i - 1] = getArgValue(args[i], argTypes[i - 1][0]);
+			}
+		} else {
+			for (size_t i = 0; i < args.size(); i++) {
+				args_array[i] = getArgValue(args[i], argTypes[i][0]);
+			}
+		}
 	}
+
 	// Execute the call
 	uintptr_t result_storage = 0;
 	std::vector<void*> arg_values;
 	arg_values.push_back(&env);
-	jobject this_ref = (jobject)(uintptr_t)(args[0].get());
+
+	jobject this_ref;
+	if (isStatic) {
+		// static method
+		this_ref = nullptr;  // todo handle this case, should be a class object reference
+	} else {
+		this_ref = (jobject)(uintptr_t)(args[0].get());
+	}
 	arg_values.push_back(&this_ref);
 	for (uint32_t i = 0; i < args.size(); i++) {
 		arg_values.push_back((void*)&args_array[i]);
 	}
 	ffi_call(&context.cif, FFI_FN(functionPtr), &result_storage, arg_values.data());
 	// Process and return result
-	delete[] args_array;
+	if (args_array) delete[] args_array;
 	return getReturnObject(result_storage, returnType[0]);
 }

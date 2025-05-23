@@ -22,7 +22,7 @@ namespace sandvik {
 
 			// Main method to invoke native functions
 			std::shared_ptr<Object> invoke(void* functionPtr, JNIEnv* env, const std::vector<std::shared_ptr<Object>>& args, const std::string& returnType,
-			                               const std::string& paramTypes);
+			                               const std::string& paramTypes, bool isStatic = false);
 
 		private:
 			// Internal call context
