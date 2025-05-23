@@ -791,9 +791,15 @@ const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolea
 	if (obj == nullptr) {
 		throw std::runtime_error("NullPointerException");
 	}
+	logger.debug(fmt::format("env->GetStringUTFChars {}", obj->debug()));
 	return obj->str().c_str();
 }
 void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char *chars) {
+	StringObject *obj = (StringObject *)str;
+	if (obj == nullptr) {
+		throw std::runtime_error("NullPointerException");
+	}
+	logger.debug(fmt::format("env->ReleaseStringUTFChars {}", obj->debug()));
 	// throw std::runtime_error("ReleaseStringUTFChars not implemented");
 }
 
