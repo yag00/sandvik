@@ -17,6 +17,9 @@ namespace sandvik {
 
 			void loadDex(const std::string& path);
 			void loadApk(const std::string& path);
+			void addClassPath(const std::string& classpath_);
+			std::string getClassPath() const;
+
 			void run();
 			void run(const std::string& mainClass_, const std::vector<std::string>& args_);
 			void stop();

@@ -32,6 +32,14 @@ void Vm::loadApk(const std::string& path) {
 	_classloader->loadApk(path);
 }
 
+void Vm::addClassPath(const std::string& classpath_) {
+	_classloader->addClassPath(classpath_);
+}
+
+std::string Vm::getClassPath() const {
+	return _classloader->getClassPath();
+}
+
 void Vm::loadLibrary(const std::string& libName_) {
 	// Load the shared library
 	auto lib = std::make_unique<SharedLibrary>(libName_);

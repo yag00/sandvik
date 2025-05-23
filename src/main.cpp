@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
 	args::ValueFlag<std::string> dexFile(parser, "file", "Specify the DEX file to load", {"dex"}, "");
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
+	args::ValueFlag<std::string> runTime(parser, "runtime", "Specify the the runtime path", {"runtime"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
 
 	try {
@@ -82,6 +83,9 @@ int main(int argc, char** argv) {
 	}
 
 	Vm vm;
+	if (!args::get(runTime).empty()) {
+		vm.addClassPath(args::get(runTime));
+	}
 	if (!args::get(dexFile).empty()) {
 		vm.loadDex(args::get(dexFile));
 	} else if (!args::get(apkFile).empty()) {
