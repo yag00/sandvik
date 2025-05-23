@@ -297,6 +297,19 @@ public class DalvikTest {
         return length + arr[0] + barr[0] + carr[0] + sarr[0] + larr[0] + farr[0] + darr[0];
     }
 
+    public static char[] makeCharArray() {
+        return new char[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    }
+    public static short[] makeShortArray() {
+        return new short[] { 0x100, 0x101, 0x102, 0x103, 0x104, 0x105, 0x106, 0x107, 0x108, 0x109 };
+    }
+    public static int[] makeIntArray() {
+        return new int[] { 0x100001, 0x100002, 0x100003, 0x100004, 0x100005, 0x100006, 0x100007, 0x100008 };
+    }
+    public static long[] makeLongArray() {
+        return new long[] { 0x100000001L, 0x100000002L, 0x100000003L, 0x100000004L, 0x100000005L, 0x100000006L, 0x100000007L };
+    }
+
     // Test object operations
     static class TestObject {
         static boolean sfbool;
@@ -668,6 +681,9 @@ public class DalvikTest {
         check(obj2.getFbyte() == (byte) 2, "object-ref-return");
         check(obj2.getFchar() == (char)'B', "object-ref-return");
         check(obj2.getFshort() == (short)0x0100, "object-ref-return");
+
+        check(obj == obj2, "object-equality");
+        check((obj != obj2) == false, "object-inequality");
     }
     public static void runTestStringOps() {
         System.out.println("Running string operation tests...");
@@ -683,6 +699,26 @@ public class DalvikTest {
         System.out.println("Running array operation tests...");
         double result = testArrayOps();
         check(result == 119.0, "array ops");
+
+        char[] charArray = makeCharArray();
+        for (int i = 0; i < charArray.length; i++) {
+            check(charArray[i] == i + 1, "char array element " + i);
+        }
+
+        short[] shortArray = makeShortArray();
+        for (int i = 0; i < shortArray.length; i++) {
+            check(shortArray[i] == 0x100 + i, "short array element " + i);
+        }
+
+        int[] intArray = makeIntArray();
+        for (int i = 0; i < intArray.length; i++) {
+            check(intArray[i] == 0x100001 + i, "int array element " + i);
+        }
+
+        long[] longArray = makeLongArray();
+        for (int i = 0; i < longArray.length; i++) {
+            check(longArray[i] == 0x100000001L + i, "long array element " + i);
+        }
     }
     public static void runTestInheritance() {
         interface MyInterface {

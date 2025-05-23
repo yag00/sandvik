@@ -5,6 +5,8 @@
 
 #include <vm.hpp>
 #include <classloader.hpp>
+#include <jni.hpp>
+#include <system/sharedlibrary.hpp>
 #include <system/logger.hpp>
 
 using namespace sandvik;

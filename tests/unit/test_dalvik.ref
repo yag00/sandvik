@@ -125,6 +125,8 @@ Running field and static operation tests...
 [OK] object-ref-return
 [OK] object-ref-return
 [OK] object-ref-return
+[OK] object-equality
+[OK] object-inequality
 Running string operation tests...
 [OK] string ops
 [OK] const-class
@@ -132,11 +134,46 @@ Running string operation tests...
 Running array operation tests...
 [OK] string array
 [OK] array ops
+[OK] char array element 0
+[OK] char array element 1
+[OK] char array element 2
+[OK] char array element 3
+[OK] char array element 4
+[OK] char array element 5
+[OK] char array element 6
+[OK] char array element 7
+[OK] char array element 8
+[OK] char array element 9
+[OK] short array element 0
+[OK] short array element 1
+[OK] short array element 2
+[OK] short array element 3
+[OK] short array element 4
+[OK] short array element 5
+[OK] short array element 6
+[OK] short array element 7
+[OK] short array element 8
+[OK] short array element 9
+[OK] int array element 0
+[OK] int array element 1
+[OK] int array element 2
+[OK] int array element 3
+[OK] int array element 4
+[OK] int array element 5
+[OK] int array element 6
+[OK] int array element 7
+[OK] long array element 0
+[OK] long array element 1
+[OK] long array element 2
+[OK] long array element 3
+[OK] long array element 4
+[OK] long array element 5
+[OK] long array element 6
 [OK] invoke
 [OK] invoke-super
 [OK] invoke-interface
 Running exception tests...
 [OK] RuntimeException Exception caught
 [OK] IllegalArgumentException Exception caught
-Tests passed: 130
+Tests passed: 167
 Tests failed: 0
