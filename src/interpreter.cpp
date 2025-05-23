@@ -671,7 +671,66 @@ void Interpreter::filled_new_array_range(const uint8_t* operand_) {
 }
 // fill-array-data vAA, +BBBBBBBB
 void Interpreter::fill_array_data(const uint8_t* operand_) {
-	throw std::runtime_error("fill_array_data not implemented");
+	uint8_t reg = operand_[0];
+	auto offset = *reinterpret_cast<const uint32_t*>(&operand_[1]);
+	auto& frame = _rt.currentFrame();
+	auto baseAddress = frame.pc() - 1;  // Adjust for the incremented PC
+	auto data = reinterpret_cast<const uint16_t*>(frame.getMethod().getBytecode() + baseAddress + (offset << 1));
+
+	uint16_t ident = data[0];
+	if (ident != 0x0300) {  // Array-data identifier
+		throw std::runtime_error(fmt::format("Invalid array-data identifier: 0x{:04x}", ident));
+	}
+
+	uint32_t elementSize = data[1];
+	uint32_t elementCount = *reinterpret_cast<const uint32_t*>(&data[2]);
+	auto arrayData = reinterpret_cast<const uint8_t*>(&data[4]);
+
+	auto arrayObj = frame.getObjRegister(reg);
+	if (arrayObj->isNull()) {
+		throw NullPointerException("fill_array_data on null array object");
+	}
+
+	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	if (!array) {
+		throw std::runtime_error("fill_array_data: Object is not an array");
+	}
+
+	if (array->getArrayLength() != elementCount) {
+		throw std::runtime_error("fill_array_data: Array length mismatch");
+	}
+
+	for (uint32_t i = 0; i < elementCount; ++i) {
+		switch (elementSize) {
+			case 1: {
+				int8_t value = *reinterpret_cast<const int8_t*>(arrayData);
+				array->setArrayElement(i, Object::make(value));
+				arrayData += 1;
+				break;
+			}
+			case 2: {
+				int16_t value = *reinterpret_cast<const int16_t*>(arrayData);
+				array->setArrayElement(i, Object::make(value));
+				arrayData += 2;
+				break;
+			}
+			case 4: {
+				int32_t value = *reinterpret_cast<const int32_t*>(arrayData);
+				array->setArrayElement(i, Object::make(value));
+				arrayData += 4;
+				break;
+			}
+			case 8: {
+				int64_t value = *reinterpret_cast<const int64_t*>(arrayData);
+				array->setArrayElement(i, Object::make(value));
+				arrayData += 8;
+				break;
+			}
+			default:
+				throw std::runtime_error(fmt::format("fill_array_data: Unsupported element size: {}", elementSize));
+		}
+	}
+	frame.pc() += 5;
 }
 // throw vAA
 void Interpreter::throw_(const uint8_t* operand_) {
