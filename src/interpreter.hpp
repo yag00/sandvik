@@ -13,6 +13,7 @@ namespace sandvik {
 	class Disassembler;
 	class Method;
 	class Object;
+	class Class;
 	class JThread;
 	/** @brief Interpreter class
 	 */
@@ -466,6 +467,7 @@ namespace sandvik {
 
 			std::vector<std::function<void(const uint8_t* operand_)>> _dispatch;
 
+			void executeClinit(Class& class_);
 			void executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_);
 
 		private:

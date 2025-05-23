@@ -284,6 +284,23 @@ void Interpreter::execute() {
 	_dispatch[*bytecode](bytecode + 1);
 }
 
+void Interpreter::executeClinit(Class& class_) {
+	// push new frame with initializeSystemClass method (should be executed after <clinit>)
+	try {
+		auto& initializeSystemClass = class_.getMethod("initializeSystemClass", "()V");
+		_rt.newFrame(initializeSystemClass);
+	} catch (std::exception& e) {
+		// logger.debug(fmt::format("No initializeSystemClass method for class {}: {}", class_.getFullname(), e.what()));
+	}
+	// push new frame with <clinit> method
+	try {
+		auto& clinitMethod = class_.getMethod("<clinit>", "()V");
+		_rt.newFrame(clinitMethod);
+	} catch (std::exception& e) {
+		logger.debug(fmt::format("No <clinit> method for class {}: {}", class_.getFullname(), e.what()));
+	}
+}
+
 void Interpreter::executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_) {
 	// Construct the JNI symbol name
 	std::string symbolName = "Java_" + std::regex_replace(method_.getClass().getFullname(), std::regex("\\."), "_") + "_" + method_.getName();
@@ -617,8 +634,7 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 
 	if (!cls.isStaticInitialized()) {
 		frame.pc()--;
-		auto& clinitMethod = cls.getMethod("<clinit>", "()V");
-		_rt.newFrame(clinitMethod);
+		executeClinit(cls);
 		return;
 	}
 
@@ -1766,13 +1782,7 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 		if (!clazz.isStaticInitialized()) {
 			// cancel the current instruction
 			frame.pc()--;
-			// push new frame with <clinit> method
-			try {
-				auto& clinitMethod = clazz.getMethod("<clinit>", "()V");
-				_rt.newFrame(clinitMethod);
-			} catch (std::exception& e) {
-				logger.debug(fmt::format("sget_object: No <clinit> method for class {}: {}", field.getClass().getFullname(), e.what()));
-			}
+			executeClinit(clazz);
 			return;
 		}
 		// set result of the sget-object to the destination register
@@ -1915,13 +1925,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 		if (!clazz.isStaticInitialized()) {
 			// cancel the current instruction
 			frame.pc()--;
-			// push new frame with <clinit> method
-			try {
-				auto& clinitMethod = clazz.getMethod("<clinit>", "()V");
-				_rt.newFrame(clinitMethod);
-			} catch (std::exception& e) {
-				logger.debug(fmt::format("sput_object: No <clinit> method for class {}: {}", field.getClass().getFullname(), e.what()));
-			}
+			executeClinit(clazz);
 			return;
 		}
 		// set result of the sput-object
@@ -2035,8 +2039,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	auto& cls = method.getClass();
 	if (!cls.isStaticInitialized()) {
 		frame.pc()--;
-		auto& clinitMethod = cls.getMethod("<clinit>", "()V");
-		_rt.newFrame(clinitMethod);
+		executeClinit(cls);
 		return;
 	}
 
@@ -2070,8 +2073,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 				auto& cls = vmethod.getClass();
 				if (!cls.isStaticInitialized()) {
 					frame.pc()--;
-					auto& clinitMethod = cls.getMethod("<clinit>", "()V");
-					_rt.newFrame(clinitMethod);
+					executeClinit(cls);
 					return;
 				}
 				if (vmethod.isNative()) {
@@ -2090,7 +2092,13 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 				                                     method.getSignature(), args_str, e.what()));
 			}
 		} else {
-			throw NullPointerException("invoke_virtual on null object");
+			logger.warning(
+			    fmt::format("invoke_virtual call method {}->{}{}{} null this pointer", cls.getFullname(), method.getName(), method.getSignature(), args_str));
+			auto& newframe = _rt.newFrame(method);
+			// When a method is invoked, the parameters to the method are placed into the last n registers.
+			for (uint32_t i = 0; i < vA; i++) {
+				newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			}
 		}
 	} else {
 		if (method.isNative()) {
@@ -2137,8 +2145,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	auto& cls = method.getClass();
 	if (!cls.isStaticInitialized()) {
 		frame.pc()--;
-		auto& clinitMethod = cls.getMethod("<clinit>", "()V");
-		_rt.newFrame(clinitMethod);
+		executeClinit(cls);
 		return;
 	}
 	auto method_str = fmt::format("{}.{}{}(", method.getClass().getFullname(), method.getName(), method.getSignature());
@@ -2156,29 +2163,26 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	}
 	method_str += ")";
 
-	if (method.getClass().isAbstract() || method.getClass().isInterface()) {
-		throw std::runtime_error(fmt::format("Cannot invoke abstract class or interface: {}", method.getClass().getFullname()));
-	}
 	if (method.isNative()) {
-		throw std::runtime_error(fmt::format("invoke_direct native method call : {}.{}{} not implemented", method.getClass().getFullname(), method.getName(),
-		                                     method.getSignature()));
-	}
-	if (method.getBytecode() == nullptr) {
-		logger.warning(fmt::format("invoke_direct call method {} handled by vm", method_str));
-		if (method.getName() == "<init>") {
-			_rt.handleConstructor(method.getClass().getFullname(), method.getName(), method.getSignature(), args);
-		} else if (method.getName() == "<clinit>") {
-			throw std::runtime_error(fmt::format("Cannot invoke <clinit> method: {} Not implemented", method.getClass().getFullname()));
-		} else {
-			_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args);
-		}
+		executeNativeMethod(method, args);
 	} else {
-		logger.ok(fmt::format("invoke_direct call method {} static={}", method_str, method.isStatic()));
-		auto& newframe = _rt.newFrame(method);
-		// set args on new frame
-		// When a method is invoked, the parameters to the method are placed into the last n registers.
-		for (uint32_t i = 0; i < vA; i++) {
-			newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+		if (method.getBytecode() == nullptr) {
+			logger.warning(fmt::format("invoke_direct call method {} handled by vm", method_str));
+			if (method.getName() == "<init>") {
+				_rt.handleConstructor(method.getClass().getFullname(), method.getName(), method.getSignature(), args);
+			} else if (method.getName() == "<clinit>") {
+				throw std::runtime_error(fmt::format("Cannot invoke <clinit> method: {} Not implemented", method.getClass().getFullname()));
+			} else {
+				_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args);
+			}
+		} else {
+			logger.ok(fmt::format("invoke_direct call method {} static={}", method_str, method.isStatic()));
+			auto& newframe = _rt.newFrame(method);
+			// set args on new frame
+			// When a method is invoked, the parameters to the method are placed into the last n registers.
+			for (uint32_t i = 0; i < vA; i++) {
+				newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			}
 		}
 	}
 	frame.pc() += 5;
