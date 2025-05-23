@@ -848,7 +848,13 @@ void Interpreter::if_eq(const uint8_t* operand_) {
 	uint8_t regB = (operand_[0] >> 4) & 0x0F;
 	int16_t offset = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
-	if (frame.getIntRegister(regA) == frame.getIntRegister(regB)) {
+	// obj comparison as if eq could be used for object equality
+	auto objA = frame.getObjRegister(regA);
+	auto objB = frame.getObjRegister(regB);
+	if (objA->isNull() || objB->isNull()) {
+		throw NullPointerException("if-ne on null object");
+	}
+	if (*objA == *objB) {
 		frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
 	} else {
 		frame.pc() += 3;
@@ -860,7 +866,13 @@ void Interpreter::if_ne(const uint8_t* operand_) {
 	uint8_t regB = (operand_[0] >> 4) & 0x0F;
 	int16_t offset = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
-	if (frame.getIntRegister(regA) != frame.getIntRegister(regB)) {
+	// obj comparison as if ne could be used for object equality
+	auto objA = frame.getObjRegister(regA);
+	auto objB = frame.getObjRegister(regB);
+	if (objA->isNull() || objB->isNull()) {
+		throw NullPointerException("if-ne on null object");
+	}
+	if (*objA != *objB) {
 		frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
 	} else {
 		frame.pc() += 3;
