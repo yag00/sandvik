@@ -62,7 +62,6 @@ namespace sandvik {
 			int32_t getValue() const;
 			int64_t getLongValue() const;
 			float getFloatValue() const;
-			double getDoubleValue() const;
 			std::string debug() const override;
 
 			bool operator==(const Object& other) const override;

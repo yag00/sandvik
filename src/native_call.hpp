@@ -37,7 +37,7 @@ namespace sandvik {
 			ffi_type* getFFITypeForJNIType(char jniType) const;
 			ffi_type* getFFITypeForReturn(const std::string& returnType) const;
 			void prepareCallContext(CallContext& context, const std::string& paramTypes, const std::string& returnType, std::vector<std::string>& argTypes);
-			uintptr_t getArgValue(const std::shared_ptr<Object>& arg, const char jniType) const;
+			uintptr_t getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType) const;
 			std::shared_ptr<Object> getReturnObject(uintptr_t result, const char jniType) const;
 	};
 }  // namespace sandvik

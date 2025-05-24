@@ -219,7 +219,7 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			if (method_ == "append" && sig_ == "(J)Ljava/lang/StringBuilder;") {
 				auto lsb = std::dynamic_pointer_cast<NumberObject>(args_[1]);
 				auto msb = std::dynamic_pointer_cast<NumberObject>(args_[2]);
-				uint64_t value = ((uint64_t)msb->getValue() << 32) | lsb->getValue();
+				int64_t value = (static_cast<uint64_t>((uint32_t)msb->getValue()) << 32) | static_cast<uint64_t>((uint32_t)lsb->getValue());
 				logger.debug(fmt::format("StringBuilder append: {}", value));
 				data->append(std::to_string(value));
 				frame_.setReturnObject(args_[0]);
@@ -235,7 +235,7 @@ bool JThread::handleInstanceMethod(Frame& frame_, const std::string& class_, con
 			if (method_ == "append" && sig_ == "(D)Ljava/lang/StringBuilder;") {
 				auto lsb = std::dynamic_pointer_cast<NumberObject>(args_[1]);
 				auto msb = std::dynamic_pointer_cast<NumberObject>(args_[2]);
-				uint64_t value = ((uint64_t)msb->getValue() << 32) | lsb->getValue();
+				uint64_t value = (static_cast<uint64_t>((uint32_t)msb->getValue()) << 32) | static_cast<uint64_t>((uint32_t)lsb->getValue());
 				double dvalue = *reinterpret_cast<double*>(&value);
 				logger.debug(fmt::format("StringBuilder append: {}", dvalue));
 				data->append(std::to_string(dvalue));

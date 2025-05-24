@@ -151,9 +151,6 @@ float NumberObject::getFloatValue() const {
 	const uint32_t value = (uint32_t)_value;
 	return *reinterpret_cast<const float*>(&value);
 }
-double NumberObject::getDoubleValue() const {
-	return *reinterpret_cast<const double*>(&_value);
-}
 bool NumberObject::isNumberObject() const {
 	return true;
 }

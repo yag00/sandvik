@@ -91,28 +91,37 @@ void NativeCallHelper::prepareCallContext(CallContext& context, const std::strin
 	context.prepared = true;
 }
 
-uintptr_t NativeCallHelper::getArgValue(const std::shared_ptr<Object>& arg, const char jniType) const {
+uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType) const {
+	logger.debug(fmt::format("getArgValue: {} jniType={}", (*it)->debug(), jniType));
 	switch (jniType) {
 		case 'I':
 		case 'Z':
 		case 'B':
 		case 'S':
 		case 'C': {
-			auto number = std::dynamic_pointer_cast<NumberObject>(arg);
+			auto number = std::dynamic_pointer_cast<NumberObject>(*it);
+			++it;
 			if (!number) {
 				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
 			}
 			return static_cast<uintptr_t>(number->getValue());
 		}
 		case 'J': {
-			auto number = std::dynamic_pointer_cast<NumberObject>(arg);
-			if (!number) {
+			auto lsb = std::dynamic_pointer_cast<NumberObject>(*it);
+			++it;
+			auto msb = std::dynamic_pointer_cast<NumberObject>(*it);
+			++it;
+			if (!lsb || !msb) {
 				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
 			}
-			return static_cast<uintptr_t>(number->getLongValue());
+			uint32_t lsb_value = lsb->getValue();
+			uint32_t msb_value = msb->getValue();
+			uintptr_t result = (static_cast<uintptr_t>(msb_value) << 32) | static_cast<uintptr_t>(lsb_value);
+			return result;
 		}
 		case 'F': {
-			auto number = std::dynamic_pointer_cast<NumberObject>(arg);
+			auto number = std::dynamic_pointer_cast<NumberObject>(*it);
+			++it;
 			if (!number) {
 				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
 			}
@@ -122,18 +131,25 @@ uintptr_t NativeCallHelper::getArgValue(const std::shared_ptr<Object>& arg, cons
 			return result;
 		}
 		case 'D': {
-			auto number = std::dynamic_pointer_cast<NumberObject>(arg);
-			if (!number) {
+			auto lsb = std::dynamic_pointer_cast<NumberObject>(*it);
+			++it;
+			auto msb = std::dynamic_pointer_cast<NumberObject>(*it);
+			++it;
+			if (!lsb || !msb) {
 				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
 			}
-			uintptr_t result;
-			double value = number->getDoubleValue();
-			std::memcpy(&result, &value, sizeof(value));
+			uint32_t lsb_value = lsb->getValue();
+			uint32_t msb_value = msb->getValue();
+			uintptr_t result = (static_cast<uintptr_t>(msb_value) << 32) | static_cast<uintptr_t>(lsb_value);
 			return result;
 		}
 		case 'L':
 		case '[':  // Objects and arrays
-			return (uintptr_t)arg.get();
+		{
+			auto obj = *it;
+			++it;
+			return (uintptr_t)obj.get();
+		}
 		default:
 			throw std::runtime_error(fmt::format("Unsupported JNI type character: {}", jniType));
 	}
@@ -165,27 +181,17 @@ std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env,
 	std::vector<std::string> argTypes;
 	CallContext context;
 	prepareCallContext(context, paramTypes, returnType, argTypes);
-	// Prepare the arguments
-	uintptr_t* args_array = nullptr;
-	if (args.size()) {
-		args_array = new uintptr_t[args.size()];
-		if (isStatic == false) {
-			// if not static, first argument is this => skip it
-			for (size_t i = 1; i < args.size(); i++) {
-				args_array[i - 1] = getArgValue(args[i], argTypes[i - 1][0]);
-			}
-		} else {
-			for (size_t i = 0; i < args.size(); i++) {
-				args_array[i] = getArgValue(args[i], argTypes[i][0]);
-			}
-		}
-	}
 
 	// Execute the call
 	uintptr_t result_storage = 0;
+	uintptr_t* param_storage = 0;
+	if (args.size() > 0) {
+		param_storage = new uintptr_t[args.size()];
+	}
 	std::vector<void*> arg_values;
+	// jni environment pointer
 	arg_values.push_back(&env);
-
+	// jobject this reference
 	jobject this_ref;
 	if (isStatic) {
 		// static method
@@ -194,11 +200,23 @@ std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env,
 		this_ref = (jobject)(uintptr_t)(args[0].get());
 	}
 	arg_values.push_back(&this_ref);
-	for (uint32_t i = 0; i < args.size(); i++) {
-		arg_values.push_back((void*)&args_array[i]);
+	// Prepare argument values
+	size_t idx = 0;
+	auto mutableArgs = args;  // Create a mutable copy of args
+	auto it = mutableArgs.begin();
+	if (!isStatic) {
+		// If not static, skip the first argument (this reference)
+		it++;
+	}
+	while (it != mutableArgs.end()) {
+		param_storage[idx] = getArgValue(it, argTypes[idx][0]);
+		arg_values.push_back((void*)&param_storage[idx]);
+		idx++;
 	}
 	ffi_call(&context.cif, FFI_FN(functionPtr), &result_storage, arg_values.data());
 	// Process and return result
-	if (args_array) delete[] args_array;
+	if (param_storage) {
+		delete[] param_storage;
+	}
 	return getReturnObject(result_storage, returnType[0]);
 }

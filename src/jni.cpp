@@ -792,7 +792,12 @@ const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolea
 		throw std::runtime_error("NullPointerException");
 	}
 	logger.debug(fmt::format("env->GetStringUTFChars {}", obj->debug()));
-	return obj->str().c_str();
+	char *utf = new char[obj->str().length() + 1];
+	std::strncpy(utf, obj->str().c_str(), obj->str().length());
+	if (isCopy != nullptr) {
+		*isCopy = JNI_FALSE;  // Assuming we don't need to copy the string
+	}
+	return utf;
 }
 void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char *chars) {
 	StringObject *obj = (StringObject *)str;
@@ -800,7 +805,10 @@ void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char
 		throw std::runtime_error("NullPointerException");
 	}
 	logger.debug(fmt::format("env->ReleaseStringUTFChars {}", obj->debug()));
-	// throw std::runtime_error("ReleaseStringUTFChars not implemented");
+	if (chars) {
+		// If we allocated memory for chars, we should delete it
+		delete[] chars;
+	}
 }
 
 jsize NativeInterface::GetArrayLength(JNIEnv *env, jarray array) {
