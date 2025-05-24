@@ -1,5 +1,6 @@
 // gcc -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -shared -o libnative.so native.c
 #include <jni.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -33,5 +34,27 @@ JNIEXPORT jint JNICALL Java_Native_test(
     // Release the string memory
     (*env)->ReleaseStringUTFChars(env, jstr, str);
 
+    return result;
+}
+JNIEXPORT jdouble JNICALL Java_Native_doubleadd(
+    JNIEnv *env,        // JNI environment pointer
+    jobject obj,        // Java object this is attached to
+    jdouble a,             // First integer parameter
+    jdouble b              // Second integer parameter
+) {
+    printf("Native doubleadd called with:\n");
+    printf("  Double a: 0x%lx %f\n", *(uint64_t*)&a, a);
+    printf("  Double b: 0x%lx %f\n", *(uint64_t*)&b, b);
+    jdouble result = a + b;
+    printf("  Double r: 0x%lx %f\n", *(uint64_t*)&result, result);
+    return result;
+}
+JNIEXPORT jlong JNICALL Java_Native_longadd(
+    JNIEnv *env,        // JNI environment pointer
+    jobject obj,        // Java object this is attached to
+    jlong a,             // First integer parameter
+    jlong b              // Second integer parameter
+) {
+    jlong result = a + b;
     return result;
 }
