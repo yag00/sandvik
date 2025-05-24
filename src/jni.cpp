@@ -794,6 +794,7 @@ const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolea
 	logger.debug(fmt::format("env->GetStringUTFChars {}", obj->debug()));
 	char *utf = new char[obj->str().length() + 1];
 	std::strncpy(utf, obj->str().c_str(), obj->str().length());
+	utf[obj->str().length()] = '\0';  // Null-terminate the string
 	if (isCopy != nullptr) {
 		*isCopy = JNI_FALSE;  // Assuming we don't need to copy the string
 	}
