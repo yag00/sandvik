@@ -1448,12 +1448,12 @@ void Interpreter::iget(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I") {
-		throw std::runtime_error(fmt::format("iget: Field type mismatch, expected int but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iget: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 
 	auto fieldObj = obj->getField(field.getName());
 	if (!fieldObj || !fieldObj->isNumberObject()) {
-		throw std::runtime_error(fmt::format("iget: Field is not a number object"));
+		throw std::runtime_error(fmt::format("iget: Field {} is not a number object", field.getName()));
 	}
 	int32_t value = static_cast<int32_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
 	logger.debug(fmt::format("iget {}.{}={}", field.getClass().getFullname(), field.getName(), value));
@@ -1475,11 +1475,11 @@ void Interpreter::iget_wide(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "J" && field.getType() != "D") {
-		throw std::runtime_error(fmt::format("iget_wide: Field type mismatch, expected long or double but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iget_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType()));
 	}
 	auto fieldObj = obj->getField(field.getName());
 	if (!fieldObj || !fieldObj->isNumberObject()) {
-		throw std::runtime_error(fmt::format("iget_wide: Field is not a number object"));
+		throw std::runtime_error(fmt::format("iget_wide: Field {} is not a number object", field.getName()));
 	}
 
 	auto value = std::dynamic_pointer_cast<NumberObject>(fieldObj)->getLongValue();
@@ -1503,7 +1503,7 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 	// class should have been loaded if trying to access an instance field. resolveField should not fail.
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
-		throw std::runtime_error(fmt::format("iget_object: Field type mismatch, expected object or array but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iget_object: Field {} type mismatch, expected object or array but got {}", field.getName(), field.getType()));
 	}
 
 	auto fieldObj = obj->getField(field.getName());
@@ -1526,12 +1526,12 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
-		throw std::runtime_error(fmt::format("iget_boolean: Field type mismatch, expected boolean but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iget_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType()));
 	}
 
 	auto fieldObj = obj->getField(field.getName());
 	if (!fieldObj || !fieldObj->isNumberObject()) {
-		throw std::runtime_error(fmt::format("iget_boolean: Field is not a number object"));
+		throw std::runtime_error(fmt::format("iget_boolean: Field {} is not a number object", field.getName()));
 	}
 	bool value = static_cast<bool>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
 	logger.debug(fmt::format("iget_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value));
@@ -1553,12 +1553,12 @@ void Interpreter::iget_byte(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
-		throw std::runtime_error(fmt::format("iget_byte: Field type mismatch, expected byte but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iget_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType()));
 	}
 
 	auto fieldObj = obj->getField(field.getName());
 	if (!fieldObj || !fieldObj->isNumberObject()) {
-		throw std::runtime_error(fmt::format("iget_byte: Field is not a number object"));
+		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
 	int8_t value = static_cast<int8_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
 	logger.debug(fmt::format("iget_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value));
@@ -1580,12 +1580,12 @@ void Interpreter::iget_char(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
-		throw std::runtime_error(fmt::format("iget_char: Field type mismatch, expected char but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iget_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType()));
 	}
 
 	auto fieldObj = obj->getField(field.getName());
 	if (!fieldObj || !fieldObj->isNumberObject()) {
-		throw std::runtime_error(fmt::format("iget_byte: Field is not a number object"));
+		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
 	uint16_t value = static_cast<uint16_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
 	logger.debug(fmt::format("iget_char {}.{}={}", field.getClass().getFullname(), field.getName(), value));
@@ -1607,12 +1607,12 @@ void Interpreter::iget_short(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
-		throw std::runtime_error(fmt::format("iget_short: Field type mismatch, expected short but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iget_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType()));
 	}
 
 	auto fieldObj = obj->getField(field.getName());
 	if (!fieldObj || !fieldObj->isNumberObject()) {
-		throw std::runtime_error(fmt::format("iget_byte: Field is not a number object"));
+		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
 	int16_t value = static_cast<int16_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
 	logger.debug(fmt::format("iget_short {}.{}={}", field.getClass().getFullname(), field.getName(), value));
@@ -1634,7 +1634,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I") {
-		throw std::runtime_error(fmt::format("iput_boolean: Field type mismatch, expected int but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 	int32_t value = frame.getIntRegister(src);
 	logger.debug(fmt::format("iput {}.{}={}", field.getClass().getFullname(), field.getName(), value));
@@ -1660,7 +1660,7 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 	}
 
 	if (field.getType() != "J" && field.getType() != "D") {
-		throw std::runtime_error(fmt::format("iput_wide: Field type mismatch, expected long or double but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iput_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType()));
 	}
 
 	int64_t value = frame.getLongRegister(src);
@@ -1688,7 +1688,7 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 	}
 
 	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
-		throw std::runtime_error(fmt::format("iput_object: Field type mismatch, expected object or array but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iput_object: Field {} type mismatch, expected object or array but got {}", field.getName(), field.getType()));
 	}
 
 	auto value = frame.getObjRegister(src);
@@ -1711,7 +1711,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
-		throw std::runtime_error(fmt::format("iput_boolean: Field type mismatch, expected boolean but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iput_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType()));
 	}
 
 	bool value = frame.getIntRegister(src) != 0;
@@ -1734,7 +1734,7 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
-		throw std::runtime_error(fmt::format("iput_byte: Field type mismatch, expected byte but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iput_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType()));
 	}
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
@@ -1757,7 +1757,7 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
-		throw std::runtime_error(fmt::format("iput_char: Field type mismatch, expected char but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iput_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType()));
 	}
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
@@ -1780,7 +1780,7 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
-		throw std::runtime_error(fmt::format("iput_short: Field type mismatch, expected short but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("iput_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType()));
 	}
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
@@ -1797,7 +1797,7 @@ void Interpreter::sget(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I") {
-		throw std::runtime_error(fmt::format("sget: Field type mismatch, expected int but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sget: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 
 	int32_t value = field.getIntValue();
@@ -1813,7 +1813,7 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "J" && field.getType() != "D") {
-		throw std::runtime_error(fmt::format("sget_wide: Field type mismatch, expected long or double but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sget_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType()));
 	}
 
 	int64_t value = field.getLongValue();
@@ -1834,7 +1834,7 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 			throw std::runtime_error("sget_object: Cannot use sget_object on a non-static field");
 		}
 		if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
-			throw std::runtime_error(fmt::format("sget_object: Field type mismatch, expected object but got {}", field.getType()));
+			throw std::runtime_error(fmt::format("sget_object: Field {} type mismatch, expected object but got {}", field.getName(), field.getType()));
 		}
 		// static field access, class instance may not be instantiated yet
 		auto& clazz = field.getClass();
@@ -1866,7 +1866,7 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
-		throw std::runtime_error(fmt::format("sget_boolean: Field type mismatch, expected boolean but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sget_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType()));
 	}
 
 	bool value = field.getIntValue() != 0;
@@ -1882,7 +1882,7 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
-		throw std::runtime_error(fmt::format("sget_byte: Field type mismatch, expected byte but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sget_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType()));
 	}
 
 	int8_t value = static_cast<int8_t>(field.getIntValue());
@@ -1898,7 +1898,7 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
-		throw std::runtime_error(fmt::format("sget_char: Field type mismatch, expected char but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sget_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType()));
 	}
 
 	uint16_t value = static_cast<uint16_t>(field.getIntValue());
@@ -1914,7 +1914,7 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
-		throw std::runtime_error(fmt::format("sget_short: Field type mismatch, expected short but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sget_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType()));
 	}
 
 	int16_t value = static_cast<int16_t>(field.getIntValue());
@@ -1934,7 +1934,7 @@ void Interpreter::sput(const uint8_t* operand_) {
 	}
 
 	if (field.getType() != "I") {
-		throw std::runtime_error(fmt::format("sput: Field type mismatch, expected int but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 
 	int32_t value = frame.getIntRegister(src);
@@ -1955,7 +1955,7 @@ void Interpreter::sput_wide(const uint8_t* operand_) {
 	}
 
 	if (field.getType() != "J" && field.getType() != "D") {
-		throw std::runtime_error(fmt::format("sput_wide: Field type mismatch, expected long or double but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sput_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType()));
 	}
 
 	int64_t value = frame.getLongRegister(src);
@@ -1977,7 +1977,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 			throw std::runtime_error("sput_object: Cannot use sput_object on a non-static field");
 		}
 		if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
-			throw std::runtime_error(fmt::format("sput_object: Field type mismatch, expected object but got {}", field.getType()));
+			throw std::runtime_error(fmt::format("sput_object: Field {} type mismatch, expected object but got {}", field.getName(), field.getType()));
 		}
 		// static field access, class instance may not be instantiated yet
 		auto& clazz = field.getClass();
@@ -2009,7 +2009,7 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 	}
 
 	if (field.getType() != "Z") {
-		throw std::runtime_error(fmt::format("sput_boolean: Field type mismatch, expected boolean but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sput_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType()));
 	}
 
 	bool value = frame.getIntRegister(src) != 0;
@@ -2030,7 +2030,7 @@ void Interpreter::sput_byte(const uint8_t* operand_) {
 	}
 
 	if (field.getType() != "B") {
-		throw std::runtime_error(fmt::format("sput_byte: Field type mismatch, expected byte but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sput_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType()));
 	}
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
@@ -2051,7 +2051,7 @@ void Interpreter::sput_char(const uint8_t* operand_) {
 	}
 
 	if (field.getType() != "C") {
-		throw std::runtime_error(fmt::format("sput_char: Field type mismatch, expected char but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sput_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType()));
 	}
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
@@ -2072,7 +2072,7 @@ void Interpreter::sput_short(const uint8_t* operand_) {
 	}
 
 	if (field.getType() != "S") {
-		throw std::runtime_error(fmt::format("sput_short: Field type mismatch, expected short but got {}", field.getType()));
+		throw std::runtime_error(fmt::format("sput_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType()));
 	}
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
