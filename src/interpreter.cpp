@@ -1447,7 +1447,7 @@ void Interpreter::iget(const uint8_t* operand_) {
 	}
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
-	if (field.getType() != "I") {
+	if (field.getType() != "I" && field.getType() != "F") {
 		throw std::runtime_error(fmt::format("iget: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 
@@ -1633,7 +1633,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 	}
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
-	if (field.getType() != "I") {
+	if (field.getType() != "I" && field.getType() != "F") {
 		throw std::runtime_error(fmt::format("iput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 	int32_t value = frame.getIntRegister(src);
@@ -1796,7 +1796,7 @@ void Interpreter::sget(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
-	if (field.getType() != "I") {
+	if (field.getType() != "I" && field.getType() != "F") {
 		throw std::runtime_error(fmt::format("sget: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 
@@ -1933,7 +1933,7 @@ void Interpreter::sput(const uint8_t* operand_) {
 		throw std::runtime_error("sput: Cannot use sput on a non-static field");
 	}
 
-	if (field.getType() != "I") {
+	if (field.getType() != "I" && field.getType() != "F") {
 		throw std::runtime_error(fmt::format("sput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 
