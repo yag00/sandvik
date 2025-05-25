@@ -2094,13 +2094,6 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
-	auto& cls = method.getClass();
-	if (!cls.isStaticInitialized()) {
-		frame.pc()--;
-		executeClinit(cls);
-		return;
-	}
 
 	std::string args_str = "(";
 	std::vector<std::shared_ptr<Object>> args{};
@@ -2121,71 +2114,60 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	if (this_ptr->isNull()) {
 		throw NullPointerException("invoke-virtual on null object");
 	}
+	auto this_ptr_class = std::dynamic_pointer_cast<ObjectClass>(this_ptr);
+	if (this_ptr_class == nullptr) {
+		throw std::runtime_error(fmt::format("invoke-virtual: this pointer is not an ObjectClass, got {}", this_ptr->debug()));
+	}
+	Class* instance = &this_ptr_class->getClass();
+	if (!instance->isStaticInitialized()) {
+		throw std::runtime_error(fmt::format("invoke-virtual: class {} is not static initialized", instance->getFullname()));
+	}
 
-	if (method.isVirtual()) {
-		auto this_ptr_class = std::dynamic_pointer_cast<ObjectClass>(this_ptr);
-		if (this_ptr_class != nullptr) {
-			Class* runtimeClass = &this_ptr_class->getClass();
-			Method* vmeth = nullptr;
-			while (1) {
-				try {
-					vmeth = &runtimeClass->getMethod(method.getName(), method.getSignature());
-					break;  // Method found, exit loop
-				} catch (std::exception& e) {
-					logger.debug(fmt::format("invoke-virtual: method {}->{}{} not found, trying superclass", runtimeClass->getFullname(), method.getName(),
-					                         method.getSignature()));
-					if (runtimeClass->hasSuperClass()) {
-						// If the method is not found in the current class, try the superclass
-						runtimeClass = &classloader.getOrLoad(runtimeClass->getSuperClassname());
-						if (!runtimeClass->isStaticInitialized()) {
-							frame.pc()--;
-							executeClinit(*runtimeClass);
-							return;
-						}
-					} else {
-						// If no superclass, break the loop
-						break;
-					}
-				}
-			}
-			if (vmeth) {
-				if (vmeth->isNative()) {
-					executeNativeMethod(*vmeth, args);
-				} else {
-					logger.ok(fmt::format("invoke-virtual call method {}->{}{}{} on instance {}", runtimeClass->getFullname(), vmeth->getName(),
-					                      vmeth->getSignature(), args_str, cls.getFullname()));
-					auto& newframe = _rt.newFrame(*vmeth);
-					// When a method is invoked, the parameters to the method are placed into the last n registers.
-					for (uint32_t i = 0; i < vA; i++) {
-						newframe.setObjRegister(vmeth->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
-					}
+	std::string classname, methodname, signature;
+	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
+
+	Method* vmethod = nullptr;
+	while (1) {
+		try {
+			vmethod = &instance->getMethod(methodname, signature);
+			break;  // Method found, exit loop
+		} catch (std::exception& e) {
+			logger.debug(fmt::format("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature));
+			if (instance->hasSuperClass()) {
+				// If the method is not found in the current class, try the superclass
+				instance = &classloader.getOrLoad(instance->getSuperClassname());
+				if (!instance->isStaticInitialized()) {
+					frame.pc()--;
+					executeClinit(*instance);
+					return;
 				}
 			} else {
-				// If no method found, throw an error
-				throw std::runtime_error(fmt::format("invoke-virtual: call method {}->{}{}{} not found", runtimeClass->getFullname(), method.getName(),
-				                                     method.getSignature(), args_str));
+				// If no superclass, break the loop
+				break;
 			}
+		}
+	}
+	if (vmethod) {
+		if (!vmethod->isVirtual()) {
+			logger.error(fmt::format("invoke-virtual: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), methodname, signature));
+		}
+		if (vmethod->isNative()) {
+			executeNativeMethod(*vmethod, args);
 		} else {
-			logger.warning(
-			    fmt::format("invoke-virtual call method {}->{}{}{} null this pointer", cls.getFullname(), method.getName(), method.getSignature(), args_str));
-			auto& newframe = _rt.newFrame(method);
+			logger.ok(fmt::format("invoke-virtual call method {}->{}{}{} on instance {}", instance->getFullname(), methodname, signature, args_str,
+			                      this_ptr_class->getClass().getFullname()));
+			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
 			for (uint32_t i = 0; i < vA; i++) {
-				newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+				newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
 			}
 		}
 	} else {
-		if (method.getBytecode() == nullptr) {
-			// handle by vm => @todo this should be handled by java runtime should be removed at some point.
-			if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
-				throw std::runtime_error(fmt::format("invoke-virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
-				                                     method.getSignature(), args_str));
-			}
-		} else {
-			throw std::runtime_error(
-			    fmt::format("invoke-virtual: method {}->{}{}{} is not virtual", cls.getFullname(), method.getName(), method.getSignature(), args_str));
-		}
+		// If no method found, throw an error
+		throw std::runtime_error(
+		    fmt::format("invoke-virtual: call method {}->{}{}{} not found", this_ptr_class->getClass().getFullname(), methodname, signature, args_str));
 	}
+
 	frame.pc() += 5;
 }
 // invoke-super {vD, vE, vF, vG, vA}, meth@CCCC

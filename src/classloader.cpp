@@ -109,8 +109,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 		try {
 			auto classPtr = dex->findClass(*this, classname_);
 			if (classPtr->isExternal()) {
-				logger.debug(fmt::format("Class {} is external, we should skip", classname_));
-				// continue;
+				continue;
 			}
 			_classes[classname_] = std::move(classPtr);
 			return *(_classes[classname_]);
@@ -156,6 +155,13 @@ Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_) {
 	std::string method;
 	std::string sig;
 	return resolveMethod(dex_, idx_, classname, method, sig);
+}
+void ClassLoader::findMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& method_, std::string& sig_) {
+	try {
+		resolveMethod(dex_, idx_, classname_, method_, sig_);
+	} catch (std::exception& e) {
+		// pass
+	}
 }
 
 Class& ClassLoader::resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_) {
