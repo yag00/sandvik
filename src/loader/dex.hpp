@@ -14,6 +14,7 @@ namespace LIEF {
 }  // namespace LIEF
 
 namespace sandvik {
+	class ClassLoader;
 	class Class;
 	class Dex {
 		public:
@@ -39,7 +40,7 @@ namespace sandvik {
 
 			bool is_loaded() const noexcept;
 			std::vector<std::string> getClassNames() const;
-			std::unique_ptr<Class> findClass(const std::string& name) const;
+			std::unique_ptr<Class> findClass(ClassLoader& classloader_, const std::string& name) const;
 
 			void resolveMethod(uint16_t idx, std::string& class_, std::string& method_, std::string& sig_);
 			void resolveClass(uint16_t idx, std::string& class_);

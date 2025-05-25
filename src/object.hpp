@@ -13,7 +13,7 @@ namespace sandvik {
 			Object() = default;
 			virtual ~Object() = default;
 			Object(const Object&);
-			Object& operator=(const Object&);
+			Object& operator=(const Object&) = delete;
 			Object(Object&& other) noexcept = delete;
 			Object& operator=(Object&& other) noexcept = delete;
 

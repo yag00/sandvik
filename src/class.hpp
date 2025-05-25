@@ -16,12 +16,13 @@ namespace LIEF {
 }  // namespace LIEF
 
 namespace sandvik {
+	class ClassLoader;
 	class Object;
 	class Method;
 	class Field;
 	class Class {
 		public:
-			explicit Class(const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
+			explicit Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
 			~Class() = default;
 			Class(const Class& other);
 
@@ -38,6 +39,7 @@ namespace sandvik {
 			Method& getMethod(uint32_t idx_);
 			Field& getField(const std::string& name_);
 			Field& getField(uint32_t idx_);
+			std::vector<std::string> getFieldList();
 
 			bool inheritsFrom(Class& class_) const;
 			bool isInstanceOf(std::shared_ptr<Object>& class_) const;
@@ -46,9 +48,11 @@ namespace sandvik {
 			bool isPrimitive() const;
 			bool isInterface() const;
 			bool hasSuperClass() const;
+			Class& getSuperClass() const;
 			std::string getSuperClassname() const;
 
 		private:
+			ClassLoader& _classloader;
 			const uint32_t _dexIdx;
 			const LIEF::DEX::Class& _class;
 			bool _isStaticInitialized;

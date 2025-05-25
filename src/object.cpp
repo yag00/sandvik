@@ -35,16 +35,6 @@ Object::Object(const Object& other) {
 	}
 }
 
-Object& Object::operator=(const Object& other) {
-	if (this != &other) {
-		_fields.clear();
-		for (const auto& field : other._fields) {
-			_fields[field.first] = field.second->clone();
-		}
-	}
-	return *this;
-}
-
 bool Object::operator==(const Object& other) const {
 	if (this == &other) {
 		return true;
@@ -99,9 +89,7 @@ std::shared_ptr<Object> Object::getField(const std::string& name_) const {
 	}
 	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->debug()));
 }
-// void Object::setField(const std::string& name_, std::shared_ptr<Object>&& value_) {
-//	_fields[name_] = std::move(value_);
-// }
+
 void Object::setField(const std::string& name_, std::shared_ptr<Object> value_) {
 	_fields[name_] = value_;
 }
@@ -117,14 +105,6 @@ uintptr_t* Object::getObjectData() const {
 NumberObject::NumberObject(uint64_t value_) : _value(value_) {
 }
 NumberObject::NumberObject(const NumberObject& other) : Object(other), _value(other._value) {
-}
-
-NumberObject& NumberObject::operator=(const NumberObject& other) {
-	if (this != &other) {
-		Object::operator=(other);
-		_value = other._value;
-	}
-	return *this;
 }
 
 bool NumberObject::operator==(const Object& other) const {
@@ -161,13 +141,6 @@ std::string NumberObject::debug() const {
 StringObject::StringObject(const std::string& value_) : _value(value_) {
 }
 
-StringObject& StringObject::operator=(const StringObject& other) {
-	if (this != &other) {
-		Object::operator=(other);
-		_value = other._value;
-	}
-	return *this;
-}
 StringObject::StringObject(const StringObject& other) : Object(other), _value(other._value) {
 }
 bool StringObject::operator==(const Object& other) const {
@@ -194,17 +167,60 @@ std::string StringObject::debug() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 ObjectClass::ObjectClass(Class& class_) : _class(class_) {
+	for (const auto& fieldname : _class.getFieldList()) {
+		auto& field = _class.getField(fieldname);
+		if (!field.isStatic()) {
+			logger.debug(fmt::format("New instance of {}: Adding field {} type={}", _class.getFullname(), fieldname, field.getType()));
+			switch (field.getType()[0]) {
+				case 'I':
+				case 'Z':
+				case 'B':
+				case 'S':
+				case 'C':
+				case 'J':
+				case 'F':
+				case 'D':
+					_fields[fieldname] = std::make_shared<NumberObject>(0);
+					break;
+				default:
+					_fields[fieldname] = std::make_shared<NullObject>();
+					break;
+			}
+		}
+	}
+	Class* current = &_class;
+	while (current->hasSuperClass()) {
+		logger.debug(fmt::format("super class {}", current->getSuperClassname()));
+		current = &current->getSuperClass();
+		for (const auto& fieldname : current->getFieldList()) {
+			auto& field = current->getField(fieldname);
+			if (!field.isStatic()) {
+				logger.debug(fmt::format("New instance of {} inherits from ({}): Adding field {} type={}", _class.getFullname(), current->getFullname(),
+				                         fieldname, field.getType()));
+				switch (field.getType()[0]) {
+					case 'I':
+					case 'Z':
+					case 'B':
+					case 'S':
+					case 'C':
+					case 'J':
+					case 'F':
+					case 'D':
+						_fields[fieldname] = std::make_shared<NumberObject>(0);
+						break;
+					default:
+						_fields[fieldname] = std::make_shared<NullObject>();
+						break;
+				}
+			}
+		}
+	}
 }
+
 ObjectClass::ObjectClass(const ObjectClass& other) : Object(other), _class(other._class) {
 	logger.error("ObjectClass Copy constructor");
 }
-ObjectClass& ObjectClass::operator=(const ObjectClass& other) {
-	logger.error("ObjectClass operator=");
-	if (this != &other) {
-		Object::operator=(other);
-	}
-	return *this;
-}
+
 std::shared_ptr<Object> ObjectClass::clone() const {
 	return std::make_shared<ObjectClass>(_class);
 }
@@ -222,14 +238,6 @@ bool ObjectClass::isInstanceOf(const std::string& instance_) const {
 ThrowableObject::ThrowableObject(const std::exception& e_) : _e(e_) {
 }
 ThrowableObject::ThrowableObject(const ThrowableObject& other) : Object(other), _e(other._e) {
-}
-
-ThrowableObject& ThrowableObject::operator=(const ThrowableObject& other) {
-	if (this != &other) {
-		Object::operator=(other);
-		_e = other._e;
-	}
-	return *this;
 }
 
 std::shared_ptr<Object> ThrowableObject::clone() const {
@@ -259,13 +267,7 @@ VmObject::VmObject(const std::string& instance_) : _instance(instance_) {
 }
 VmObject::VmObject(const VmObject& other) : Object(other), _instance(other._instance) {
 }
-VmObject& VmObject::operator=(const VmObject& other) {
-	if (this != &other) {
-		Object::operator=(other);
-		_instance = other._instance;
-	}
-	return *this;
-}
+
 std::shared_ptr<Object> VmObject::clone() const {
 	return std::make_shared<VmObject>(*this);
 }

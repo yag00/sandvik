@@ -81,7 +81,7 @@ Class& ClassLoader::getMainActivityClass() {
 			if (it != _classes.end()) {
 				return *(it->second);
 			} else {
-				auto classPtr = apk->findClass(className);
+				auto classPtr = apk->findClass(*this, className);
 				_classes[className] = std::move(classPtr);
 				return *(_classes[className]);
 			}
@@ -98,7 +98,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	}
 	for (const auto& apk : _apks) {
 		try {
-			auto classPtr = apk->findClass(classname_);
+			auto classPtr = apk->findClass(*this, classname_);
 			_classes[classname_] = std::move(classPtr);
 			return *(_classes[classname_]);
 		} catch (std::exception& e) {
@@ -107,7 +107,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	}
 	for (const auto& dex : _dexs) {
 		try {
-			auto classPtr = dex->findClass(classname_);
+			auto classPtr = dex->findClass(*this, classname_);
 			if (classPtr->isExternal()) {
 				logger.debug(fmt::format("Class {} is external, we should skip", classname_));
 				// continue;
@@ -129,7 +129,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			fullPath += classname + ".dex";
 			if (std::filesystem::exists(fullPath)) {
 				auto dex = std::make_unique<Dex>(_dexs.size(), fullPath);
-				_classes[classname_] = dex->findClass(classname_);
+				_classes[classname_] = dex->findClass(*this, classname_);
 				_dexs.push_back(std::move(dex));
 				logger.ok(fmt::format("class {} loaded", classname_));
 				return *(_classes[classname_]);

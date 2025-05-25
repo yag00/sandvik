@@ -177,9 +177,9 @@ std::string Apk::findMainActivity() const {
 	}
 }
 
-std::unique_ptr<Class> Apk::findClass(const std::string& name) const {
+std::unique_ptr<Class> Apk::findClass(ClassLoader& classloader_, const std::string& name) const {
 	if (_classes_dex) {
-		return _classes_dex->findClass(name);
+		return _classes_dex->findClass(classloader_, name);
 	} else {
 		throw std::runtime_error("No DEX file loaded");
 	}

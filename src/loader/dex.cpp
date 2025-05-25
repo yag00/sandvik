@@ -75,14 +75,14 @@ std::vector<std::string> Dex::getClassNames() const {
 	return names;
 }
 
-std::unique_ptr<::sandvik::Class> Dex::findClass(const std::string& name) const {
+std::unique_ptr<::sandvik::Class> Dex::findClass(ClassLoader& classloader_, const std::string& name) const {
 	if (!_dex) {
 		throw DexLoaderException("No DEX file loaded");
 	}
 
 	for (const auto& cls : _dex->classes()) {
 		if (cls.pretty_name() == name) {
-			return std::make_unique<::sandvik::Class>(_idx, cls);
+			return std::make_unique<::sandvik::Class>(classloader_, _idx, cls);
 		}
 	}
 	throw DexLoaderException(fmt::format("Class '{}' not found in DEX file", name));

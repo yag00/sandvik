@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace sandvik {
+	class ClassLoader;
 	class Class;
 	class Dex;
 	class ZipReader;
@@ -31,7 +32,7 @@ namespace sandvik {
 
 			std::vector<std::string> getClassNames() const;
 			std::string getMainActivity() const;
-			std::unique_ptr<Class> findClass(const std::string& name) const;
+			std::unique_ptr<Class> findClass(ClassLoader& classloader_, const std::string& name) const;
 
 		protected:
 			std::string findMainActivity() const;

@@ -9,6 +9,7 @@
 #include <LIEF/DEX/Type.hpp>
 #include <sstream>
 
+#include "classloader.hpp"
 #include "field.hpp"
 #include "method.hpp"
 #include "object.hpp"
@@ -17,10 +18,11 @@
 
 using namespace sandvik;
 
-Class::Class(const uint32_t dexIdx_, const LIEF::DEX::Class& class_) : _dexIdx(dexIdx_), _class(class_), _isStaticInitialized(false) {
+Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_)
+    : _classloader(classloader_), _dexIdx(dexIdx_), _class(class_), _isStaticInitialized(false) {
 }
 
-Class::Class(const Class& other) : _dexIdx(other._dexIdx), _class(other._class), _isStaticInitialized(false) {
+Class::Class(const Class& other) : _classloader(other._classloader), _dexIdx(other._dexIdx), _class(other._class), _isStaticInitialized(false) {
 	// Deep copy of methods
 	for (const auto& [key, method] : other._methods) {
 		_methods.emplace(key, std::make_unique<Method>(*method));
@@ -86,6 +88,9 @@ bool Class::isPrimitive() const {
 }
 
 bool Class::hasSuperClass() const {
+	if (_class.pretty_name() == "java.lang.Object") {
+		return false;  // java.lang.Object has no super class
+	}
 	return _class.has_parent();
 }
 
@@ -111,6 +116,13 @@ bool Class::isInstanceOf(std::shared_ptr<Object>& class_) const {
 		}
 	}
 	return false;
+}
+
+Class& Class::getSuperClass() const {
+	if (hasSuperClass()) {
+		return _classloader.getOrLoad(_class.parent()->pretty_name());
+	}
+	throw std::runtime_error(fmt::format("Class {} has no super class", getFullname()));
 }
 
 std::string Class::getSuperClassname() const {
@@ -183,6 +195,14 @@ Field& Class::getField(uint32_t idx_) {
 	} catch (std::exception& e) {
 		throw std::runtime_error(fmt::format("Field not found for index={}", idx_));
 	}
+}
+
+std::vector<std::string> Class::getFieldList() {
+	std::vector<std::string> fieldList;
+	for (const auto& field : _class.fields()) {
+		fieldList.push_back(field.name());
+	}
+	return fieldList;
 }
 
 void Class::debug() const {
