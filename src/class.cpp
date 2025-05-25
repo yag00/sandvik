@@ -113,6 +113,13 @@ bool Class::isInstanceOf(std::shared_ptr<Object>& class_) const {
 	return false;
 }
 
+std::string Class::getSuperClassname() const {
+	if (_class.has_parent()) {
+		return _class.parent()->pretty_name();
+	}
+	return "";
+}
+
 Method& Class::getMethod(const std::string& name_, const std::string& descriptor_) {
 	auto sig = name_ + descriptor_;
 	auto it = _methods.find(sig);

@@ -2119,40 +2119,55 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 
 	auto this_ptr = frame.getObjRegister(regs[0]);
 	if (this_ptr->isNull()) {
-		throw NullPointerException("invoke_virtual on null object");
+		throw NullPointerException("invoke-virtual on null object");
 	}
 
 	if (method.isVirtual()) {
 		auto this_ptr_class = std::dynamic_pointer_cast<ObjectClass>(this_ptr);
 		if (this_ptr_class != nullptr) {
-			// Resolve the actual method from the runtime type of the object
-			try {
-				auto& runtimeClass = this_ptr_class->getClass();
-				auto& vmethod = runtimeClass.getMethod(method.getName(), method.getSignature());
-				auto& cls = vmethod.getClass();
-				if (!cls.isStaticInitialized()) {
-					frame.pc()--;
-					executeClinit(cls);
-					return;
-				}
-				if (vmethod.isNative()) {
-					executeNativeMethod(vmethod, args);
-				} else {
-					logger.ok(
-					    fmt::format("invoke_virtual call method {}->{}{}{}", runtimeClass.getFullname(), vmethod.getName(), vmethod.getSignature(), args_str));
-					auto& newframe = _rt.newFrame(vmethod);
-					// When a method is invoked, the parameters to the method are placed into the last n registers.
-					for (uint32_t i = 0; i < vA; i++) {
-						newframe.setObjRegister(vmethod.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			Class* runtimeClass = &this_ptr_class->getClass();
+			Method* vmeth = nullptr;
+			while (1) {
+				try {
+					vmeth = &runtimeClass->getMethod(method.getName(), method.getSignature());
+					break;  // Method found, exit loop
+				} catch (std::exception& e) {
+					logger.debug(fmt::format("invoke-virtual: method {}->{}{} not found, trying superclass", runtimeClass->getFullname(), method.getName(),
+					                         method.getSignature()));
+					if (runtimeClass->hasSuperClass()) {
+						// If the method is not found in the current class, try the superclass
+						runtimeClass = &classloader.getOrLoad(runtimeClass->getSuperClassname());
+						if (!runtimeClass->isStaticInitialized()) {
+							frame.pc()--;
+							executeClinit(*runtimeClass);
+							return;
+						}
+					} else {
+						// If no superclass, break the loop
+						break;
 					}
 				}
-			} catch (std::exception& e) {
-				throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} {}", method.getClass().getFullname(), method.getName(),
-				                                     method.getSignature(), args_str, e.what()));
+			}
+			if (vmeth) {
+				if (vmeth->isNative()) {
+					executeNativeMethod(*vmeth, args);
+				} else {
+					logger.ok(fmt::format("invoke-virtual call method {}->{}{}{} on instance {}", runtimeClass->getFullname(), vmeth->getName(),
+					                      vmeth->getSignature(), args_str, cls.getFullname()));
+					auto& newframe = _rt.newFrame(*vmeth);
+					// When a method is invoked, the parameters to the method are placed into the last n registers.
+					for (uint32_t i = 0; i < vA; i++) {
+						newframe.setObjRegister(vmeth->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+					}
+				}
+			} else {
+				// If no method found, throw an error
+				throw std::runtime_error(fmt::format("invoke-virtual: call method {}->{}{}{} not found", runtimeClass->getFullname(), method.getName(),
+				                                     method.getSignature(), args_str));
 			}
 		} else {
 			logger.warning(
-			    fmt::format("invoke_virtual call method {}->{}{}{} null this pointer", cls.getFullname(), method.getName(), method.getSignature(), args_str));
+			    fmt::format("invoke-virtual call method {}->{}{}{} null this pointer", cls.getFullname(), method.getName(), method.getSignature(), args_str));
 			auto& newframe = _rt.newFrame(method);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
 			for (uint32_t i = 0; i < vA; i++) {
@@ -2160,24 +2175,15 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			}
 		}
 	} else {
-		if (method.isNative()) {
-			executeNativeMethod(method, args);
-		} else {
-			if (method.getBytecode() == nullptr) {
-				// handle by vm
-				if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
-					throw std::runtime_error(fmt::format("invoke_virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
-					                                     method.getSignature(), args_str));
-				}
-			} else {
-				logger.ok(
-				    fmt::format("invoke_virtual call method {}->{}{}{}", method.getClass().getFullname(), method.getName(), method.getSignature(), args_str));
-				auto& newframe = _rt.newFrame(method);
-				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (uint32_t i = 0; i < vA; i++) {
-					newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
-				}
+		if (method.getBytecode() == nullptr) {
+			// handle by vm => @todo this should be handled by java runtime should be removed at some point.
+			if (!_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args)) {
+				throw std::runtime_error(fmt::format("invoke-virtual: method {}->{}{}{} not found", method.getClass().getFullname(), method.getName(),
+				                                     method.getSignature(), args_str));
 			}
+		} else {
+			throw std::runtime_error(
+			    fmt::format("invoke-virtual: method {}->{}{}{} is not virtual", cls.getFullname(), method.getName(), method.getSignature(), args_str));
 		}
 	}
 	frame.pc() += 5;
@@ -2226,7 +2232,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 		executeNativeMethod(method, args);
 	} else {
 		if (method.getBytecode() == nullptr) {
-			logger.warning(fmt::format("invoke_direct call method {} handled by vm", method_str));
+			logger.warning(fmt::format("invoke-direct call method {} handled by vm", method_str));
 			if (method.getName() == "<init>") {
 				_rt.handleConstructor(method.getClass().getFullname(), method.getName(), method.getSignature(), args);
 			} else if (method.getName() == "<clinit>") {
@@ -2235,7 +2241,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 				_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args);
 			}
 		} else {
-			logger.ok(fmt::format("invoke_direct call method {} static={}", method_str, method.isStatic()));
+			logger.ok(fmt::format("invoke-direct call method {} static={}", method_str, method.isStatic()));
 			auto& newframe = _rt.newFrame(method);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.

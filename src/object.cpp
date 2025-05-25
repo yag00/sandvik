@@ -97,7 +97,7 @@ std::shared_ptr<Object> Object::getField(const std::string& name_) const {
 	if (it != _fields.end()) {
 		return it->second;
 	}
-	throw std::out_of_range(fmt::format("Field '{}' does not exist in object", name_));
+	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->debug()));
 }
 // void Object::setField(const std::string& name_, std::shared_ptr<Object>&& value_) {
 //	_fields[name_] = std::move(value_);

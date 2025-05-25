@@ -46,6 +46,7 @@ namespace sandvik {
 			bool isPrimitive() const;
 			bool isInterface() const;
 			bool hasSuperClass() const;
+			std::string getSuperClassname() const;
 
 		private:
 			const uint32_t _dexIdx;
