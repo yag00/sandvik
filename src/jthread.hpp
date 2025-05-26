@@ -24,6 +24,7 @@ namespace sandvik {
 			Frame& newFrame(Method& method_);
 			void popFrame();
 			Frame& currentFrame() const;
+			uint64_t stackDepth() const;
 
 			void execute();
 

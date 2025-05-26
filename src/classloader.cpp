@@ -108,7 +108,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	for (const auto& dex : _dexs) {
 		try {
 			auto classPtr = dex->findClass(*this, classname_);
-			if (classPtr->isExternal()) {
+			if (!classPtr->isInterface() && classPtr->isExternal()) {
 				continue;
 			}
 			_classes[classname_] = std::move(classPtr);

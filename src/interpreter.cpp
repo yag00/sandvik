@@ -2252,23 +2252,12 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	auto& interface = classloader.resolveMethod(frame.getDexIdx(), methodRef);
-	auto interface_str = fmt::format("{}.{}{}(", interface.getClass().getFullname(), interface.getName(), interface.getSignature());
 
-	auto this_ptr = std::dynamic_pointer_cast<ObjectClass>(frame.getObjRegister(regs[0]));
-	if (this_ptr->isNull()) {
-		throw NullPointerException("invoke_interface on null object");
-	}
-	if (!interface.getClass().isInterface()) {
-		throw std::runtime_error(fmt::format("Not an interface: {}", interface.getClass().getFullname()));
-	}
-
-	auto& method = this_ptr->getClass().getMethod(interface.getName(), interface.getSignature());
-
+	std::string interface_str = "(";
 	std::vector<std::shared_ptr<Object>> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
 		auto obj = frame.getObjRegister(regs[i]);
-		if (i == 0 && !method.isStatic()) {
+		if (i == 0) {
 			interface_str += "this=";
 		}
 		interface_str += obj->debug();
@@ -2279,17 +2268,82 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	}
 	interface_str += ")";
 
-	if (method.getBytecode() == nullptr) {
-		throw std::runtime_error(
-		    fmt::format("invoke_interface: method {}->{}{} not found", method.getClass().getFullname(), method.getName(), method.getSignature()));
-	} else {
-		logger.ok(fmt::format("invoke_interface call method {}", interface_str));
-		auto& newframe = _rt.newFrame(method);
-		// set args on new frame
-		// When a method is invoked, the parameters to the method are placed into the last n registers.
-		for (uint32_t i = 0; i < vA; i++) {
-			newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+	auto this_ptr = std::dynamic_pointer_cast<ObjectClass>(frame.getObjRegister(regs[0]));
+	if (this_ptr->isNull()) {
+		throw NullPointerException("invoke_interface on null object");
+	}
+	auto this_ptr_class = std::dynamic_pointer_cast<ObjectClass>(this_ptr);
+	if (this_ptr_class == nullptr) {
+		throw std::runtime_error(fmt::format("invoke-interface: this pointer is not an ObjectClass, got {}", this_ptr->debug()));
+	}
+	Class* instance = &this_ptr_class->getClass();
+	if (!instance->isStaticInitialized()) {
+		throw std::runtime_error(fmt::format("invoke-interface: class {} is not static initialized", instance->getFullname()));
+	}
+	auto& interface = classloader.resolveMethod(frame.getDexIdx(), methodRef);
+	if (!interface.getClass().isInterface()) {
+		throw std::runtime_error(fmt::format("invoke-interface: {}.{}{} is not an interface method", interface.getClass().getFullname(), interface.getName(),
+		                                     interface.getSignature()));
+	}
+
+	logger.error(fmt::format("invoke-interface class {} ?implements {}->{}{}{}", instance->getFullname(), interface.getClass().getFullname(),
+	                         interface.getName(), interface.getSignature(), interface_str));
+
+	Method* vmethod = nullptr;
+	while (1) {
+		try {
+			logger.error(fmt::format("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
+			                         interface.getSignature(), interface_str));
+			vmethod = &instance->getMethod(interface.getName(), interface.getSignature());
+			logger.ok(fmt::format("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
+			                      interface.getSignature(), interface_str));
+			break;  // Method found, exit loop
+		} catch (std::exception& e) {
+			logger.error(fmt::format("invoke-interface: class {} does not implement interface {}.{}{} not found, trying superclass", instance->getFullname(),
+			                         interface.getName(), interface.getSignature(), interface_str));
+			if (instance->hasSuperClass()) {
+				// If the method is not found in the current class, try the superclass
+				instance = &classloader.getOrLoad(instance->getSuperClassname());
+				if (!instance->isStaticInitialized()) {
+					frame.pc()--;
+					executeClinit(*instance);
+					return;
+				}
+				if (instance->isInterface()) {
+					// If the superclass is an interface, we need to check its methods
+					try {
+						vmethod = &instance->getMethod(interface.getName(), interface.getSignature());
+						break;  // Method found, exit loop
+					} catch (std::exception& e) {
+						// Continue searching in the next superclass
+					}
+				}
+			} else {
+				// If no superclass, break the loop
+				break;
+			}
 		}
+	}
+	if (vmethod) {
+		if (!vmethod->isVirtual()) {
+			logger.error(fmt::format("invoke-interface: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), interface.getName(),
+			                         interface.getSignature()));
+		}
+		if (vmethod->isNative()) {
+			executeNativeMethod(*vmethod, args);
+		} else {
+			logger.ok(fmt::format("invoke-interface call method {}->{}{}{} on instance {}", instance->getFullname(), interface.getName(),
+			                      interface.getSignature(), interface_str, this_ptr_class->getClass().getFullname()));
+			auto& newframe = _rt.newFrame(*vmethod);
+			// When a method is invoked, the parameters to the method are placed into the last n registers.
+			for (uint32_t i = 0; i < vA; i++) {
+				newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			}
+		}
+	} else {
+		// If no method found, throw an error
+		throw std::runtime_error(fmt::format("invoke-interface: call method {}->{}{}{} not found", this_ptr_class->getClass().getFullname(),
+		                                     interface.getName(), interface.getSignature(), interface_str));
 	}
 	frame.pc() += 5;
 }

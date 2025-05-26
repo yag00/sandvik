@@ -28,6 +28,10 @@ bool JThread::end() const {
 	return _stack.size() == 0;
 }
 
+uint64_t JThread::stackDepth() const {
+	return _stack.size();
+}
+
 Frame& JThread::newFrame(Method& method_) {
 	if (method_.getName() == "<clinit>") {
 		auto& clazz = method_.getClass();
