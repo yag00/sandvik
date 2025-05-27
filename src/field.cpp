@@ -10,29 +10,33 @@
 
 using namespace sandvik;
 
-Field::Field(Class& class_, const LIEF::DEX::Field& field_) : _class(class_), _field(field_), _obj(Object::makeNull()) {
+Field::Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_)
+    : _class(class_), _name(name_), _type(type_), _isStatic(isStatic_), _value(0), _strValue(""), _obj(Object::makeNull()) {
 }
-
-Field::Field(const Field& other) : _class(other._class), _field(other._field) {
-}
-
-std::string Field::getName() const {
-	return _field.name();
+Field::Field(Class& class_, const LIEF::DEX::Field& field_)
+    : _class(class_),
+      _name(field_.name()),
+      _type(get_type_descriptor(*field_.type())),
+      _isStatic(field_.has(LIEF::DEX::ACC_STATIC)),
+      _value(0),
+      _strValue(""),
+      _obj(Object::makeNull()) {
 }
 
 Class& Field::getClass() const {
 	return _class;
 }
 
-bool Field::hasClass() const {
-	return _field.has_class();
-}
-bool Field::isStatic() const {
-	return _field.has(LIEF::DEX::ACC_STATIC);
+std::string Field::getName() const {
+	return _name;
 }
 
 std::string Field::getType() const {
-	return get_type_descriptor(*_field.type());
+	return _type;
+}
+
+bool Field::isStatic() const {
+	return _isStatic;
 }
 
 uint32_t Field::getIntValue() const {

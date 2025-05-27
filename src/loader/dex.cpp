@@ -11,6 +11,8 @@
 #include <utility>
 
 #include "class.hpp"
+#include "field.hpp"
+#include "method.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
 

@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "class.hpp"
+#include "field.hpp"
 #include "system/logger.hpp"
 
 using namespace sandvik;

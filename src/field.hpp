@@ -16,8 +16,8 @@ namespace sandvik {
 	class Object;
 	class Field {
 		public:
+			Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_);
 			Field(Class& class_, const LIEF::DEX::Field& field_);
-			Field(const Field& other);
 			~Field() = default;
 
 			uint32_t getIntValue() const;
@@ -28,17 +28,16 @@ namespace sandvik {
 			void setLongValue(uint64_t value);
 			void setStringValue(const std::string& value);
 			void setObjectValue(std::shared_ptr<Object> value);
-
-			std::string getName() const;
 			Class& getClass() const;
-
+			std::string getName() const;
 			std::string getType() const;
-			bool hasClass() const;
 			bool isStatic() const;
 
 		private:
 			Class& _class;
-			const LIEF::DEX::Field& _field;
+			std::string _name;
+			std::string _type;
+			bool _isStatic;
 
 			uint64_t _value;
 			std::string _strValue;
@@ -46,4 +45,4 @@ namespace sandvik {
 	};
 }  // namespace sandvik
 
-#endif  // __OBJECT_HPP__
+#endif  // __FIELD_HPP__

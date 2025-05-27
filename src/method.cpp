@@ -13,31 +13,69 @@
 
 using namespace sandvik;
 
-Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_), _method(method_) {
+Method::Method(Class& class_, const std::string& name_, const std::string& signature_) : _class(class_) {
+	_name = name_;
+	_signature = signature_;
+
+	_nbRegisters = 0;
+	_index = 0;
+	_bytecode = std::vector<uint8_t>();
+
+	_isPublic = false;
+	_isProtected = false;
+	_isPrivate = false;
+	_isFinal = false;
+	_isStatic = false;
+	_isAbstract = false;
+	_isNative = false;
+	_isVirtual = false;
 }
-Method::Method(const Method& other) : _class(other._class), _method(other._method) {
+
+Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_) {
+	_name = method_.name();
+	_signature = get_method_descriptor(method_);
+
+	_nbRegisters = method_.code_info().nb_registers();
+	_index = method_.index();
+	_bytecode = method_.bytecode();
+
+	_isPublic = method_.has(LIEF::DEX::ACC_PUBLIC);
+	_isProtected = method_.has(LIEF::DEX::ACC_PROTECTED);
+	_isPrivate = method_.has(LIEF::DEX::ACC_PRIVATE);
+	_isFinal = method_.has(LIEF::DEX::ACC_FINAL);
+	_isStatic = method_.has(LIEF::DEX::ACC_STATIC);
+	_isAbstract = method_.has(LIEF::DEX::ACC_ABSTRACT);
+	_isNative = method_.has(LIEF::DEX::ACC_NATIVE);
+	_isVirtual = method_.is_virtual();
+
+	for (const auto& exc : method_.code_info().exceptions()) {
+		_trycatch_items.push_back({exc.start_addr, exc.insn_count, exc.handlers, exc.catch_all_addr});
+	}
 }
+
 Class& Method::getClass() const {
 	return _class;
 }
-
 std::string Method::getName() const {
-	return _method.name();
+	return _name;
 }
 
 std::string Method::getSignature() const {
-	return get_method_descriptor(_method);
+	return _signature;
 }
 
 uint32_t Method::getNbRegisters() const {
-	auto& c = _method.code_info();
-	return c.nb_registers();
+	return _nbRegisters;
+}
+
+uint32_t Method::getIndex() const {
+	return _index;
 }
 
 std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t pc_, uint32_t& catchAllAddr_) const {
 	uint16_t pc = pc_ >> 1;
-	logger.debug(fmt::format("getExceptionHandler: pc={:x} size={}", pc, _method.code_info().exceptions().size()));
-	for (const auto& exc : _method.code_info().exceptions()) {
+	logger.debug(fmt::format("getExceptionHandler: pc={:x} size={}", pc, _trycatch_items.size()));
+	for (const auto& exc : _trycatch_items) {
 		logger.debug(fmt::format("{}: Exception handler: start_addr: {:x}, insn_count: {:x}, catch_all_addr: {:x}", getName(), exc.start_addr, exc.insn_count,
 		                         exc.catch_all_addr));
 		if (pc >= exc.start_addr && pc < exc.start_addr + exc.insn_count) {
@@ -48,74 +86,46 @@ std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t 
 	throw std::runtime_error(fmt::format("No exception handler found for pc: {}", pc_));
 }
 
+bool Method::hasBytecode() const {
+	return _bytecode.empty() == false;
+}
+
 const uint8_t* const Method::getBytecode() const {
-	return _method.bytecode().data();
+	return _bytecode.data();
 }
 
 bool Method::isStaticInitializer() const {
-	return getName() == "<clinit>" && isStatic() && get_method_descriptor(_method) == "()V";
+	return getName() == "<clinit>" && isStatic() && _signature == "()V";
 }
 
 bool Method::isConstructor() const {
-	return getName() == "<init>" && get_method_descriptor(_method).back() == 'V' && !_class.isInterface();
-}
-
-bool Method::isPublic() const {
-	return _method.has(LIEF::DEX::ACC_PUBLIC);
-}
-
-bool Method::isPrivate() const {
-	return _method.has(LIEF::DEX::ACC_PRIVATE);
-}
-
-bool Method::isProtected() const {
-	return _method.has(LIEF::DEX::ACC_PROTECTED);
+	return getName() == "<init>" && _signature.back() == 'V' && !_class.isInterface();
 }
 
 bool Method::isStatic() const {
-	return _method.has(LIEF::DEX::ACC_STATIC);
+	return _isStatic;
+}
+
+bool Method::isPublic() const {
+	return _isPublic;
+}
+
+bool Method::isPrivate() const {
+	return _isPrivate;
 }
 
 bool Method::isFinal() const {
-	return _method.has(LIEF::DEX::ACC_FINAL);
+	return _isFinal;
 }
 
 bool Method::isAbstract() const {
-	return _method.has(LIEF::DEX::ACC_ABSTRACT);
+	return _isAbstract;
 }
 
 bool Method::isNative() const {
-	return _method.has(LIEF::DEX::ACC_NATIVE);
-}
-bool Method::isVirtual() const {
-	return _method.is_virtual();
+	return _isNative;
 }
 
-void Method::debug() const {
-	std::ostringstream oss;
-	oss << _method;
-	logger.debug(oss.str());
-	/*logger.debug(fmt::format("Method: {}::{}", _class.getName(), getSignature()));
-	// logger.debug(fmt::format("Bytecode: {:x}", _method.bytecode()));
-	logger.debug(fmt::format("Code offset: {}", _method.code_offset()));
-	logger.debug(fmt::format("Is static initializer: {}", isStaticInitializer()));
-	logger.debug(fmt::format("Is constructor: {}", isConstructor()));
-	logger.debug(fmt::format("Is public: {}", isPublic()));
-	logger.debug(fmt::format("Is private: {}", isPrivate()));
-	logger.debug(fmt::format("Is protected: {}", isProtected()));
-	logger.debug(fmt::format("Is static: {}", isStatic()));
-	logger.debug(fmt::format("Is final: {}", isFinal()));
-	logger.debug(fmt::format("Is abstract: {}", isAbstract()));
-	logger.debug(fmt::format("Is native: {}", isNative()));
-	logger.debug(fmt::format("Is interface: {}", _class.isInterface()));
-	logger.debug(fmt::format("Is virtual: {}", _method.is_virtual()));
-	logger.debug(fmt::format("Is synthetic: {}", _method.has(LIEF::DEX::ACC_SYNTHETIC)));
-	logger.debug(fmt::format("Is bridge: {}", _method.has(LIEF::DEX::ACC_BRIDGE)));
-	logger.debug(fmt::format("Is strict: {}", _method.has(LIEF::DEX::ACC_STRICT)));
-	logger.debug(fmt::format("Is volatile: {}", _method.has(LIEF::DEX::ACC_VOLATILE)));
-	logger.debug(fmt::format("Is transient: {}", _method.has(LIEF::DEX::ACC_TRANSIENT)));
-	logger.debug(fmt::format("Is annotation: {}", _method.has(LIEF::DEX::ACC_ANNOTATION)));
-	logger.debug(fmt::format("Is enum: {}", _method.has(LIEF::DEX::ACC_ENUM)));
-	logger.debug(fmt::format("Is declared synchronized: {}", _method.has(LIEF::DEX::ACC_DECLARED_SYNCHRONIZED)));
-	logger.debug(fmt::format("Is varargs: {}", _method.has(LIEF::DEX::ACC_VARARGS)));*/
+bool Method::isVirtual() const {
+	return _isVirtual;
 }

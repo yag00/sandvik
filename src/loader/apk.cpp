@@ -11,8 +11,10 @@
 
 #include "fmt/format.h"
 
-#include "../class.hpp"
+#include "class.hpp"
 #include "dex.hpp"
+#include "field.hpp"
+#include "method.hpp"
 #include "system/logger.hpp"
 #include "system/zip.hpp"
 

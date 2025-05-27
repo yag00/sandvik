@@ -11,6 +11,7 @@
 #include "classloader.hpp"
 #include "disassembler.hpp"
 #include "exceptions.hpp"
+#include "field.hpp"
 #include "frame.hpp"
 #include "jni.hpp"
 #include "jthread.hpp"
