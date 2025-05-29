@@ -2,6 +2,8 @@
 #define __METHOD_HPP__
 
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -12,7 +14,31 @@ namespace LIEF {
 }  // namespace LIEF
 
 namespace sandvik {
+	class Frame;
+	class Object;
 	class Class;
+	enum ACCESS_FLAGS {
+		ACC_UNKNOWN = 0x0,
+		ACC_PUBLIC = 0x1,
+		ACC_PRIVATE = 0x2,
+		ACC_PROTECTED = 0x4,
+		ACC_STATIC = 0x8,
+		ACC_FINAL = 0x10,
+		ACC_SYNCHRONIZED = 0x20,
+		ACC_VOLATILE = 0x40,
+		ACC_BRIDGE = 0x40,
+		ACC_TRANSIENT = 0x80,
+		ACC_VARARGS = 0x80,
+		ACC_NATIVE = 0x100,
+		ACC_INTERFACE = 0x200,
+		ACC_ABSTRACT = 0x400,
+		ACC_STRICT = 0x800,
+		ACC_SYNTHETIC = 0x1000,
+		ACC_ANNOTATION = 0x2000,
+		ACC_ENUM = 0x4000,
+		ACC_CONSTRUCTOR = 0x10000,
+		ACC_DECLARED_SYNCHRONIZED = 0x20000
+	};
 	class Method {
 		public:
 			Method(Class& class_, const std::string& name_, const std::string& signature_);
@@ -40,6 +66,7 @@ namespace sandvik {
 			bool isNative() const;
 			bool isVirtual() const;
 
+			void execute(Frame& frame_, std::vector<std::shared_ptr<Object>>& registers_);
 			void debug() const;
 
 		private:
@@ -49,15 +76,8 @@ namespace sandvik {
 			uint32_t _index = 0;
 			uint32_t _nbRegisters = 0;
 			std::vector<uint8_t> _bytecode;
-
-			bool _isPublic = false;
-			bool _isProtected = false;
-			bool _isPrivate = false;
-			bool _isFinal = false;
-			bool _isStatic = false;
-			bool _isAbstract = false;
-			bool _isNative = false;
-			bool _isVirtual = false;
+			uint64_t _accessFlags;
+			bool _isVirtual;
 
 			struct trycatch_item {
 					uint32_t start_addr;
@@ -67,6 +87,10 @@ namespace sandvik {
 					uint32_t catch_all_addr;
 			};
 			std::vector<trycatch_item> _trycatch_items;
+
+			std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> _function;
+
+			friend class ClassBuilder;
 	};
 }  // namespace sandvik
 

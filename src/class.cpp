@@ -92,17 +92,18 @@ std::string Class::getFullname() const {
 	return _fullname;
 }
 
+bool Class::isInstanceOf(const std::string& class_) const {
+	if (getFullname() == class_) {
+		return true;
+	}
+	return false;
+}
 bool Class::isInstanceOf(std::shared_ptr<Object>& class_) const {
 	if (class_->isNull()) {
 		return false;
 	}
 	auto clazz = std::dynamic_pointer_cast<ObjectClass>(class_);
-	if (!clazz) {
-		auto str = std::dynamic_pointer_cast<StringObject>(class_);
-		if (str && getFullname() == "java.lang.String") {
-			return true;
-		}
-	} else {
+	if (clazz) {
 		logger.debug(fmt::format("isInstanceOf: {}", clazz->getClass().getFullname()));
 		if (clazz->getClass().getFullname() == getFullname()) {
 			return true;

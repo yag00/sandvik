@@ -39,6 +39,9 @@ namespace sandvik {
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint32_t dex_, uint16_t idx_);
 
 		private:
+			friend class ClassBuilder;
+			void addClass(std::unique_ptr<Class> class_);
+
 			std::vector<std::string> _classpath;
 			std::vector<std::unique_ptr<Apk>> _apks;
 			std::vector<std::unique_ptr<Dex>> _dexs;

@@ -296,7 +296,15 @@ void Interpreter::executeClinit(Class& class_) {
 	// push new frame with <clinit> method
 	try {
 		auto& clinitMethod = class_.getMethod("<clinit>", "()V");
-		_rt.newFrame(clinitMethod);
+		if (clinitMethod.isNative()) {
+			throw std::runtime_error(fmt::format("Native <clinit> method for class {} is not supported!", class_.getFullname()));
+		}
+		if (clinitMethod.hasBytecode()) {
+			_rt.newFrame(clinitMethod);
+		} else {
+			std::vector<std::shared_ptr<Object>> args;
+			clinitMethod.execute(_rt.currentFrame(), args);
+		}
 	} catch (std::exception& e) {
 		logger.debug(fmt::format("No <clinit> method for class {}: {}", class_.getFullname(), e.what()));
 	}
@@ -533,7 +541,7 @@ void Interpreter::const_string(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 	auto str = classloader.resolveString(frame.getDexIdx(), stringIndex);
-	frame.setObjRegister(dest, Object::make(str));
+	frame.setObjRegister(dest, Object::make(classloader, str));
 	frame.pc() += 3;
 }
 // const-string/jumbo vAA, string@BBBBBBBB
@@ -543,7 +551,7 @@ void Interpreter::const_string_jumbo(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 	auto str = classloader.resolveString(frame.getDexIdx(), stringIndex);
-	frame.setObjRegister(dest, Object::make(str));
+	frame.setObjRegister(dest, Object::make(classloader, str));
 	frame.pc() += 5;
 }
 // const-class vAA, type@BBBB
@@ -1848,13 +1856,13 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 		// set result of the sget-object to the destination register
 		frame.setObjRegister(dest, field.getObjectValue());
 	} catch (const std::exception& e) {
-		if (_rt.handleClassFieldGetter(classname, fieldname)) {
-			// handle by vm
-			logger.warning(fmt::format("sget_object handle static field getter by vm for {}->{}!", classname, fieldname));
-			frame.setObjRegister(dest, Object::makeVmObject(classname + "." + fieldname));
-		} else {
-			throw std::runtime_error(fmt::format("sget_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what()));
-		}
+		// if (_rt.handleClassFieldGetter(classname, fieldname)) {
+		//	// handle by vm
+		//	logger.warning(fmt::format("sget_object handle static field getter by vm for {}->{}!", classname, fieldname));
+		//	frame.setObjRegister(dest, Object::makeVmObject(classname + "." + fieldname));
+		// } else {
+		throw std::runtime_error(fmt::format("sget_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what()));
+		//}
 	}
 	frame.pc() += 3;
 }
@@ -2157,10 +2165,14 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 		} else {
 			logger.ok(fmt::format("invoke-virtual call method {}->{}{}{} on instance {}", instance->getFullname(), methodname, signature, args_str,
 			                      this_ptr_class->getClass().getFullname()));
-			auto& newframe = _rt.newFrame(*vmethod);
-			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < vA; i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			if (vmethod->hasBytecode()) {
+				auto& newframe = _rt.newFrame(*vmethod);
+				// When a method is invoked, the parameters to the method are placed into the last n registers.
+				for (uint32_t i = 0; i < vA; i++) {
+					newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+				}
+			} else {
+				vmethod->execute(frame, args);
 			}
 		}
 	} else {
@@ -2215,14 +2227,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 		executeNativeMethod(method, args);
 	} else {
 		if (method.getBytecode() == nullptr) {
-			logger.warning(fmt::format("invoke-direct call method {} handled by vm", method_str));
-			if (method.getName() == "<init>") {
-				_rt.handleConstructor(method.getClass().getFullname(), method.getName(), method.getSignature(), args);
-			} else if (method.getName() == "<clinit>") {
-				throw std::runtime_error(fmt::format("Cannot invoke <clinit> method: {} Not implemented", method.getClass().getFullname()));
-			} else {
-				_rt.handleInstanceMethod(frame, method.getClass().getFullname(), method.getName(), method.getSignature(), args);
-			}
+			method.execute(frame, args);
 		} else {
 			logger.ok(fmt::format("invoke-direct call method {} static={}", method_str, method.isStatic()));
 			auto& newframe = _rt.newFrame(method);

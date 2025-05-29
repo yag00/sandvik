@@ -90,6 +90,10 @@ Class& ClassLoader::getMainActivityClass() {
 	throw std::runtime_error("Main activity class not found");
 }
 
+void ClassLoader::addClass(std::unique_ptr<Class> class_) {
+	_classes[class_->getFullname()] = std::move(class_);
+}
+
 Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	// Check if the class is already loaded
 	auto it = _classes.find(classname_);

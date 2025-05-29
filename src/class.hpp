@@ -39,7 +39,8 @@ namespace sandvik {
 			Field& getField(uint32_t idx_);
 			std::vector<std::string> getFieldList();
 
-			virtual bool isInstanceOf(std::shared_ptr<Object>& class_) const;
+			bool isInstanceOf(const std::string& class_) const;
+			bool isInstanceOf(std::shared_ptr<Object>& class_) const;
 			bool isExternal() const;
 			bool isAbstract() const;
 			bool isInterface() const;
@@ -64,6 +65,7 @@ namespace sandvik {
 
 			std::map<std::string, std::unique_ptr<Method>> _methods;
 			std::map<std::string, std::unique_ptr<Field>> _fields;
+			friend class ClassBuilder;
 	};
 }  // namespace sandvik
 

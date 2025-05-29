@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "class.hpp"
+#include "classloader.hpp"
 #include "field.hpp"
 #include "system/logger.hpp"
 
@@ -16,8 +17,9 @@ std::shared_ptr<Object> Object::make(Class& class_) {
 std::shared_ptr<Object> Object::make(uint64_t number_) {
 	return std::make_shared<NumberObject>(number_);
 }
-std::shared_ptr<Object> Object::make(const std::string& str_) {
-	return std::make_shared<StringObject>(str_);
+std::shared_ptr<Object> Object::make(ClassLoader& classloader_, const std::string& str_) {
+	auto& clazz = classloader_.getOrLoad("java.lang.String");
+	return std::make_shared<StringObject>(clazz, str_);
 }
 std::shared_ptr<Object> Object::make(const std::exception& e_) {
 	return std::make_shared<ThrowableObject>(e_);
@@ -139,10 +141,10 @@ std::string NumberObject::debug() const {
 	return fmt::format("NumberObject: {:#x}", _value);
 }
 ///////////////////////////////////////////////////////////////////////////////
-StringObject::StringObject(const std::string& value_) : _value(value_) {
+StringObject::StringObject(Class& class_, const std::string& value_) : ObjectClass(class_), _value(value_) {
 }
 
-StringObject::StringObject(const StringObject& other) : Object(other), _value(other._value) {
+StringObject::StringObject(const StringObject& other) : ObjectClass(other), _value(other._value) {
 }
 bool StringObject::operator==(const Object& other) const {
 	if (this == &other) {

@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace sandvik {
+	class ClassLoader;
 	class Class;
 	class Object {
 		public:
@@ -24,7 +25,7 @@ namespace sandvik {
 
 			static std::shared_ptr<Object> make(Class& class_);
 			static std::shared_ptr<Object> make(uint64_t number_);
-			static std::shared_ptr<Object> make(const std::string& str_);
+			static std::shared_ptr<Object> make(ClassLoader& classloader_, const std::string& str_);
 			static std::shared_ptr<Object> make(const std::exception& e_);
 			static std::shared_ptr<Object> makeNull();
 			static std::shared_ptr<Object> makeVmObject(const std::string& str_);
@@ -70,24 +71,6 @@ namespace sandvik {
 			uint64_t _value;
 	};
 
-	class StringObject : public Object {
-		public:
-			StringObject(const std::string& value_);
-			~StringObject() override = default;
-
-			StringObject(const StringObject& other);
-			StringObject& operator=(const StringObject& other);
-			std::shared_ptr<Object> clone() const override;
-
-			std::string str() const;
-			std::string debug() const override;
-
-			bool operator==(const Object& other) const override;
-
-		private:
-			std::string _value;
-	};
-
 	class ObjectClass : public Object {
 		public:
 			ObjectClass(Class& class_);
@@ -103,6 +86,25 @@ namespace sandvik {
 
 		private:
 			Class& _class;
+	};
+
+	class StringObject : public ObjectClass {
+		public:
+			// StringObject(const std::string& value_);
+			StringObject(Class& class_, const std::string& value_);
+			~StringObject() override = default;
+
+			StringObject(const StringObject& other);
+			StringObject& operator=(const StringObject& other);
+			std::shared_ptr<Object> clone() const override;
+
+			std::string str() const;
+			std::string debug() const override;
+
+			bool operator==(const Object& other) const override;
+
+		private:
+			std::string _value;
 	};
 
 	class ThrowableObject : public Object {

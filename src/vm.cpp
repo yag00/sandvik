@@ -8,9 +8,12 @@
 
 #include "array.hpp"
 #include "class.hpp"
+#include "classbuilder.hpp"
 #include "classloader.hpp"
+#include "field.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
+#include "java.base/classes.hpp"
 #include "jni.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
@@ -22,6 +25,12 @@ using namespace sandvik;
 
 Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>()) {
 	logger.info("VM instance created.");
+	java::io::PrintStream(*_classloader);      // Load java.io.PrintStream class
+	java::lang::Class(*_classloader);          // Load java.lang.Class class
+	java::lang::Object(*_classloader);         // Load java.lang.Object class
+	java::lang::System(*_classloader);         // Load java.lang.System class
+	java::lang::String(*_classloader);         // Load java.lang.String class
+	java::lang::StringBuilder(*_classloader);  // Load java.lang.StringBuilder class
 }
 
 void Vm::loadDex(const std::string& path) {
@@ -96,7 +105,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	// Set the arguments for the main method
 	auto args = Array::make("String", args_.size());
 	for (size_t i = 0; i < args_.size(); ++i) {
-		auto strObj = StringObject::make(args_[i]);
+		auto strObj = StringObject::make(*_classloader, args_[i]);
 		std::static_pointer_cast<Array>(args)->setArrayElement(i, strObj);
 	}
 	mainThread.currentFrame().setObjRegister(method.getNbRegisters() - 1, args);

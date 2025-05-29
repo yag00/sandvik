@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "class.hpp"
+#include "frame.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
 
@@ -20,14 +21,7 @@ Method::Method(Class& class_, const std::string& name_, const std::string& signa
 	_nbRegisters = 0;
 	_index = 0;
 	_bytecode = std::vector<uint8_t>();
-
-	_isPublic = false;
-	_isProtected = false;
-	_isPrivate = false;
-	_isFinal = false;
-	_isStatic = false;
-	_isAbstract = false;
-	_isNative = false;
+	_accessFlags = 0;
 	_isVirtual = false;
 }
 
@@ -39,13 +33,11 @@ Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_)
 	_index = method_.index();
 	_bytecode = method_.bytecode();
 
-	_isPublic = method_.has(LIEF::DEX::ACC_PUBLIC);
-	_isProtected = method_.has(LIEF::DEX::ACC_PROTECTED);
-	_isPrivate = method_.has(LIEF::DEX::ACC_PRIVATE);
-	_isFinal = method_.has(LIEF::DEX::ACC_FINAL);
-	_isStatic = method_.has(LIEF::DEX::ACC_STATIC);
-	_isAbstract = method_.has(LIEF::DEX::ACC_ABSTRACT);
-	_isNative = method_.has(LIEF::DEX::ACC_NATIVE);
+	const auto& flag = method_.access_flags();
+	_accessFlags = 0;
+	for (const auto& f : flag) {
+		_accessFlags |= static_cast<uint64_t>(f);
+	}
 	_isVirtual = method_.is_virtual();
 
 	for (const auto& exc : method_.code_info().exceptions()) {
@@ -103,29 +95,36 @@ bool Method::isConstructor() const {
 }
 
 bool Method::isStatic() const {
-	return _isStatic;
+	return _accessFlags & ACCESS_FLAGS::ACC_STATIC;
 }
 
 bool Method::isPublic() const {
-	return _isPublic;
+	return _accessFlags & ACCESS_FLAGS::ACC_PUBLIC;
 }
 
 bool Method::isPrivate() const {
-	return _isPrivate;
+	return _accessFlags & ACCESS_FLAGS::ACC_PRIVATE;
 }
 
 bool Method::isFinal() const {
-	return _isFinal;
+	return _accessFlags & ACCESS_FLAGS::ACC_FINAL;
 }
 
 bool Method::isAbstract() const {
-	return _isAbstract;
+	return _accessFlags & ACCESS_FLAGS::ACC_ABSTRACT;
 }
 
 bool Method::isNative() const {
-	return _isNative;
+	return _accessFlags & ACCESS_FLAGS::ACC_NATIVE;
 }
 
 bool Method::isVirtual() const {
 	return _isVirtual;
+}
+
+void Method::execute(Frame& frame_, std::vector<std::shared_ptr<Object>>& registers_) {
+	if (!_function) {
+		throw std::runtime_error(fmt::format("Method {}.{} has no implementation", _class.getFullname(), getName()));
+	}
+	_function(frame_, registers_);
 }
