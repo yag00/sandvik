@@ -25,12 +25,15 @@ using namespace sandvik;
 
 Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>()) {
 	logger.info("VM instance created.");
-	java::io::PrintStream(*_classloader);      // Load java.io.PrintStream class
-	java::lang::Class(*_classloader);          // Load java.lang.Class class
-	java::lang::Object(*_classloader);         // Load java.lang.Object class
-	java::lang::System(*_classloader);         // Load java.lang.System class
-	java::lang::String(*_classloader);         // Load java.lang.String class
-	java::lang::StringBuilder(*_classloader);  // Load java.lang.StringBuilder class
+	java::io::PrintStream(*_classloader);                 // Load java.io.PrintStream class
+	java::lang::Class(*_classloader);                     // Load java.lang.Class class
+	java::lang::Double(*_classloader);                    // Load java.lang.Class class
+	java::lang::IllegalArgumentException(*_classloader);  // Load java.lang.Class class
+	java::lang::Object(*_classloader);                    // Load java.lang.Object class
+	java::lang::RuntimeException(*_classloader);          // Load java.lang.Object class
+	java::lang::System(*_classloader);                    // Load java.lang.System class
+	java::lang::String(*_classloader);                    // Load java.lang.String class
+	java::lang::StringBuilder(*_classloader);             // Load java.lang.StringBuilder class
 }
 
 void Vm::loadDex(const std::string& path) {
