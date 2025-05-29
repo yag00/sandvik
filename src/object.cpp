@@ -27,6 +27,10 @@ std::shared_ptr<Object> Object::make(const std::exception& e_) {
 std::shared_ptr<Object> Object::makeNull() {
 	return std::make_shared<NullObject>();
 }
+std::shared_ptr<Object> Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
+	auto& clazz = classloader_.getOrLoad("java.lang.Class");
+	return std::make_shared<ConstClassObject>(clazz, classtype_);
+}
 std::shared_ptr<Object> Object::makeVmObject(const std::string& str_) {
 	return std::make_shared<VmObject>(str_);
 }
@@ -235,6 +239,34 @@ std::string ObjectClass::debug() const {
 }
 bool ObjectClass::isInstanceOf(const std::string& instance_) const {
 	return _class.getFullname() == instance_;
+}
+///////////////////////////////////////////////////////////////////////////////
+ConstClassObject::ConstClassObject(Class& class_, Class& classtype_) : ObjectClass(class_), _type(classtype_) {
+}
+
+ConstClassObject::ConstClassObject(const ConstClassObject& other) : ObjectClass(other), _type(other._type) {
+}
+bool ConstClassObject::operator==(const Object& other) const {
+	if (this == &other) {
+		return true;
+	}
+	const auto* otherClass = dynamic_cast<const ConstClassObject*>(&other);
+	if (otherClass == nullptr) {
+		return false;
+	}
+	return _type.getFullname() == otherClass->getClassType().getFullname();
+}
+
+Class& ConstClassObject::getClassType() const {
+	return _type;
+}
+
+std::shared_ptr<Object> ConstClassObject::clone() const {
+	return std::make_shared<ConstClassObject>(*this);
+}
+
+std::string ConstClassObject::debug() const {
+	return fmt::format("Class<? {}>", _type.getFullname());
 }
 ///////////////////////////////////////////////////////////////////////////////
 

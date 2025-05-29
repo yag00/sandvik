@@ -27,6 +27,7 @@ namespace sandvik {
 			static std::shared_ptr<Object> make(uint64_t number_);
 			static std::shared_ptr<Object> make(ClassLoader& classloader_, const std::string& str_);
 			static std::shared_ptr<Object> make(const std::exception& e_);
+			static std::shared_ptr<Object> makeConstClass(ClassLoader& classloader_, Class& classtype_);  // for Class<?> object
 			static std::shared_ptr<Object> makeNull();
 			static std::shared_ptr<Object> makeVmObject(const std::string& str_);
 
@@ -90,7 +91,6 @@ namespace sandvik {
 
 	class StringObject : public ObjectClass {
 		public:
-			// StringObject(const std::string& value_);
 			StringObject(Class& class_, const std::string& value_);
 			~StringObject() override = default;
 
@@ -105,6 +105,23 @@ namespace sandvik {
 
 		private:
 			std::string _value;
+	};
+	class ConstClassObject : public ObjectClass {
+		public:
+			ConstClassObject(Class& class_, Class& type_);
+			~ConstClassObject() override = default;
+
+			ConstClassObject(const ConstClassObject& other);
+			ConstClassObject& operator=(const ConstClassObject& other);
+			std::shared_ptr<Object> clone() const override;
+
+			Class& getClassType() const;
+			std::string debug() const override;
+
+			bool operator==(const Object& other) const override;
+
+		private:
+			Class& _type;
 	};
 
 	class ThrowableObject : public Object {

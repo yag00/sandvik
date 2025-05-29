@@ -561,7 +561,7 @@ void Interpreter::const_class(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 	auto& cls = classloader.resolveClass(frame.getDexIdx(), typeIndex);
-	frame.setObjRegister(dest, Object::make(cls));
+	frame.setObjRegister(dest, Object::makeConstClass(classloader, cls));
 	frame.pc() += 3;
 }
 // monitor-enter vAA
