@@ -39,6 +39,18 @@ using namespace sandvik;
 namespace {
 	class PrintStream {
 		public:
+			static void println_V(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
+				if (args_.size() < 1) {
+					throw std::runtime_error("Not enough arguments for println");
+				}
+				auto clazz = std::dynamic_pointer_cast<ObjectClass>(args_[0]);
+				if (!clazz || !clazz->isInstanceOf("java.io.PrintStream")) {
+					throw std::runtime_error("First argument is not an instance of java.io.PrintStream");
+				}
+				// @todo handle stream kind (System.out, System.err, etc.) not always std::cout
+				fmt::print("\n");
+				fflush(stdout);
+			}
 			static void println_I(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
 				if (args_.size() < 2) {
 					throw std::runtime_error("Not enough arguments for println");
@@ -108,6 +120,7 @@ namespace java {
 	namespace io {
 		void PrintStream(::sandvik::ClassLoader& classLoader) {
 			ClassBuilder _builder(classLoader, "java.io", "java.io.PrintStream");
+			_builder.addVirtualMethod("println", "()V", 0, PrintStream::println_V);
 			_builder.addVirtualMethod("println", "(I)V", 0, PrintStream::println_I);
 			_builder.addVirtualMethod("println", "(J)V", 0, PrintStream::println_J);
 			_builder.addVirtualMethod("println", "(Ljava/lang/String;)V", 0, PrintStream::println_String);

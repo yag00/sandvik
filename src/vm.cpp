@@ -48,7 +48,9 @@ Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_uniq
 	java::lang::Double(*_classloader);                    // Load java.lang.Class class
 	java::lang::IllegalArgumentException(*_classloader);  // Load java.lang.Class class
 	java::lang::Integer(*_classloader);                   // Load java.lang.Class class
+	java::lang::Math(*_classloader);                      // Load java.lang.Object class
 	java::lang::Object(*_classloader);                    // Load java.lang.Object class
+	java::lang::Package(*_classloader);                   // Load java.lang.Object class
 	java::lang::RuntimeException(*_classloader);          // Load java.lang.Object class
 	java::lang::System(*this, *_classloader);             // Load java.lang.System class
 	java::lang::String(*_classloader);                    // Load java.lang.String class

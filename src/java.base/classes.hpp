@@ -36,7 +36,9 @@ namespace java {
 		void Double(::sandvik::ClassLoader& classLoader);
 		void IllegalArgumentException(::sandvik::ClassLoader& classLoader);
 		void Integer(::sandvik::ClassLoader& classLoader);
+		void Math(::sandvik::ClassLoader& classLoader);
 		void Object(::sandvik::ClassLoader& classLoader);
+		void Package(::sandvik::ClassLoader& classLoader);
 		void RuntimeException(::sandvik::ClassLoader& classLoader);
 		void String(::sandvik::ClassLoader& classLoader);
 		void StringBuilder(::sandvik::ClassLoader& classLoader);
