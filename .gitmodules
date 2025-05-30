@@ -1,0 +1,18 @@
+[submodule "ext/fmt"]
+	path = ext/fmt
+	url = https://github.com/fmtlib/fmt
+[submodule "ext/libffi"]
+	path = ext/libffi
+	url = https://github.com/libffi/libffi.git
+[submodule "ext/LIEF"]
+	path = ext/LIEF
+	url = https://github.com/yag00/LIEF.git
+[submodule "ext/args"]
+	path = ext/args
+	url = https://github.com/Taywee/args.git
+[submodule "ext/googletest"]
+	path = ext/googletest
+	url = https://github.com/google/googletest.git
+[submodule "axml-parser"]
+	path = ext/axml-parser
+	url = https://github.com/yag00/axml-parser.git
