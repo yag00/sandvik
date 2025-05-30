@@ -30,6 +30,8 @@ def configure(conf):
 	conf.load('python')
 	conf.check_python_version((3,0,0))
 
+	conf.git_submodule_update()
+
 	conf.load('doxygen')
 
 	# set clang/clang++ as default compiler

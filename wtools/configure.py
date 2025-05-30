@@ -8,17 +8,6 @@ import subprocess
 from waflib import Logs
 from waflib.Configure import conf
 
-def clone_repository(dir, repository, tag):
-	# Check if the repository directory exists
-	if not os.path.exists(dir):
-		print(f"Cloning repository {repository}")
-		# Clone the repository with the specified tag
-		clone_command = ["git", "clone", "--branch", tag, repository, dir]
-		subprocess.run(clone_command, check=True)
-		print("Repository cloned successfully.")
-	else:
-		raise("Repository directory already exists! Something went wrong.")
-
 def execute(cmd, cwd, env_vars=None):
 	print(cmd)
 	bcmd = cmd.split(' ')
@@ -40,6 +29,12 @@ def copytree(src, dst, symlinks=False, ignore=None):
             shutil.copy2(s, d)
 
 @conf
+def git_submodule_update(conf):
+	# Initialize and update git submodules
+	conf.cmd_and_log(['git', 'submodule', 'init'])
+	conf.cmd_and_log(['git', 'submodule', 'update'])
+
+@conf
 def check_fmt(conf):
 	includes = os.path.abspath('ext/fmt-bin/include/')
 	libs = os.path.abspath('ext/fmt-bin/lib/')
@@ -56,7 +51,6 @@ def check_fmt(conf):
 		v = conf.check(stlib='fmt', stlibpath=[libs], includes=[includes], uselib_store='FMT', fragment=version_code, execute=True, define_ret=True)
 		conf.msg('Checking for library fmt version', v.strip())
 	except:
-		clone_repository('ext/fmt', 'https://github.com/fmtlib/fmt', '11.0.2')
 		installdir = os.path.abspath('ext/fmt-bin/')
 		conf.msg('Building local fmt', installdir)
 		if not os.path.exists('ext/fmt/build'):
@@ -101,7 +95,6 @@ def check_ffi(conf):
 		v = conf.check(stlib='ffi', stlibpath=[libs], includes=[includes], uselib_store='FFI', fragment=version_code, execute=True, define_ret=True)
 		conf.msg('Checking for library ffi version', v.strip())
 	except Exception as e:
-		clone_repository('ext/libffi', 'https://github.com/libffi/libffi.git', version)
 		installdir = os.path.abspath('ext/libffi-bin/')
 		conf.msg('Building local libffi', installdir)
 		cwd = os.path.abspath('ext/libffi')
@@ -122,7 +115,7 @@ def check_lief(conf):
 		'#include <iostream>',
 		'#include <LIEF/version.h>',
 		'int main() {',
-		'	std::cout << LIEF_TAG << std::endl;',
+		'	std::cout << LIEF_VERSION << std::endl;',
 		'	return 0;',
 		'}',
 		])
@@ -130,7 +123,6 @@ def check_lief(conf):
 		v = conf.check(stlib='LIEF', stlibpath=[libs], includes=[includes], uselib_store='LIEF', fragment=version_code, execute=True, define_ret=True)
 		conf.msg('Checking for library LIEF version', v.strip())
 	except Exception as e:
-		clone_repository('ext/LIEF', 'https://github.com/lief-project/LIEF.git', 'main')
 		installdir = os.path.abspath('ext/LIEF-bin/')
 		conf.msg('Building local LIEF', installdir)
 		if not os.path.exists('ext/LIEF/build'):
@@ -161,7 +153,6 @@ def check_axml(conf):
 		v = conf.check(stlib='axml_parser', stlibpath=[libs], includes=[includes], uselib_store='AXML', fragment=version_code, execute=True, define_ret=True)
 		conf.msg('Checking for library axml-parser version', v.strip())
 	except Exception as e:
-		clone_repository('ext/axml-parser', 'https://github.com/MCMrARM/axml-parser.git', 'master')
 		installdir = os.path.abspath('ext/axml-parser-bin/')
 		conf.msg('Building local axml-parser', installdir)
 		if not os.path.exists('ext/axml-parser/build'):
@@ -202,7 +193,6 @@ def check_args(conf):
 		v = conf.check(header_name='args.hxx', includes=[includes], uselib_store='ARGS', fragment=version_code, execute=True, define_ret=True)
 		conf.msg('Checking for library args version', v.strip())
 	except Exception as e:
-		clone_repository('ext/args', 'https://github.com/Taywee/args.git', '6.4.7')
 		v = conf.check(header_name='args.hxx', includes=[includes], uselib_store='ARGS', fragment=version_code, execute=True, define_ret=True)
 		conf.msg('Checking for library args version', v.strip())
 	conf.undefine('HAVE_ARGS_HXX')
@@ -217,7 +207,6 @@ def check_googletest(conf):
 	try:
 		conf.check(stlib='gtest', stlibpath=[libs], includes=[includes], uselib_store='GOOGLETEST', define_ret=True)
 	except Exception as e:
-		clone_repository('ext/googletest', 'https://github.com/google/googletest.git', 'v1.14.0')
 		installdir = os.path.abspath('ext/googletest-bin/')
 		conf.msg('Building local googletest', installdir)
 		if not os.path.exists('ext/googletest/build'):
