@@ -31,10 +31,8 @@ std::shared_ptr<Object> Object::makeConstClass(ClassLoader& classloader_, Class&
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
 	return std::make_shared<ConstClassObject>(clazz, classtype_);
 }
-std::shared_ptr<Object> Object::makeVmObject(const std::string& str_) {
-	return std::make_shared<VmObject>(str_);
-}
 
+///////////////////////////////////////////////////////////////////////////////
 Object::Object(const Object& other) {
 	_fields.clear();
 	for (const auto& field : other._fields) {
@@ -296,22 +294,4 @@ bool NullObject::isNull() const {
 }
 std::string NullObject::debug() const {
 	return "Null";
-}
-///////////////////////////////////////////////////////////////////////////////
-VmObject::VmObject(const std::string& instance_) : _instance(instance_) {
-}
-VmObject::VmObject(const VmObject& other) : Object(other), _instance(other._instance) {
-}
-
-std::shared_ptr<Object> VmObject::clone() const {
-	return std::make_shared<VmObject>(*this);
-}
-std::string VmObject::str() const {
-	return _instance;
-}
-std::string VmObject::debug() const {
-	return fmt::format("VmObject: {}", _instance);
-}
-bool VmObject::isInstanceOf(const std::string& instance_) const {
-	return _instance == instance_;
 }

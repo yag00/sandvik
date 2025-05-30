@@ -28,12 +28,6 @@ namespace sandvik {
 
 			void execute();
 
-			bool handleConstructor(const std::string& class_, const std::string& method_, const std::string& sig_,
-			                       std::vector<std::shared_ptr<Object>> args_ = {});
-			bool handleInstanceMethod(Frame& frame_, const std::string& class_, const std::string& method_, const std::string& sig_,
-			                          std::vector<std::shared_ptr<Object>> args_ = {});
-			bool handleClassFieldGetter(const std::string& class_, const std::string& field_);
-
 		private:
 			Vm& _vm;
 			ClassLoader& _classloader;

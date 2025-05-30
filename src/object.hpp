@@ -29,7 +29,6 @@ namespace sandvik {
 			static std::shared_ptr<Object> make(const std::exception& e_);
 			static std::shared_ptr<Object> makeConstClass(ClassLoader& classloader_, Class& classtype_);  // for Class<?> object
 			static std::shared_ptr<Object> makeNull();
-			static std::shared_ptr<Object> makeVmObject(const std::string& str_);
 
 			virtual std::string debug() const;
 
@@ -42,7 +41,6 @@ namespace sandvik {
 			virtual bool operator==(const Object& other) const;
 			virtual bool operator==(std::nullptr_t) const;
 
-			// void setField(const std::string& name_, std::shared_ptr<Object>&& value_);
 			void setField(const std::string& name_, std::shared_ptr<Object> value_);
 			std::shared_ptr<Object> getField(const std::string& name_) const;
 
@@ -152,22 +150,6 @@ namespace sandvik {
 			bool operator==(std::nullptr_t) const override;
 			bool isNull() const override;
 			std::string debug() const override;
-	};
-	class VmObject : public Object {
-		public:
-			VmObject(const std::string& instance_);
-			~VmObject() override = default;
-
-			VmObject(const VmObject& other);
-			VmObject& operator=(const VmObject& other);
-			std::shared_ptr<Object> clone() const override;
-
-			bool isInstanceOf(const std::string& instance_) const override;
-			std::string str() const;
-			std::string debug() const override;
-
-		private:
-			std::string _instance;
 	};
 }  // namespace sandvik
 

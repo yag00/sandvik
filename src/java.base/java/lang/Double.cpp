@@ -46,7 +46,7 @@ namespace java {
 	namespace lang {
 		void Double(::sandvik::ClassLoader& classLoader) {
 			ClassBuilder builder(classLoader, "java.lang", "java.lang.Double");
-			builder.addMethod("isNaN", "(D)Z", 0, Double::isNaN);
+			builder.addMethod("isNaN", "(D)Z", ACCESS_FLAGS::ACC_STATIC, Double::isNaN);
 			builder.finalize();
 		}
 	}  // namespace lang

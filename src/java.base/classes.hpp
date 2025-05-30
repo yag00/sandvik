@@ -6,7 +6,8 @@
 
 namespace sandvik {
 	class ClassLoader;
-}
+	class Vm;
+}  // namespace sandvik
 
 namespace java {
 	namespace io {
@@ -16,11 +17,12 @@ namespace java {
 		void Class(::sandvik::ClassLoader& classLoader);
 		void Double(::sandvik::ClassLoader& classLoader);
 		void IllegalArgumentException(::sandvik::ClassLoader& classLoader);
+		void Integer(::sandvik::ClassLoader& classLoader);
 		void Object(::sandvik::ClassLoader& classLoader);
 		void RuntimeException(::sandvik::ClassLoader& classLoader);
 		void String(::sandvik::ClassLoader& classLoader);
 		void StringBuilder(::sandvik::ClassLoader& classLoader);
-		void System(::sandvik::ClassLoader& classLoader);
+		void System(::sandvik::Vm& vm, ::sandvik::ClassLoader& classLoader);
 	}  // namespace lang
 }  // namespace java
 

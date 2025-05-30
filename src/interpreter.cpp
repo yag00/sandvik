@@ -2292,20 +2292,15 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		                                     interface.getSignature()));
 	}
 
-	logger.error(fmt::format("invoke-interface class {} ?implements {}->{}{}{}", instance->getFullname(), interface.getClass().getFullname(),
-	                         interface.getName(), interface.getSignature(), interface_str));
-
 	Method* vmethod = nullptr;
 	while (1) {
 		try {
-			logger.error(fmt::format("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
+			logger.debug(fmt::format("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
 			                         interface.getSignature(), interface_str));
 			vmethod = &instance->getMethod(interface.getName(), interface.getSignature());
-			logger.ok(fmt::format("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
-			                      interface.getSignature(), interface_str));
 			break;  // Method found, exit loop
 		} catch (std::exception& e) {
-			logger.error(fmt::format("invoke-interface: class {} does not implement interface {}.{}{} not found, trying superclass", instance->getFullname(),
+			logger.debug(fmt::format("invoke-interface: class {} does not implement interface {}.{}{} not found, trying superclass", instance->getFullname(),
 			                         interface.getName(), interface.getSignature(), interface_str));
 			if (instance->hasSuperClass()) {
 				// If the method is not found in the current class, try the superclass
