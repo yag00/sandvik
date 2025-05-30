@@ -1,6 +1,6 @@
 #include "frame.hpp"
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <stdexcept>
