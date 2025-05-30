@@ -22,7 +22,7 @@ using namespace sandvik;
 namespace {
 	class StringBuilder {
 		public:
-			static std::string* __append_check_and_get_string(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
+			static std::shared_ptr<std::string> __append_check_and_get_string(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
 				if (args_.size() < 2) {
 					throw std::runtime_error("Not enough arguments");
 				}
@@ -30,7 +30,9 @@ namespace {
 				if (!clazz || !clazz->isInstanceOf("java.lang.StringBuilder")) {
 					throw std::runtime_error("First argument is not an instance of java.lang.StringBuilder");
 				}
-				return (std::string*)clazz->getObjectData();
+				auto message = clazz->getObjectData<std::string>();
+				if (!message) throw std::runtime_error("StringBuilder object data is not initialized");
+				return message;
 			}
 			static void init(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
 				if (args_.size() < 1) {
@@ -40,7 +42,7 @@ namespace {
 				if (!clazz || !clazz->isInstanceOf("java.lang.StringBuilder")) {
 					throw std::runtime_error("First argument is not an instance of java.lang.StringBuilder");
 				}
-				clazz->setObjectData((uintptr_t*)new std::string());
+				clazz->setObjectData(std::make_shared<std::string>());
 			}
 			static void append_Z(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
 				auto s = __append_check_and_get_string(frame_, args_);
@@ -110,7 +112,11 @@ namespace {
 				if (!clazz || !clazz->isInstanceOf("java.lang.StringBuilder")) {
 					throw std::runtime_error("First argument is not an instance of java.lang.StringBuilder");
 				}
-				frame_.setReturnObject(Object::make(loader_, *(std::string*)clazz->getObjectData()));
+				auto str = clazz->getObjectData<std::string>();
+				if (!str) {
+					throw std::runtime_error("StringBuilder object data is not initialized");
+				}
+				frame_.setReturnObject(Object::make(loader_, *str));
 			}
 
 		public:

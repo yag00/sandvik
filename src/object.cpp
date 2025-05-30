@@ -98,13 +98,6 @@ std::shared_ptr<Object> Object::getField(const std::string& name_) const {
 void Object::setField(const std::string& name_, std::shared_ptr<Object> value_) {
 	_fields[name_] = value_;
 }
-void Object::setObjectData(uintptr_t* data_) {
-	_data.reset(data_);
-}
-
-uintptr_t* Object::getObjectData() const {
-	return _data.get();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 NumberObject::NumberObject(uint64_t value_) : _value(value_) {

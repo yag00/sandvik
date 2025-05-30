@@ -34,8 +34,7 @@ namespace {
 				if (!message) {
 					throw std::runtime_error("Second argument is not an instance of java.lang.String");
 				}
-				std::string* msg = new std::string(message->str());
-				clazz->setObjectData((uintptr_t*)msg);
+				clazz->setObjectData(std::make_shared<std::string>(message->str()));
 			}
 			static void getMessage(ClassLoader& classloader_, Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
 				if (args_.size() < 1) {
@@ -45,7 +44,7 @@ namespace {
 				if (!clazz || !clazz->isInstanceOf("java.lang.RuntimeException")) {
 					throw std::runtime_error("First argument is not an instance of java.lang.RuntimeException");
 				}
-				auto message = (std::string*)clazz->getObjectData();
+				auto message = clazz->getObjectData<std::string>();
 				if (!message) {
 					throw std::runtime_error("No message set for RuntimeException");
 				}

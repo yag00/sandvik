@@ -1,6 +1,7 @@
 #ifndef __OBJECT_HPP__
 #define __OBJECT_HPP__
 
+#include <any>
 #include <map>
 #include <memory>
 #include <string>
@@ -17,9 +18,6 @@ namespace sandvik {
 			Object& operator=(const Object&) = delete;
 			Object(Object&& other) noexcept = delete;
 			Object& operator=(Object&& other) noexcept = delete;
-
-			void setObjectData(uintptr_t* data_);
-			uintptr_t* getObjectData() const;
 
 			virtual std::shared_ptr<Object> clone() const = 0;
 
@@ -44,9 +42,21 @@ namespace sandvik {
 			void setField(const std::string& name_, std::shared_ptr<Object> value_);
 			std::shared_ptr<Object> getField(const std::string& name_) const;
 
+			template <typename T>
+			void setObjectData(std::shared_ptr<T> data) {
+				_data = std::move(data);
+			}
+			template <typename T>
+			std::shared_ptr<T> getObjectData() const {
+				if (auto ptr = std::any_cast<std::shared_ptr<T>>(&_data)) {
+					return *ptr;
+				}
+				return nullptr;
+			}
+
 		protected:
 			std::map<std::string, std::shared_ptr<Object>> _fields;
-			std::unique_ptr<uintptr_t> _data;
+			std::any _data;
 	};
 
 	class NumberObject : public Object {
