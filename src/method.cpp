@@ -82,6 +82,10 @@ bool Method::hasBytecode() const {
 	return _bytecode.empty() == false;
 }
 
+uint32_t Method::getBytecodeSize() const {
+	return static_cast<uint32_t>(_bytecode.size());
+}
+
 const uint8_t* const Method::getBytecode() const {
 	return _bytecode.data();
 }

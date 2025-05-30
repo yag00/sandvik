@@ -277,6 +277,9 @@ void Interpreter::execute() {
 	if (code == nullptr) {
 		throw std::runtime_error(fmt::format("Method {} has no bytecode!", func));
 	}
+	if (frame.pc() >= method.getBytecodeSize()) {
+		throw std::runtime_error(fmt::format("Current frame {} has invalid pc: {}", func, frame.pc()));
+	}
 	auto bytecode = code + frame.pc();
 	auto inst = _disassembler->disassemble(bytecode);
 	logger.info(fmt::format("{:04x}: {:<80} {:<20} ", frame.pc() / 2, inst, func));
@@ -794,13 +797,13 @@ void Interpreter::goto_(const uint8_t* operand_) {
 // goto/16 +AAAA
 void Interpreter::goto_16(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
-	int16_t offset = *reinterpret_cast<const int16_t*>(operand_);
+	int16_t offset = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
 }
 // goto/32 +AAAAAAAA
 void Interpreter::goto_32(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
-	int32_t offset = *reinterpret_cast<const int32_t*>(operand_);
+	int32_t offset = *reinterpret_cast<const int32_t*>(&operand_[1]);
 	frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
 }
 // packed-switch vAA, +BBBBBBBB

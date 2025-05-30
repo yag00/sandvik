@@ -551,8 +551,9 @@ std::string Disassembler::format_i10t(const std::string& name_, const uint8_t* o
 }
 
 std::string Disassembler::format_i20t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
-	size_ += 2;
-	uint16_t AAAA = *(uint16_t*)operand_;
+	// skip the first operand byte
+	size_ += 3;
+	int16_t AAAA = *(int16_t*)&operand_[1];
 	return fmt::format("{} {}", name_, AAAA);
 }
 
@@ -632,8 +633,8 @@ std::string Disassembler::format_i22c(const std::string& name_, const uint8_t* o
 }
 
 std::string Disassembler::format_i30t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
-	size_ += 4;
-	int32_t offset = *(int32_t*)operand_;
+	size_ += 5;
+	int32_t offset = *(int32_t*)&operand_[1];
 	return fmt::format("{} {}", name_, offset);
 }
 

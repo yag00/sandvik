@@ -53,6 +53,7 @@ namespace sandvik {
 			std::vector<std::pair<uint32_t, uint32_t>> getExceptionHandler(uint16_t pc_, uint32_t& catchAllAddr_) const;
 
 			bool hasBytecode() const;
+			uint32_t getBytecodeSize() const;
 			const uint8_t* const getBytecode() const;
 
 			bool isStaticInitializer() const;
