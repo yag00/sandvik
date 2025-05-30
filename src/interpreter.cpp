@@ -2357,15 +2357,51 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 }
 // invoke-super/range {vCCCC .. vNNNN}, meth@BBBB
 void Interpreter::invoke_super_range(const uint8_t* operand_) {
-	throw std::runtime_error("invoke_super_range not implemented");
+	invoke_direct_range(operand_);
 }
 // invoke-direct/range {vCCCC .. vNNNN}, meth@BBBB
 void Interpreter::invoke_direct_range(const uint8_t* operand_) {
-	throw std::runtime_error("invoke_direct_range not implemented");
+	const uint16_t methodRef = *reinterpret_cast<const uint16_t*>(&operand_[1]);
+	const uint16_t startReg = *reinterpret_cast<const uint16_t*>(&operand_[3]);
+	const uint8_t regCount = operand_[0];
+
+	auto& frame = _rt.currentFrame();
+	auto& classloader = _rt.getClassLoader();
+
+	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
+	auto& cls = method.getClass();
+
+	if (!cls.isStaticInitialized()) {
+		frame.pc()--;
+		executeClinit(cls);
+		return;
+	}
+
+	std::vector<std::shared_ptr<Object>> args;
+	for (uint8_t i = 0; i < regCount; ++i) {
+		args.push_back(frame.getObjRegister(startReg + i));
+	}
+
+	if (method.isNative()) {
+		executeNativeMethod(method, args);
+	} else {
+		if (method.getBytecode() == nullptr) {
+			method.execute(frame, args);
+		} else {
+			logger.ok(fmt::format("invoke-static-range call method {}.{}{} with {} arguments", method.getClass().getFullname(), method.getName(),
+			                      method.getSignature(), regCount));
+			auto& newframe = _rt.newFrame(method);
+			for (uint8_t i = 0; i < regCount; ++i) {
+				newframe.setObjRegister(method.getNbRegisters() - regCount + i, frame.getObjRegister(startReg + i));
+			}
+		}
+	}
+
+	frame.pc() += 5;
 }
 // invoke-static/range {vCCCC .. vNNNN}, meth@BBBB
 void Interpreter::invoke_static_range(const uint8_t* operand_) {
-	throw std::runtime_error("invoke_static_range not implemented");
+	invoke_direct_range(operand_);
 }
 // invoke-interface/range {vCCCC .. vNNNN}, meth@BBBB
 void Interpreter::invoke_interface_range(const uint8_t* operand_) {
