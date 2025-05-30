@@ -4,8 +4,8 @@
 import sys, os, platform
 from wtools import testrunner
 
-def setenv(bld):
-	libpath = [bld.bldnode.abspath()] + bld.env.LIBPATH_ZMQ
+def setenv(bld, paths=[]):
+	libpath = [bld.bldnode.abspath()] + paths
 	if platform.system() == "Windows":
 		if 'PATH' in os.environ:
 			os.putenv('PATH', os.pathsep.join([lib for lib in libpath]) + os.pathsep + os.environ['PATH'])
@@ -26,6 +26,8 @@ class UnitTest:
 
 	def run(self):
 		bld = self.bld
+
+		setenv(bld, paths=[bld.path.find_node('tests/java/native').abspath()])
 
 		bld.stlib(
 			name		= 'googletest',

@@ -1,18 +1,22 @@
 #include <string.h>
 #include <gtest/gtest.h>
 
+#include <java.base/classes.hpp>
+#include <classloader.hpp>
 #include <object.hpp>
 
 using namespace sandvik;
 
 
 TEST(object, number) {
+	ClassLoader classloader;
+	java::lang::String(classloader);
 	auto obj_null = Object::makeNull();
 	auto obj_zero = Object::make(0);
 	auto obj_a = Object::make(1234);
 	auto obj_b = Object::make(1234);
 	auto obj_c = Object::make(5678);
-	auto obj_s = Object::make("1234");
+	auto obj_s = Object::make(classloader, "1234");
 
 	auto& ref_null = *obj_null.get();
 	auto& ref_zero = *obj_zero.get();
@@ -45,10 +49,12 @@ TEST(object, number) {
 }
 
 TEST(object, string) {
+	ClassLoader classloader;
+	java::lang::String(classloader);
 	auto obj_null = Object::makeNull();
-	auto obj_a = Object::make("Hello");
-	auto obj_b = Object::make("Hello");
-	auto obj_c = Object::make("Hello2");
+	auto obj_a = Object::make(classloader, "Hello");
+	auto obj_b = Object::make(classloader, "Hello");
+	auto obj_c = Object::make(classloader, "Hello2");
 	auto obj_i = Object::make(1);
 
 	auto& ref_null = *obj_null.get();

@@ -80,3 +80,26 @@ TEST(VM, dalvik) {
 	refFile.close();
 	ASSERT_EQ(actualOutput, expectedOutput) << "The actual output does not match the expected output.";
 }
+
+TEST(VM, native) {
+	logger.setLevel(Logger::LogLevel::NONE);
+	Vm vm;
+
+	// Redirect stdout to output.txt
+	FILE* file = freopen("test_native.out", "w", stdout);
+	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
+
+	vm.loadDex("../tests/java/native/classes.dex");
+	vm.run("Native", {});
+
+	std::ifstream outputFile("test_native.out");
+	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)),
+							 std::istreambuf_iterator<char>());
+	outputFile.close();
+
+	std::ifstream refFile("../tests/unit/test_native.ref");
+	std::string expectedOutput((std::istreambuf_iterator<char>(refFile)),
+							   std::istreambuf_iterator<char>());
+	refFile.close();
+	ASSERT_EQ(actualOutput, expectedOutput) << "The actual output does not match the expected output.";
+}

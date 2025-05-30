@@ -1,0 +1,12 @@
+JNI_OnLoad called: Native library loaded.
+Native function called with:
+  String: HelloNative
+  Int a: 10
+  Int b: 20
+Native test function returned: 30
+Native doubleadd called with:
+  Double a: 0x4014666666666666 5.100000
+  Double b: 0x400999999999999a 3.200000
+  Double r: 0x402099999999999a 8.300000
+Native add function returned: 8.300000
+Native add function returned: 30000000000
