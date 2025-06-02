@@ -1,6 +1,9 @@
 # Sandvik Project
 
-![Sandvik Logo](logo.png)
+![Sandvik Logo](doc/logo.png)
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+![pipeline](https://gitlab.com/christophe.duvernois/sandvik/badges/main/pipeline.svg)
 
 ## Overview
 
@@ -19,13 +22,7 @@ It is a work in progress, aiming to become a full-featured Dalvik Virtual Machin
 
 ### Installation
 
-1. Clone the repository:
-	```bash
-	git clone https://github.com/yourusername/sandvik.git
-	cd sandvik
-	```
-
-2. Build the project:
+1. Build the project:
 	```bash
 	./waf configure
 	./waf build
@@ -81,8 +78,33 @@ Sandvik can be used to run Dalvik bytecode files (`.dex`) or Android application
 
 ### Examples
 
+To run the `HelloWorld` Java program:
+
+1. Compile the Java source file:
+	```bash
+	javac HelloWorld.java
+	```
+
+2. Convert the compiled `.class` file to Dalvik bytecode using the `d8` tool:
+	```bash
+	d8 HelloWorld.class
+	```
+
+3. Run the generated `classes.dex` file with Sandvik:
+
+This will execute the `HelloWorld` class from the specified DEX file, showcasing the VM's ability to interpret and run Dalvik bytecode. The output should display the expected behavior of the test program, such as printing "Hello, World!" to the console:
 ```bash
-./wbuild/sandvik --dex tests/java/dalvik/classes.dex --main DalvikTest
+./wbuild/sandvik --dex tests/java/hello/classes.dex --main HelloWorld
+[*] VM instance created.
+[+]  === sandvik ===
+[*] Running main class: HelloWorld
+[*] Running class: HelloWorld
+[*] .0000: sget-object v1, string@0           : 62 01 00 00       HelloWorld::main([Ljava/lang/String;)V
+[*] .0002: const-string v0, string@1          : 1a 00 01 00       HelloWorld::main([Ljava/lang/String;)V
+[*] .0004: invoke-virtual {v1, v0}, method@2  : 6e 20 02 00 01 00 HelloWorld::main([Ljava/lang/String;)V
+[+] invoke-virtual call method java.io.PrintStream->println(Ljava/lang/String;)V(this=Instance of java.io.PrintStream, String=Hello, World!) on instance java.io.PrintStream
+Hello, World!
+[*] .0007: return-void                        : 0e                 HelloWorld::main([Ljava/lang/String;)V
 ```
 
 ## Contributing
@@ -94,6 +116,8 @@ Contributions are welcome! Please follow these steps:
 3. Submit a pull request with a detailed description.
 
 ## License
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
 
