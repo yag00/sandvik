@@ -27,6 +27,7 @@
 #include "loader/dex.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
+#include "version.hpp"
 #include "vm.hpp"
 
 using namespace sandvik;
@@ -64,7 +65,9 @@ int main(int argc, char** argv) {
 	}
 
 	if (version) {
-		std::cout << "sandvik version 1.0.0" << std::endl;
+		fmt::print("Sandvik version {}-{}\n", sandvik::version::getVersion(), sandvik::version::getShortCommit());
+		fmt::print("Sandvik date {}\n", sandvik::version::getBuildDate());
+		fmt::print("Sandvik commit {}\n", sandvik::version::getCommit());
 		return 0;
 	}
 
@@ -113,7 +116,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	logger.ok(" === sandvik ===");
+	logger.ok(fmt::format(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit()));
 	std::string mainClassValue = args::get(mainClass);
 	if (mainClassValue.empty()) {
 		logger.error("Main class not specified");

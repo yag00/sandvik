@@ -4,7 +4,7 @@
 import os, sys
 from waflib import Options, Utils
 sys.path += ['wtools']
-from wtools import configure, test
+from wtools import configure, version, test, git
 
 from waflib.Tools.compiler_c import c_compiler
 from waflib.Tools.compiler_cxx import cxx_compiler
@@ -13,6 +13,7 @@ top = '.'
 out = 'wbuild'
 
 APPNAME='sandvik'
+VERSION='1.0.0'
 
 def options(opt):
 	opt.load('python')
@@ -93,6 +94,7 @@ def configure(conf):
 	#we are done :)
 
 def build(bld):
+	gitinfo = git.getInfos(bld)
 	#-------------------------------------------------
 	# check style
 	#-------------------------------------------------
@@ -100,6 +102,10 @@ def build(bld):
 	bld.checkstyle(
 		inputs = checkstyle_sources,
 	)
+	#-------------------------------------------------
+	# generate version.in.hpp file
+	#-------------------------------------------------
+	bld.version(gitinfo=gitinfo, version=VERSION, output='src/version.in.hpp',)
 	bld.add_group() #make sure formatting is done before going further
 	#-------------------------------------------------
 	# build sandvik static/shared library
