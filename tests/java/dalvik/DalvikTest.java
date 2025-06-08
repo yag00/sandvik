@@ -737,6 +737,22 @@ public class DalvikTest {
         for (int i = 0; i < longArray.length; i++) {
             check(longArray[i] == 0x100000001L + i, "long array element " + i);
         }
+
+        int[][] A = new int[3][3];
+         for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                A[i][j] = i*3+j;
+            }
+         }
+        check(A[0][0] == 0, "2D array A[0][0]");
+        check(A[0][1] == 1, "2D array A[0][1]");
+        check(A[0][2] == 2, "2D array A[0][2]");
+        check(A[1][0] == 3, "2D array A[1][0]");
+        check(A[1][1] == 4, "2D array A[1][1]");
+        check(A[1][2] == 5, "2D array A[1][2]");
+        check(A[2][0] == 6, "2D array A[2][0]");
+        check(A[2][1] == 7, "2D array A[2][1]");
+        check(A[2][2] == 8, "2D array A[2][2]");
     }
     public static void runTestInheritance() {
         interface MyInterface {

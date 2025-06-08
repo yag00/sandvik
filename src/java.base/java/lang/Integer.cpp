@@ -63,6 +63,7 @@ namespace java {
 	namespace lang {
 		void Integer(::sandvik::ClassLoader& classLoader) {
 			ClassBuilder builder(classLoader, "java.lang", "java.lang.Integer");
+			builder.addField("TYPE", "Ljava/lang/Class;", ACCESS_FLAGS::ACC_PUBLIC | ACCESS_FLAGS::ACC_STATIC | ACCESS_FLAGS::ACC_FINAL);
 			builder.addMethod("parseInt", "(Ljava/lang/String;)I", ACCESS_FLAGS::ACC_STATIC, Integer::parseInt);
 			builder.finalize();
 		}
