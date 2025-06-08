@@ -109,28 +109,41 @@ NativeInterface* Vm::getJNIEnv() const {
 
 void Vm::run() {
 	auto& clazz = _classloader->getMainActivityClass();
-	clazz.debug();
 	run(clazz, {});
 }
 void Vm::run(const std::string& mainClass_, const std::vector<std::string>& args_) {
 	auto& clazz = _classloader->getOrLoad(mainClass_);
-	clazz.debug();
 	run(clazz, args_);
 }
 
 void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	logger.info("Running class: " + clazz_.getFullname());
 	JThread mainThread(*this, *_classloader, "main");
-	// Create a new frame for the main method
-	auto& method = clazz_.getMethod("main", "([Ljava/lang/String;)V");
-	mainThread.newFrame(method);
+
+	uint32_t nbRegisters = 0;
+	if (clazz_.hasMethod("onCreate", "(Landroid/os/Bundle;)V")) {
+		// Create a new frame for the main method
+		auto& method = clazz_.getMethod("onCreate", "(Landroid/os/Bundle;)V");
+		mainThread.newFrame(method);
+		nbRegisters = method.getNbRegisters() - 1;
+	} else {
+		if (clazz_.hasMethod("main", "([Ljava/lang/String;)V")) {
+			// Create a new frame for the main method
+			auto& method = clazz_.getMethod("main", "([Ljava/lang/String;)V");
+			mainThread.newFrame(method);
+			nbRegisters = method.getNbRegisters() - 1;
+		} else {
+			throw std::runtime_error(fmt::format("onCreate or main method not found in class {}", clazz_.getFullname()));
+		}
+	}
+
 	// Set the arguments for the main method
 	auto args = Array::make("String", args_.size());
 	for (size_t i = 0; i < args_.size(); ++i) {
 		auto strObj = StringObject::make(*_classloader, args_[i]);
 		std::static_pointer_cast<Array>(args)->setArrayElement(i, strObj);
 	}
-	mainThread.currentFrame().setObjRegister(method.getNbRegisters() - 1, args);
+	mainThread.currentFrame().setObjRegister(nbRegisters, args);
 	try {
 		mainThread.newFrame(clazz_.getMethod("<clinit>", "()V"));
 	} catch (const std::exception& e) {

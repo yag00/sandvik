@@ -50,6 +50,7 @@ namespace sandvik {
 			std::string getName() const;
 			std::string getFullname() const;
 
+			bool hasMethod(const std::string& name_, const std::string& descriptor_);
 			Method& getMethod(const std::string& name_, const std::string& descriptor_);
 			Method& getMethod(uint32_t idx_);
 

@@ -39,12 +39,11 @@
 using namespace sandvik;
 
 /** Constructor: Loads the JAR file */
-Apk::Apk(const std::string& path_) : _path(path_) {
+Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_dex(classes_dex_) {
 	if (!ZipReader::isValidArchive(_path)) {
 		throw std::runtime_error(fmt::format("Invalid APK file: {}", _path));
 	}
 
-	_classes_dex = std::make_unique<Dex>(0);
 	_zipReader = std::make_unique<ZipReader>();
 	_zipReader->open(_path);
 	std::list<std::string> files = _zipReader->getList();
@@ -58,7 +57,7 @@ Apk::Apk(const std::string& path_) : _path(path_) {
 	}
 	std::vector<uint8_t> dexBuffer(buffer, buffer + size);
 	free(buffer);
-	_classes_dex->load(dexBuffer, file);
+	_classes_dex.load(dexBuffer, file);
 
 	// load AndroidManifest.xml
 	file = "AndroidManifest.xml";
@@ -86,7 +85,7 @@ std::string Apk::getMainActivity() const {
 
 std::vector<std::string> Apk::getClassNames() const {
 	std::vector<std::string> classNames;
-	for (const auto& classname : _classes_dex->getClassNames()) {
+	for (const auto& classname : _classes_dex.getClassNames()) {
 		classNames.push_back(classname);
 	}
 	return classNames;
@@ -198,9 +197,5 @@ std::string Apk::findMainActivity() const {
 }
 
 std::unique_ptr<Class> Apk::findClass(ClassLoader& classloader_, const std::string& name) const {
-	if (_classes_dex) {
-		return _classes_dex->findClass(classloader_, name);
-	} else {
-		throw std::runtime_error("No DEX file loaded");
-	}
+	return _classes_dex.findClass(classloader_, name);
 }

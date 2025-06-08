@@ -41,8 +41,7 @@ ClassLoader::~ClassLoader() {
 
 void ClassLoader::loadDex(const std::string& dex_) {
 	try {
-		// Load the DEX file
-		auto dex = std::make_unique<Dex>(_dexs.size(), dex_);  // Assuming Apk can handle DEX files as well
+		auto dex = std::make_unique<Dex>(_dexs.size(), dex_);
 		logger.debug(fmt::format("DEX loaded: {}", dex->getPath()));
 		_dexs.push_back(std::move(dex));
 	} catch (const std::exception& e) {
@@ -53,9 +52,11 @@ void ClassLoader::loadDex(const std::string& dex_) {
 
 void ClassLoader::loadApk(const std::string& apk_) {
 	try {
-		auto apk = std::make_unique<Apk>(apk_);
+		auto dex = std::make_unique<Dex>(_dexs.size());
+		auto apk = std::make_unique<Apk>(apk_, *dex);
 		logger.debug(fmt::format("APK loaded: {}", apk->getPath()));
 		_apks.push_back(std::move(apk));
+		_dexs.push_back(std::move(dex));
 	} catch (const std::exception& e) {
 		logger.error(fmt::format("Failed to load APK: {}", e.what()));
 		return;
@@ -118,15 +119,6 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	if (it != _classes.end()) {
 		return *(it->second);
 	}
-	for (const auto& apk : _apks) {
-		try {
-			auto classPtr = apk->findClass(*this, classname_);
-			_classes[classname_] = std::move(classPtr);
-			return *(_classes[classname_]);
-		} catch (std::exception& e) {
-			// pass
-		}
-	}
 	for (const auto& dex : _dexs) {
 		try {
 			auto classPtr = dex->findClass(*this, classname_);
@@ -164,6 +156,9 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 }
 
 Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& methodname_, std::string& sig_) {
+	if (dex_ >= _dexs.size()) {
+		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
+	}
 	try {
 		_dexs[dex_]->resolveMethod(idx_, classname_, methodname_, sig_);
 		auto& cls = getOrLoad(classname_);
@@ -187,6 +182,9 @@ void ClassLoader::findMethod(uint32_t dex_, uint16_t idx_, std::string& classnam
 }
 
 Class& ClassLoader::resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_) {
+	if (dex_ >= _dexs.size()) {
+		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
+	}
 	try {
 		_dexs[dex_]->resolveClass(idx_, classname_);
 		return getOrLoad(classname_);
@@ -206,6 +204,9 @@ Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_) {
 }
 
 Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_, std::string& classname, std::string& field) {
+	if (dex_ >= _dexs.size()) {
+		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
+	}
 	try {
 		_dexs[dex_]->resolveField(idx_, classname, field);
 		auto& cls = getOrLoad(classname);
@@ -216,6 +217,9 @@ Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_, std::string& clas
 }
 
 std::string ClassLoader::resolveString(uint32_t dex_, uint16_t idx_) {
+	if (dex_ >= _dexs.size()) {
+		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
+	}
 	try {
 		return _dexs[dex_]->resolveString(idx_);
 	} catch (const std::exception& e) {
@@ -224,6 +228,9 @@ std::string ClassLoader::resolveString(uint32_t dex_, uint16_t idx_) {
 }
 
 std::vector<std::pair<std::string, uint32_t>> ClassLoader::resolveArray(uint32_t dex_, uint16_t idx_) {
+	if (dex_ >= _dexs.size()) {
+		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
+	}
 	try {
 		return _dexs[dex_]->resolveArray(idx_);
 	} catch (const std::exception& e) {

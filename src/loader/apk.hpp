@@ -33,7 +33,7 @@ namespace sandvik {
 	class Apk {
 		public:
 			Apk() = default;
-			explicit Apk(const std::string& path);
+			explicit Apk(const std::string& path, Dex& classes_dex_);
 			~Apk();
 
 			// Prevent copying
@@ -57,8 +57,8 @@ namespace sandvik {
 
 		private:
 			std::string _path;
+			Dex& _classes_dex;
 			std::unique_ptr<ZipReader> _zipReader;
-			std::unique_ptr<Dex> _classes_dex;
 			std::string _manifest;
 			std::string _mainActivity;
 	};

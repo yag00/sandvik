@@ -143,6 +143,15 @@ bool Class::hasSuperClass() const {
 	return _hasSuperClass;
 }
 
+bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) {
+	auto sig = name_ + descriptor_;
+	auto it = _methods.find(sig);
+	if (it != _methods.end()) {
+		return true;
+	}
+	return false;
+}
+
 Method& Class::getMethod(const std::string& name_, const std::string& descriptor_) {
 	auto sig = name_ + descriptor_;
 	auto it = _methods.find(sig);

@@ -118,7 +118,6 @@ void Dex::resolveMethod(uint16_t idx, std::string& class_, std::string& method_,
 		if (idx >= methods.size()) {
 			throw DexLoaderException(fmt::format("Method index {} out of range", idx));
 		}
-
 		auto it = methods.begin();
 		std::advance(it, idx);
 		const auto& method = *it;
