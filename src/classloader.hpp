@@ -37,6 +37,7 @@ namespace sandvik {
 			ClassLoader();
 			~ClassLoader();
 
+			void loadRt(const std::string& rt_);
 			void loadDex(const std::string& dex_);
 			void loadApk(const std::string& apk_);
 			void addClassPath(const std::string& classpath_);

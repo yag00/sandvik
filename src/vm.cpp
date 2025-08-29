@@ -57,6 +57,10 @@ Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_uniq
 	java::lang::StringBuilder(*_classloader);             // Load java.lang.StringBuilder class
 }
 
+void Vm::loadRt(const std::string& path) {
+	_classloader->loadRt(path);
+}
+
 void Vm::loadDex(const std::string& path) {
 	_classloader->loadDex(path);
 }

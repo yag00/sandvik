@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
 
 	Vm vm;
 	if (!args::get(runTime).empty()) {
-		vm.addClassPath(args::get(runTime));
+		vm.loadRt(args::get(runTime));
 	}
 	if (!args::get(dexFile).empty()) {
 		vm.loadDex(args::get(dexFile));

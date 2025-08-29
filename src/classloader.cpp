@@ -28,6 +28,7 @@
 #include "field.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
+#include "loader/rtld.hpp"
 #include "method.hpp"
 #include "system/logger.hpp"
 
@@ -37,6 +38,16 @@ ClassLoader::ClassLoader() {
 }
 
 ClassLoader::~ClassLoader() {
+}
+
+void ClassLoader::loadRt(const std::string& rt_) {
+	try {
+		rtld::load(rt_, _dexs);
+		logger.debug(fmt::format("RT loaded: {}", rt_));
+	} catch (const std::exception& e) {
+		logger.error(fmt::format("Failed to load DEX: {}", e.what()));
+		return;
+	}
 }
 
 void ClassLoader::loadDex(const std::string& dex_) {
