@@ -41,7 +41,7 @@ ClassLoader::~ClassLoader() {
 
 void ClassLoader::loadDex(const std::string& dex_) {
 	try {
-		auto dex = std::make_unique<Dex>(_dexs.size(), dex_);
+		auto dex = std::make_unique<Dex>(dex_);
 		logger.debug(fmt::format("DEX loaded: {}", dex->getPath()));
 		_dexs.push_back(std::move(dex));
 	} catch (const std::exception& e) {
@@ -52,7 +52,7 @@ void ClassLoader::loadDex(const std::string& dex_) {
 
 void ClassLoader::loadApk(const std::string& apk_) {
 	try {
-		auto dex = std::make_unique<Dex>(_dexs.size());
+		auto dex = std::make_unique<Dex>();
 		auto apk = std::make_unique<Apk>(apk_, *dex);
 		logger.debug(fmt::format("APK loaded: {}", apk->getPath()));
 		_apks.push_back(std::move(apk));
@@ -141,7 +141,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			}
 			fullPath += classname + ".dex";
 			if (std::filesystem::exists(fullPath)) {
-				auto dex = std::make_unique<Dex>(_dexs.size(), fullPath);
+				auto dex = std::make_unique<Dex>(fullPath);
 				_classes[classname_] = dex->findClass(*this, classname_);
 				_dexs.push_back(std::move(dex));
 				logger.ok(fmt::format("class {} loaded", classname_));
@@ -236,4 +236,13 @@ std::vector<std::pair<std::string, uint32_t>> ClassLoader::resolveArray(uint32_t
 	} catch (const std::exception& e) {
 		throw std::runtime_error(fmt::format("Array not found: {} ({})", idx_, e.what()));
 	}
+}
+
+uint64_t ClassLoader::getDexIndex(const Dex& dex_) const {
+	for (size_t i = 0; i < _dexs.size(); ++i) {
+		if (_dexs[i].get() == &dex_) {
+			return i;
+		}
+	}
+	throw std::runtime_error("DEX not found in classloader");
 }

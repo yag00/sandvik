@@ -29,6 +29,7 @@
 #include <utility>
 
 #include "class.hpp"
+#include "classloader.hpp"
 #include "field.hpp"
 #include "method.hpp"
 #include "system/logger.hpp"
@@ -37,13 +38,13 @@
 using namespace sandvik;
 using namespace LIEF::DEX;
 
-Dex::Dex(const uint32_t idx_, const std::string& path_) : _idx(idx_), _path(path_) {
+Dex::Dex(const std::string& path_) : _path(path_) {
 	load(path_);
 }
-Dex::Dex(const uint32_t idx_) : _idx(idx_) {
+Dex::Dex() {
 }
 
-Dex::Dex(const uint32_t idx_, std::vector<uint8_t>& buffer, const std::string& name) : _idx(idx_) {
+Dex::Dex(std::vector<uint8_t>& buffer, const std::string& name) {
 	load(buffer);
 }
 
@@ -102,7 +103,7 @@ std::unique_ptr<::sandvik::Class> Dex::findClass(ClassLoader& classloader_, cons
 
 	for (const auto& cls : _dex->classes()) {
 		if (cls.pretty_name() == name) {
-			return std::make_unique<::sandvik::Class>(classloader_, _idx, cls);
+			return std::make_unique<::sandvik::Class>(classloader_, classloader_.getDexIndex(*this), cls);
 		}
 	}
 	throw DexLoaderException(fmt::format("Class '{}' not found in DEX file", name));

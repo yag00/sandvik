@@ -42,9 +42,9 @@ namespace sandvik {
 					using std::runtime_error::runtime_error;
 			};
 
-			explicit Dex(const uint32_t idx_, const std::string& path_);
-			Dex(const uint32_t idx_);
-			Dex(const uint32_t idx_, std::vector<uint8_t>& buffer, const std::string& name = "");
+			explicit Dex(const std::string& path_);
+			Dex(std::vector<uint8_t>& buffer, const std::string& name = "");
+			Dex();
 			~Dex();
 
 			// Prevent copying
@@ -67,7 +67,6 @@ namespace sandvik {
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint16_t idx);
 
 		private:
-			const uint32_t _idx;
 			std::string _path;
 			std::unique_ptr<const LIEF::DEX::File> _dex;
 	};

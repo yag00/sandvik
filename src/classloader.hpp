@@ -56,6 +56,8 @@ namespace sandvik {
 			std::string resolveString(uint32_t dex_, uint16_t idx_);
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint32_t dex_, uint16_t idx_);
 
+			uint64_t getDexIndex(const Dex& dex_) const;
+
 		private:
 			friend class ClassBuilder;
 			void addClass(std::unique_ptr<Class> class_);
