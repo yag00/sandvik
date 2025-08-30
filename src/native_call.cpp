@@ -92,10 +92,15 @@ void NativeCallHelper::prepareCallContext(CallContext& context, const std::strin
 			while (i < paramTypes.size() && paramTypes[i] != ';') i++;
 			if (i < paramTypes.size()) i++;  // skip semicolon
 		} else if (typeChar == '[') {
+			// Skip all leading '[' for multi-dimensional arrays
 			while (i < paramTypes.size() && paramTypes[i] == '[') i++;
+			// If it's an object array, skip until the end of the object descriptor
 			if (i < paramTypes.size() && paramTypes[i] == 'L') {
 				while (i < paramTypes.size() && paramTypes[i] != ';') i++;
 				if (i < paramTypes.size()) i++;  // skip semicolon
+			} else {
+				// For primitive arrays, just skip the primitive type character
+				if (i < paramTypes.size()) i++;
 			}
 		} else {
 			i++;  // simple type
