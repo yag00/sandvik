@@ -31,6 +31,9 @@ def configure(conf):
 	conf.load('python')
 	conf.check_python_version((3,0,0))
 
+	conf.load('java')
+	conf.load('d8', tooldir='wtools')
+
 	conf.git_submodule_update()
 
 	conf.load('doxygen')
@@ -91,6 +94,9 @@ def configure(conf):
 	#-------------------------------------------------
 	conf.check_googletest()
 
+	conf.env['JAVACFLAGS'] += [
+		'-Xlint:-options'       # suppress the bootstrap classpath warning
+	]
 	#we are done :)
 
 def build(bld):
@@ -107,6 +113,20 @@ def build(bld):
 	#-------------------------------------------------
 	bld.version(gitinfo=gitinfo, version=VERSION, output='src/version.in.hpp',)
 	bld.add_group() #make sure formatting is done before going further
+	#-------------------------------------------------
+	# build java runtime sanddirt.jar
+	#-------------------------------------------------
+
+	bld(features   = 'javac jar d8',
+		srcdir     = 'sanddirt/', # folder containing the sources to compile
+		outdir     = 'sanddirt', # folder where to output the classes (in the build directory)
+		compat     = '8', # java compatibility version number
+		sourcepath = ['sanddirt'],
+		classpath  = ['.', '..'],
+		jaropts = [], # can be used to give files
+		basedir    = 'sanddirt', # folder containing the classes and other files to package (must match outdir)
+		destfile   = 'sanddirt.jar', # do not put the destfile in the folder of the java classes!
+	)
 	#-------------------------------------------------
 	# build sandvik static/shared library
 	#-------------------------------------------------
