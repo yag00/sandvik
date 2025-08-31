@@ -26,12 +26,10 @@
 
 #include "array.hpp"
 #include "class.hpp"
-#include "classbuilder.hpp"
 #include "classloader.hpp"
 #include "field.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
-#include "java.base/classes.hpp"
 #include "jni.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
@@ -44,18 +42,8 @@ using namespace sandvik;
 
 Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
 	logger.info("VM instance created.");
-	java::io::PrintStream(*_classloader);                 // Load java.io.PrintStream class
-	java::lang::Class(*_classloader);                     // Load java.lang.Class class
-	java::lang::Double(*_classloader);                    // Load java.lang.Class class
-	java::lang::IllegalArgumentException(*_classloader);  // Load java.lang.Class class
-	java::lang::Integer(*_classloader);                   // Load java.lang.Class class
-	java::lang::Math(*_classloader);                      // Load java.lang.Object class
-	java::lang::Object(*_classloader);                    // Load java.lang.Object class
-	java::lang::Package(*_classloader);                   // Load java.lang.Object class
-	java::lang::RuntimeException(*_classloader);          // Load java.lang.Object class
-	java::lang::System(*this, *_classloader);             // Load java.lang.System class
-	java::lang::String(*_classloader);                    // Load java.lang.String class
-	java::lang::StringBuilder(*_classloader);             // Load java.lang.StringBuilder class
+	// load self as a shared library to be able to resolve native methods
+	loadLibrary("libsandvik.so");
 }
 
 void Vm::loadRt(const std::string& path) {
