@@ -300,7 +300,10 @@ jclass NativeInterface::DefineClass(JNIEnv *env, const char *name, jobject loade
 	throw std::runtime_error("DefineClass not implemented");
 }
 jclass NativeInterface::FindClass(JNIEnv *env, const char *name) {
-	throw std::runtime_error("FindClass not implemented");
+	NativeInterface *this_ptr = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = this_ptr->getClassLoader();
+	Class &cls = classloader.getOrLoad(name);
+	return (jclass)&cls;
 }
 jmethodID NativeInterface::FromReflectedMethod(JNIEnv *env, jobject method) {
 	throw std::runtime_error("FromReflectedMethod not implemented");
