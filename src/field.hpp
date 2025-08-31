@@ -38,6 +38,9 @@ namespace sandvik {
 			Field(Class& class_, const LIEF::DEX::Field& field_);
 			~Field() = default;
 
+			std::string str() const;
+			std::string getPrettyType() const;
+
 			uint32_t getIntValue() const;
 			uint64_t getLongValue() const;
 			std::string getStringValue() const;

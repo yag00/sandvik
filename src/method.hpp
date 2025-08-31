@@ -84,6 +84,7 @@ namespace sandvik {
 			bool isAbstract() const;
 			bool isNative() const;
 			bool isVirtual() const;
+			bool isOverload() const;
 
 			void execute(Frame& frame_, std::vector<std::shared_ptr<Object>>& registers_);
 			void debug() const;

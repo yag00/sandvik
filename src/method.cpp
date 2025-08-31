@@ -144,6 +144,10 @@ bool Method::isVirtual() const {
 	return _isVirtual;
 }
 
+bool Method::isOverload() const {
+	return _class.isMethodOverloaded(getName());
+}
+
 void Method::execute(Frame& frame_, std::vector<std::shared_ptr<Object>>& registers_) {
 	if (!_function) {
 		throw std::runtime_error(fmt::format("Method {}.{} has no implementation", _class.getFullname(), getName()));

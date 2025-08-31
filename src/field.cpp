@@ -18,6 +18,8 @@
 
 #include "field.hpp"
 
+#include <fmt/format.h>
+
 #include <LIEF/DEX/Class.hpp>
 #include <LIEF/DEX/Field.hpp>
 #include <LIEF/DEX/Type.hpp>
@@ -39,6 +41,19 @@ Field::Field(Class& class_, const LIEF::DEX::Field& field_)
       _value(0),
       _strValue(""),
       _obj(Object::makeNull()) {
+}
+
+std::string Field::str() const {
+	return fmt::format("({}){}.{}", _type, _class.getFullname(), _name);
+}
+
+std::string Field::getPrettyType() const {
+	if (_type.size() > 2 && _type[0] == 'L' && _type.back() == ';') {
+		std::string prettyType = _type.substr(1, _type.size() - 2);
+		std::replace(prettyType.begin(), prettyType.end(), '/', '.');
+		return prettyType;
+	}
+	return _type;
 }
 
 Class& Field::getClass() const {

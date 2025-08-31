@@ -143,11 +143,24 @@ bool Class::hasSuperClass() const {
 	return _hasSuperClass;
 }
 
-bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) {
+bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) const {
 	auto sig = name_ + descriptor_;
 	auto it = _methods.find(sig);
 	if (it != _methods.end()) {
 		return true;
+	}
+	return false;
+}
+
+bool Class::isMethodOverloaded(const std::string& name_) const {
+	int count = 0;
+	for (const auto& [key, method] : _methods) {
+		if (method->getName() == name_) {
+			count++;
+			if (count > 1) {
+				return true;
+			}
+		}
 	}
 	return false;
 }
