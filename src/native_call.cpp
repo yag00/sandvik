@@ -23,12 +23,14 @@
 #include <cstring>
 #include <variant>
 
+#include "jni.hpp"
+#include "jnihandlemap.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
 using namespace sandvik;
 
-NativeCallHelper::NativeCallHelper() {
+NativeCallHelper::NativeCallHelper(NativeInterface& nif) : _nif(nif) {
 }
 
 NativeCallHelper::~NativeCallHelper() {
@@ -114,8 +116,7 @@ void NativeCallHelper::prepareCallContext(CallContext& context, const std::strin
 	context.prepared = true;
 }
 
-uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType) const {
-	logger.debug(fmt::format("getArgValue: {} jniType={}", (*it)->debug(), jniType));
+uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType) {
 	switch (jniType) {
 		case 'I':
 		case 'Z':
@@ -171,14 +172,16 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 		{
 			auto obj = *it;
 			++it;
-			return (uintptr_t)obj.get();
+			jobject o = _nif.getHandles().toJObject(obj);
+			_handles.push_back((uintptr_t)o);
+			return (uintptr_t)o;
 		}
 		default:
 			throw std::runtime_error(fmt::format("Unsupported JNI type character: {}", jniType));
 	}
 }
 
-std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, const char jniType) const {
+std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, const char jniType) {
 	switch (jniType) {
 		case 'V':
 			return nullptr;  // void return type
@@ -192,7 +195,14 @@ std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, cons
 		case 'D':
 			return Object::make((uint64_t)result);
 		case 'L':
-		case '[':  // Objects and arrays
+		case '[': {  // Objects and arrays
+			auto ret = _nif.getHandles().fromJObject((jobject)result);
+			if (ret == nullptr) {
+				return Object::makeNull();
+			}
+			_handles.push_back(result);
+			return ret;
+		}
 		default:
 			throw std::runtime_error(fmt::format("Unsupported JNI type character: {}", jniType));
 	}
@@ -200,6 +210,7 @@ std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, cons
 
 std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::vector<std::shared_ptr<Object>>& args,
                                                  const std::string& returnType, const std::string& paramTypes, bool isStatic) {
+	_handles.clear();
 	// Create a temporary call context
 	std::vector<std::string> argTypes;
 	CallContext context;
@@ -220,7 +231,8 @@ std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env,
 		// static method
 		this_ref = nullptr;  // todo handle this case, should be a class object reference
 	} else {
-		this_ref = (jobject)(uintptr_t)(args[0].get());
+		this_ref = _nif.getHandles().toJObject(args[0]);
+		_handles.push_back((uintptr_t)this_ref);
 	}
 	arg_values.push_back(&this_ref);
 	// Prepare argument values
@@ -236,10 +248,17 @@ std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env,
 		arg_values.push_back((void*)&param_storage[idx]);
 		idx++;
 	}
+
 	ffi_call(&context.cif, FFI_FN(functionPtr), &result_storage, arg_values.data());
+
 	// Process and return result
 	if (param_storage) {
 		delete[] param_storage;
 	}
-	return getReturnObject(result_storage, returnType[0]);
+	auto ret = getReturnObject(result_storage, returnType[0]);
+	for (auto handle : _handles) {
+		_nif.getHandles().release((jobject)handle);
+	}
+	_handles.clear();
+	return ret;
 }

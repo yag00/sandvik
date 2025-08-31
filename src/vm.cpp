@@ -38,10 +38,11 @@
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
 
-Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>()) {
+Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
 	logger.info("VM instance created.");
 	java::io::PrintStream(*_classloader);                 // Load java.io.PrintStream class
 	java::lang::Class(*_classloader);                     // Load java.lang.Class class
@@ -75,6 +76,10 @@ void Vm::addClassPath(const std::string& classpath_) {
 
 std::string Vm::getClassPath() const {
 	return _classloader->getClassPath();
+}
+
+ClassLoader& Vm::getClassLoader() const {
+	return *_classloader;
 }
 
 void Vm::loadLibrary(const std::string& libName_) {

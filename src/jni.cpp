@@ -26,12 +26,16 @@
 
 #include "jni/jni.h"
 
+#include "class.hpp"
+#include "classloader.hpp"
+#include "jnihandlemap.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
 
-NativeInterface::NativeInterface() {
+NativeInterface::NativeInterface(Vm &vm_) : _vm(vm_), _classloader(vm_.getClassLoader()), _handles(std::make_unique<JNIHandleMap>()) {
 	_interface = std::make_unique<JNINativeInterface_>();
 	functions = _interface.get();
 
@@ -271,6 +275,18 @@ NativeInterface::NativeInterface() {
 	_interface->GetObjectRefType = &NativeInterface::GetObjectRefType;
 }
 NativeInterface::~NativeInterface() {
+}
+
+Vm &NativeInterface::getVm() const {
+	return _vm;
+}
+
+ClassLoader &NativeInterface::getClassLoader() const {
+	return _classloader;
+}
+
+JNIHandleMap &NativeInterface::getHandles() const {
+	return *_handles;
 }
 
 // ----------------------------------------------------------------------------

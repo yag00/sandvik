@@ -354,7 +354,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 	std::string returnType = match[2];
 	logger.debug(fmt::format("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(),
 	                         symbolName, (uintptr_t)symbol));
-	auto caller = std::make_unique<NativeCallHelper>();
+	auto caller = std::make_unique<NativeCallHelper>(*_rt.vm().getJNIEnv());
 	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
 	_rt.currentFrame().setReturnObject(ret);
 }

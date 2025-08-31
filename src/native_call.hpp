@@ -32,10 +32,11 @@
 
 namespace sandvik {
 	class Object;
+	class NativeInterface;
 	class NativeCallHelper {
 		public:
 			// Constructor/Destructor
-			NativeCallHelper();
+			NativeCallHelper(NativeInterface& nif);
 			~NativeCallHelper();
 
 			// Main method to invoke native functions
@@ -43,6 +44,7 @@ namespace sandvik {
 			                               const std::string& paramTypes, bool isStatic = false);
 
 		private:
+			NativeInterface& _nif;
 			// Internal call context
 			struct CallContext {
 					ffi_cif cif;
@@ -55,8 +57,10 @@ namespace sandvik {
 			ffi_type* getFFITypeForJNIType(char jniType) const;
 			ffi_type* getFFITypeForReturn(const std::string& returnType) const;
 			void prepareCallContext(CallContext& context, const std::string& paramTypes, const std::string& returnType, std::vector<std::string>& argTypes);
-			uintptr_t getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType) const;
-			std::shared_ptr<Object> getReturnObject(uintptr_t result, const char jniType) const;
+			uintptr_t getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType);
+			std::shared_ptr<Object> getReturnObject(uintptr_t result, const char jniType);
+
+			std::vector<uintptr_t> _handles;
 	};
 }  // namespace sandvik
 

@@ -45,6 +45,7 @@ namespace sandvik {
 
 			void loadLibrary(const std::string& libName_);
 			void* findNativeSymbol(const std::string& symbolName_);
+			ClassLoader& getClassLoader() const;
 			NativeInterface* getJNIEnv() const;
 
 		protected:
