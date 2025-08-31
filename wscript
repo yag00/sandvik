@@ -104,7 +104,7 @@ def build(bld):
 	#-------------------------------------------------
 	# check style
 	#-------------------------------------------------
-	checkstyle_sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
+	checkstyle_sources = bld.path.ant_glob(['sanddirt/**/*.java', 'src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
 	bld.checkstyle(
 		inputs = checkstyle_sources,
 	)
@@ -171,6 +171,7 @@ def build(bld):
 	#-------------------------------------------------
 	# tests
 	#-------------------------------------------------
+	bld.add_group() #wait for everything to be built before running tests
 	if Options.options.tests == True or Options.options.test_name != None:
 		#run tests
 		tests = [test.UnitTest(bld, Options.options.test_name)]

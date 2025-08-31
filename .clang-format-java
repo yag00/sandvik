@@ -1,0 +1,31 @@
+BasedOnStyle: Google
+Language: Java
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Braces
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Line length
+ColumnLimit: 100
+
+# Imports
+JavaImportGroups: ["java", "javax", "org", "com"]
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInAngles: false
+
+# Wrapping
+BinPackParameters: false
+BinPackArguments: false
+AlignAfterOpenBracket: Align
+
