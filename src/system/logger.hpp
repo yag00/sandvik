@@ -24,26 +24,19 @@
 
 #include <fstream>
 #include <string>
+#include <system/singleton.hpp>
 
-#define logger ::sandvik::Logger::getInstance()
+#define logger ::sandvik::getLogger()
 
 namespace sandvik {
 	/** @brief Logger class
 	 * @todo : add fmt log method when std::format will be supported.
 	 * We do not want to directly expose fmt library to user.
 	 */
-	class Logger {
+	class Logger : public Singleton<Logger> {
 		public:
 			/** enum for log level */
 			enum class LogLevel { NONE, ERROR, OK, WARNING, INFO, DEBUG };
-
-			/** get logger instance
-			 * @return the logger
-			 */
-			static Logger &getInstance() {
-				static Logger instance;
-				return instance;
-			}
 
 			/** log to file
 			 * @param filename_ filename for log
@@ -127,6 +120,7 @@ namespace sandvik {
 			void color(uint32_t color_, char marker_, const std::string &msg_);
 
 		private:
+			friend class Singleton<Logger>;
 			Logger();
 			~Logger();
 
@@ -138,6 +132,9 @@ namespace sandvik {
 			LogLevel _level;
 			std::ofstream _file;
 	};
+	inline Logger &getLogger() {
+		return Logger::getInstance();
+	}
 }  // namespace sandvik
 
 #endif
