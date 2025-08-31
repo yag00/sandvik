@@ -2021,10 +2021,17 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 			executeClinit(clazz);
 			return;
 		}
+		auto& fieldclass = classloader.getOrLoad(field.getPrettyType());
 		// set result of the sput-object
 		auto value = frame.getObjRegister(src);
 		logger.debug(fmt::format("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug()));
-		field.setObjectValue(value);
+		// @todo : this is a hack to handle setting null to an object field. Need to properly handle this case.
+		if (value->isNumberObject() && (std::dynamic_pointer_cast<NumberObject>(value)->getValue() == 0)) {
+			auto obj = Object::make(fieldclass);
+			field.setObjectValue(obj);
+		} else {
+			field.setObjectValue(value);
+		}
 	} catch (const std::exception& e) {
 		throw std::runtime_error(fmt::format("sput_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what()));
 	}
