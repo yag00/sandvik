@@ -32,6 +32,7 @@
 #include "field.hpp"
 #include "frame.hpp"
 #include "jni.hpp"
+#include "jnihelper.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
 #include "native_call.hpp"
@@ -334,6 +335,9 @@ void Interpreter::executeClinit(Class& class_) {
 void Interpreter::executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_) {
 	// Construct the JNI symbol name
 	std::string symbolName = "Java_" + std::regex_replace(method_.getClass().getFullname(), std::regex("\\."), "_") + "_" + method_.getName();
+	if (method_.isOverload()) {
+		symbolName += "__" + JNIHelper::mangleMethodSignature(method_.getSignature());
+	}
 	logger.debug(fmt::format("call native jni function {}", symbolName));
 	void* symbol = _rt.vm().findNativeSymbol(symbolName);
 	if (!symbol) {
