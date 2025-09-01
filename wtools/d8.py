@@ -6,21 +6,46 @@ from waflib import Task
 from waflib.TaskGen import feature, after_method
 from waflib.Configure import conf
 import os
-import glob
+import zipfile
+import requests
 
 def configure(conf):
-	sdk_root = os.environ.get('ANDROID_SDK_ROOT') or os.environ.get('ANDROID_HOME')
-	if not sdk_root:
-		conf.fatal('ANDROID_SDK_ROOT or ANDROID_HOME environment variable not set')
+	d8_path = os.path.abspath('ext/android/build-tools/36.0.0')
+	try:
+		conf.find_program('d8', var='D8', path_list=[d8_path], mandatory=True)
+		version = conf.cmd_and_log(f'{conf.env['D8'][0]} --version').strip().split(' ')[1]
+		conf.msg('Checking for d8 version', version)
+	except Exception as e:
+		# Install Android SDK command-line tools
+		android_home = os.path.abspath('ext/android')
+		os.makedirs(android_home, exist_ok=True)
+		tools_zip = os.path.join(android_home, 'tools.zip')
+		cmdline_tools = os.path.join(android_home, '.')
 
-	build_tools_dir = os.path.join(sdk_root, 'build-tools')
-	versions = sorted(glob.glob(os.path.join(build_tools_dir, '*')), reverse=True)
-	if not versions:
-		conf.fatal('No build-tools found in %s' % build_tools_dir)
+		url = 'https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip'
+		conf.msg('Downloading Android command-line tools', url)
+		with requests.get(url, stream=True) as r:
+			r.raise_for_status()
+			with open(tools_zip, 'wb') as f:
+				for chunk in r.iter_content(chunk_size=8192):
+					f.write(chunk)
 
-	latest_build_tools = versions[0]
-	d8_path = os.path.join(latest_build_tools, 'd8')
-	conf.find_program('d8', var='D8', path_list=[latest_build_tools], mandatory=True)
+		with zipfile.ZipFile(tools_zip, 'r') as zip_ref:
+			for member in zip_ref.infolist():
+				extracted_path = zip_ref.extract(member, cmdline_tools)
+				perm = member.external_attr >> 16
+				if perm:
+					os.chmod(extracted_path, perm)
+		os.remove(tools_zip)
+
+		# Accept licenses and install build-tools 36.0.0
+		conf.msg('Installing Android build-tools', "36.0.0")
+		conf.cmd_and_log(f'yes | {android_home}/cmdline-tools/bin/sdkmanager --sdk_root={android_home} --licenses')
+		conf.cmd_and_log(f'{android_home}/cmdline-tools/bin/sdkmanager --sdk_root={android_home} "platform-tools" "build-tools;36.0.0"')
+
+		conf.find_program('d8', var='D8', path_list=[d8_path], mandatory=True)
+		version = conf.cmd_and_log(f'{conf.env['D8'][0]} --version').strip().split(' ')[1]
+		conf.msg('Checking for d8 version', version)
 
 class d8(Task.Task):
 	color   = 'BLUE'
