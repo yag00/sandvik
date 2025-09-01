@@ -37,6 +37,9 @@ SharedLibrary::~SharedLibrary() {
 }
 
 std::string SharedLibrary::getFullPath(const std::string& name_) {
+	if (name_.empty()) {
+		return "";
+	}
 	std::string ldLibraryPath = system::env::get("LD_LIBRARY_PATH");
 	std::istringstream pathStream(ldLibraryPath);
 	std::string path;
@@ -65,7 +68,11 @@ std::string SharedLibrary::getFullPath() const {
 }
 
 void SharedLibrary::load() {
-	_handle = dlopen(_path.c_str(), RTLD_NOW | RTLD_LOCAL);
+	if (_path.empty()) {
+		_handle = dlopen(nullptr, RTLD_NOW | RTLD_LOCAL);
+	} else {
+		_handle = dlopen(_path.c_str(), RTLD_NOW | RTLD_LOCAL);
+	}
 	if (!_handle) {
 		throw std::runtime_error(fmt::format("Cannot open library {} : {}", _path, dlerror()));
 	}

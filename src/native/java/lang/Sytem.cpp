@@ -30,7 +30,6 @@ extern "C" {
 			throw std::runtime_error("Internal error: JNIEnv is not a NativeInterface");
 		}
 		const char *name = env->GetStringUTFChars(libName, nullptr);
-		logger.error(fmt::format("System.loadLibrary {}", name));
 		jenv->getVm().loadLibrary(fmt::format("lib{}.so", name));
 		env->ReleaseStringUTFChars(libName, name);
 	}

@@ -270,6 +270,7 @@ Interpreter::Interpreter(JThread& rt_) : _rt(rt_), _disassembler(std::make_uniqu
 }
 
 Interpreter::~Interpreter() {
+#if 0
 	/*std::vector<std::pair<uint8_t, uint64_t>> sortedCoverage(_instcoverage.begin(), _instcoverage.end());
 	std::sort(sortedCoverage.begin(), sortedCoverage.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
 	for (const auto& [key, value] : sortedCoverage) {
@@ -286,6 +287,7 @@ Interpreter::~Interpreter() {
 		}
 	}
 	logger.info(fmt::format("{} tested, missing coverage for {} instructions", _instcoverage.size(), count - 8));
+#endif
 }
 
 void Interpreter::execute() {

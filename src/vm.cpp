@@ -43,7 +43,7 @@ using namespace sandvik;
 Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
 	logger.info("VM instance created.");
 	// load self as a shared library to be able to resolve native methods
-	loadLibrary("libsandvik.so");
+	loadLibrary("");
 }
 
 void Vm::loadRt(const std::string& path) {
@@ -75,7 +75,9 @@ void Vm::loadLibrary(const std::string& libName_) {
 	auto lib = std::make_unique<SharedLibrary>(libName_);
 	lib->load();
 	if (lib->isLoaded()) {
-		logger.debug(fmt::format("Loaded shared library {}", lib->getFullPath()));
+		if (!libName_.empty()) {
+			logger.debug(fmt::format("Loaded shared library {}", lib->getFullPath()));
+		}
 		// Call JNI_OnLoad if it exists
 		void* JNI_onLoad = lib->getAddressOfSymbol("JNI_OnLoad");
 		if (!JNI_onLoad) {

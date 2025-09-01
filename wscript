@@ -160,7 +160,7 @@ def build(bld):
 		name            = "vm_sandvik",
 		target          = "sandvik",
 		includes        = ['src'],
-		use             = [APPNAME + '_static', 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
+		use             = [APPNAME, 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
 		linkflags       = ["-rdynamic", "-Wl,-z,defs"],
 		install_path    = '${PREFIX}',
 	)
