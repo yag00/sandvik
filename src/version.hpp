@@ -34,6 +34,6 @@ namespace sandvik {
 		/** @return the build date of sandvik */
 		const std::string getBuildDate();
 	};  // namespace version
-};      // namespace sandvik
+};  // namespace sandvik
 
 #endif /* __SANDVIK_VERSION_H__ */

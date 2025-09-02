@@ -29,7 +29,7 @@ namespace sandvik {
 			/** set value of a variable */
 			void set(const std::string& name_, const std::string& value_);
 		};  // namespace env
-	};      // namespace system
-};          // namespace sandvik
+	};  // namespace system
+};  // namespace sandvik
 
 #endif /* __SYSTEM_ENVVAR_H__ */
