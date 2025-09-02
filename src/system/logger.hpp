@@ -22,6 +22,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include <fmt/format.h>
+
 #include <fstream>
 #include <string>
 #include <system/singleton.hpp>
@@ -118,6 +120,52 @@ namespace sandvik {
 			 * @param msg_ message
 			 */
 			void color(uint32_t color_, char marker_, const std::string &msg_);
+
+			/** formatted debug log message
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
+			template <typename... Args>
+			void fdebug(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				auto formatted = fmt::format(fmt_str, std::forward<Args>(args)...);
+				debug(formatted);
+			}
+			/** formatted info log message
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
+			template <typename... Args>
+			void finfo(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				auto formatted = fmt::format(fmt_str, std::forward<Args>(args)...);
+				info(formatted);
+			}
+			/** formatted warning log message
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
+			template <typename... Args>
+			void fwarning(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				auto formatted = fmt::format(fmt_str, std::forward<Args>(args)...);
+				warning(formatted);
+			}
+			/** formatted error log message
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
+			template <typename... Args>
+			void ferror(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				auto formatted = fmt::format(fmt_str, std::forward<Args>(args)...);
+				error(formatted);
+			}
+			/** formatted ok log message
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
+			template <typename... Args>
+			void fok(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				auto formatted = fmt::format(fmt_str, std::forward<Args>(args)...);
+				ok(formatted);
+			}
 
 		private:
 			friend class Singleton<Logger>;
