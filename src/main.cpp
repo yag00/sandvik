@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 	}
 
 	logger.setLevel(Logger::LogLevel::INFO);
-	logger.ok(fmt::format(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit()));
+	logger.fok(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit());
 	if (logLevel) {
 		std::string level = args::get(logLevel);
 		if (level == "NONE") {
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 		logger.error("Main class not specified");
 		return 1;
 	}
-	logger.info(fmt::format("Running main class: {}", mainClassValue));
+	logger.finfo("Running main class: {}", mainClassValue);
 	std::vector<std::string> args = args::get(positionalArgs);
 	try {
 		vm.run(mainClassValue, args);

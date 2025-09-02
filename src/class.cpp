@@ -122,7 +122,7 @@ bool Class::isInstanceOf(std::shared_ptr<Object>& class_) const {
 	}
 	auto clazz = std::dynamic_pointer_cast<ObjectClass>(class_);
 	if (clazz) {
-		logger.debug(fmt::format("isInstanceOf: {}", clazz->getClass().getFullname()));
+		logger.fdebug("isInstanceOf: {}", clazz->getClass().getFullname());
 		if (clazz->getClass().getFullname() == getFullname()) {
 			return true;
 		}
@@ -179,9 +179,9 @@ Method& Class::getMethod(uint32_t idx_) {
 		throw std::out_of_range("Method index out of range: " + std::to_string(idx_));
 	}
 	for (const auto& [name, method] : _methods) {
-		logger.debug(fmt::format("method {}{} index {}", method->getName(), method->getSignature(), method->getIndex()));
+		logger.fdebug("method {}{} index {}", method->getName(), method->getSignature(), method->getIndex());
 		if (method->getIndex() == idx_) {
-			logger.ok(fmt::format("Found method {}{} at index {}", method->getName(), method->getSignature(), idx_));
+			logger.fok("Found method {}{} at index {}", method->getName(), method->getSignature(), idx_);
 		}
 	}
 	auto it = _methods.begin();

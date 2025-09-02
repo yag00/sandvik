@@ -31,7 +31,7 @@
 using namespace sandvik;
 
 Frame::Frame(Method& method_) : _method(method_), _pc(0) {
-	logger.debug(fmt::format("new Frame for method = {}.{} registers ={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters()));
+	logger.fdebug("new Frame for method = {}.{} registers ={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
 	_null = Object::makeNull();
 	_exception = Object::makeNull();
 	_objectReturn = Object::makeNull();
@@ -67,7 +67,7 @@ void Frame::setPc(uint16_t pc_) {
 }
 
 void Frame::setIntRegister(uint32_t reg, int32_t value) {
-	logger.debug(fmt::format("setIntRegister: reg={}, value={:x}", reg, value));
+	logger.fdebug("setIntRegister: reg={}, value={:x}", reg, value);
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setIntRegister: reg={} out of bounds", reg));
 	}
@@ -75,7 +75,7 @@ void Frame::setIntRegister(uint32_t reg, int32_t value) {
 }
 
 int32_t Frame::getIntRegister(uint32_t reg) {
-	logger.debug(fmt::format("getIntRegister: reg={}", reg));
+	logger.fdebug("getIntRegister: reg={}", reg);
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getIntRegister: reg={} out of bounds", reg));
 	}
@@ -83,7 +83,7 @@ int32_t Frame::getIntRegister(uint32_t reg) {
 	if (std::dynamic_pointer_cast<NumberObject>(obj)) {
 		return std::dynamic_pointer_cast<NumberObject>(obj)->getValue();
 	} else {
-		logger.debug(fmt::format("getIntRegister: obj ptr=<{:x}>", (uintptr_t)obj.get()));
+		logger.fdebug("getIntRegister: obj ptr=<{:x}>", (uintptr_t)obj.get());
 	}
 	if (!obj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("Register does not contain an NumberObject {}", obj->debug()));
@@ -92,8 +92,8 @@ int32_t Frame::getIntRegister(uint32_t reg) {
 }
 
 void Frame::setLongRegister(uint32_t reg, int64_t value) {
-	logger.debug(fmt::format("setLongRegister: reg={}, value={:x}, {:x}", reg, static_cast<uint32_t>(value & 0xFFFFFFFF),
-	                         static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
+	logger.fdebug("setLongRegister: reg={}, value={:x}, {:x}", reg, static_cast<uint32_t>(value & 0xFFFFFFFF),
+	              static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
 	if (reg + 1 >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setLongRegister: reg={} out of bounds", reg));
 	}
@@ -102,7 +102,7 @@ void Frame::setLongRegister(uint32_t reg, int64_t value) {
 }
 
 int64_t Frame::getLongRegister(uint32_t reg) {
-	logger.debug(fmt::format("getLongRegister: reg={}", reg));
+	logger.fdebug("getLongRegister: reg={}", reg);
 	if (reg + 1 >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setLongRegister: reg={} out of bounds", reg));
 	}
@@ -114,12 +114,12 @@ int64_t Frame::getLongRegister(uint32_t reg) {
 	uint64_t value = static_cast<uint32_t>(static_cast<NumberObject&>(msb).getValue());
 	value <<= 32;
 	value |= static_cast<uint32_t>(static_cast<NumberObject&>(lsb).getValue());
-	logger.debug(fmt::format("getLongRegister: reg={} --> {:x}", reg, value));
+	logger.fdebug("getLongRegister: reg={} --> {:x}", reg, value);
 	return (int64_t)value;
 }
 
 void Frame::setFloatRegister(uint32_t reg, float value) {
-	logger.debug(fmt::format("setFloatRegister: reg={}, value={}", reg, value));
+	logger.fdebug("setFloatRegister: reg={}, value={}", reg, value);
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setFloatRegister: reg={} out of bounds", reg));
 	}
@@ -127,7 +127,7 @@ void Frame::setFloatRegister(uint32_t reg, float value) {
 }
 
 float Frame::getFloatRegister(uint32_t reg) {
-	logger.debug(fmt::format("getFloatRegister: reg={}", reg));
+	logger.fdebug("getFloatRegister: reg={}", reg);
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getFloatRegister: reg={} out of bounds", reg));
 	}
@@ -140,7 +140,7 @@ float Frame::getFloatRegister(uint32_t reg) {
 }
 
 void Frame::setDoubleRegister(uint32_t reg, double value) {
-	logger.debug(fmt::format("setDoubleRegister: reg={}, value={}", reg, value));
+	logger.fdebug("setDoubleRegister: reg={}, value={}", reg, value);
 	if (reg + 1 >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setDoubleRegister: reg={} out of bounds", reg));
 	}
@@ -148,11 +148,11 @@ void Frame::setDoubleRegister(uint32_t reg, double value) {
 	_registers[reg] = Object::make(static_cast<uint32_t>(temp & 0xFFFFFFFF));
 	_registers[reg + 1] = Object::make(static_cast<uint32_t>((temp >> 32) & 0xFFFFFFFF));
 
-	logger.debug(fmt::format("setDoubleRegister: reg={} value={} {}", reg, _registers[reg]->debug(), _registers[reg + 1]->debug()));
+	logger.fdebug("setDoubleRegister: reg={} value={} {}", reg, _registers[reg]->debug(), _registers[reg + 1]->debug());
 }
 
 double Frame::getDoubleRegister(uint32_t reg) {
-	logger.debug(fmt::format("getDoubleRegister: reg={}", reg));
+	logger.fdebug("getDoubleRegister: reg={}", reg);
 	if (reg + 1 >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getDoubleRegister: reg={} out of bounds", reg));
 	}
@@ -168,7 +168,7 @@ double Frame::getDoubleRegister(uint32_t reg) {
 }
 
 void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
-	logger.debug(fmt::format("setObjRegister: reg={}, obj=<{}>", reg, value->debug()));
+	logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->debug());
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setObjRegister: reg={} out of bounds", reg));
 	}
@@ -176,7 +176,7 @@ void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
 }
 /*
 void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object>&& value) {
-    logger.debug(fmt::format("setObjRegister: reg={}, obj=<{}>", reg, value->debug()));
+    logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->debug());
     if (reg >= _registers.size()) {
         increaseRegSize(reg + 1);
     }
@@ -188,7 +188,7 @@ std::shared_ptr<Object> Frame::getObjRegister(uint32_t reg) {
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getObjRegister: reg={} out of bounds", reg));
 	}
-	logger.debug(fmt::format("getObjRegister: reg={} => obj=<{}>", reg, _registers[reg]->debug()));
+	logger.fdebug("getObjRegister: reg={} => obj=<{}>", reg, _registers[reg]->debug());
 	return _registers[reg];
 }
 
@@ -224,12 +224,12 @@ void Frame::setReturnValue(int32_t ret_) {
 }
 void Frame::setReturnDoubleValue(int64_t ret_) {
 	_objectReturn = Object::make(ret_);
-	logger.debug(fmt::format("setReturnDoubleValue: {:x} -> obj=<{}>", ret_, _objectReturn->debug()));
+	logger.fdebug("setReturnDoubleValue: {:x} -> obj=<{}>", ret_, _objectReturn->debug());
 }
 
 void Frame::debug() const {
-	logger.debug(fmt::format("method={} pc={}", _method.getName(), _pc));
+	logger.fdebug("method={} pc={}", _method.getName(), _pc);
 	for (size_t i = 0; i < _registers.size(); ++i) {
-		logger.debug(fmt::format("register[{}] = {}", i, _registers[i]->debug()));
+		logger.fdebug("register[{}] = {}", i, _registers[i]->debug());
 	}
 }

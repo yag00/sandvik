@@ -76,16 +76,16 @@ void Vm::loadLibrary(const std::string& libName_) {
 	lib->load();
 	if (lib->isLoaded()) {
 		if (!libName_.empty()) {
-			logger.debug(fmt::format("Loaded shared library {}", lib->getFullPath()));
+			logger.fdebug("Loaded shared library {}", lib->getFullPath());
 		}
 		// Call JNI_OnLoad if it exists
 		void* JNI_onLoad = lib->getAddressOfSymbol("JNI_OnLoad");
 		if (!JNI_onLoad) {
-			logger.debug(fmt::format("JNI_OnLoad not found in {}", lib->getFullPath()));
+			logger.fdebug("JNI_OnLoad not found in {}", lib->getFullPath());
 		} else {
 			// jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 			auto jniOnLoad = reinterpret_cast<void (*)(JavaVM*, void*)>(JNI_onLoad);
-			logger.debug(fmt::format("Executing native function JNI_OnLoad@{:#x} ", (uintptr_t)jniOnLoad));
+			logger.fdebug("Executing native function JNI_OnLoad@{:#x} ", (uintptr_t)jniOnLoad);
 			jniOnLoad(nullptr, nullptr);  // todo pass actual JavaVM
 		}
 		_sharedlibs.push_back(std::move(lib));

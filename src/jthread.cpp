@@ -57,7 +57,7 @@ Frame& JThread::newFrame(Method& method_) {
 			// method clinit has been pushed on the stack and will be executed, mark the class as initialized
 			clazz.setStaticInitialized();
 		} else {
-			logger.warning(fmt::format("Class {} already initialized", clazz.getFullname()));
+			logger.fwarning("Class {} already initialized", clazz.getFullname());
 		}
 	}
 	_stack.push_back(std::make_unique<Frame>(method_));

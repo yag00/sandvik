@@ -274,19 +274,19 @@ Interpreter::~Interpreter() {
 	/*std::vector<std::pair<uint8_t, uint64_t>> sortedCoverage(_instcoverage.begin(), _instcoverage.end());
 	std::sort(sortedCoverage.begin(), sortedCoverage.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
 	for (const auto& [key, value] : sortedCoverage) {
-	    logger.info(fmt::format("Instruction 0x{:02x} executed {} times", key, value));
+	    logger.finfo("Instruction 0x{:02x} executed {} times", key, value);
 	}*/
 	auto count = 0;
 	for (uint16_t i = 0; i < 0xE3; ++i) {
 		if (_instcoverage.find(i) == _instcoverage.end()) {
 			auto s = _disassembler->disassemble(i);
 			if (!s.empty()) {
-				logger.warning(fmt::format("Missing coverage for instruction 0x{:02x} {}", i, s));
+				logger.fwarning("Missing coverage for instruction 0x{:02x} {}", i, s);
 				count++;
 			}
 		}
 	}
-	logger.info(fmt::format("{} tested, missing coverage for {} instructions", _instcoverage.size(), count - 8));
+	logger.finfo("{} tested, missing coverage for {} instructions", _instcoverage.size(), count - 8);
 #endif
 }
 
@@ -303,7 +303,7 @@ void Interpreter::execute() {
 	}
 	auto bytecode = code + frame.pc();
 	auto inst = _disassembler->disassemble(bytecode);
-	logger.info(fmt::format("{:04x}: {:<80} {:<20} ", frame.pc() / 2, inst, func));
+	logger.finfo("{:04x}: {:<80} {:<20} ", frame.pc() / 2, inst, func);
 	frame.pc()++;
 	_instcoverage[*bytecode]++;
 	_dispatch[*bytecode](bytecode + 1);
@@ -315,7 +315,7 @@ void Interpreter::executeClinit(Class& class_) {
 		auto& initializeSystemClass = class_.getMethod("initializeSystemClass", "()V");
 		_rt.newFrame(initializeSystemClass);
 	} catch (std::exception& e) {
-		// logger.debug(fmt::format("No initializeSystemClass method for class {}: {}", class_.getFullname(), e.what()));
+		// logger.fdebug("No initializeSystemClass method for class {}: {}", class_.getFullname(), e.what());
 	}
 	// push new frame with <clinit> method
 	try {
@@ -330,7 +330,7 @@ void Interpreter::executeClinit(Class& class_) {
 			clinitMethod.execute(_rt.currentFrame(), args);
 		}
 	} catch (std::exception& e) {
-		logger.debug(fmt::format("No <clinit> method for class {}: {}", class_.getFullname(), e.what()));
+		logger.fdebug("No <clinit> method for class {}: {}", class_.getFullname(), e.what());
 	}
 }
 
@@ -340,7 +340,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 	if (method_.isOverload()) {
 		symbolName += "__" + JNIHelper::mangleMethodSignature(method_.getSignature());
 	}
-	logger.debug(fmt::format("call native jni function {}", symbolName));
+	logger.fdebug("call native jni function {}", symbolName);
 	void* symbol = _rt.vm().findNativeSymbol(symbolName);
 	if (!symbol) {
 		throw std::runtime_error(fmt::format("Native method {} is not available!", symbolName));
@@ -354,8 +354,8 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 	}
 	std::string params = match[1];
 	std::string returnType = match[2];
-	logger.debug(fmt::format("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(),
-	                         symbolName, (uintptr_t)symbol));
+	logger.fdebug("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(), symbolName,
+	              (uintptr_t)symbol);
 	auto caller = std::make_unique<NativeCallHelper>(*_rt.vm().getJNIEnv());
 	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
 	_rt.currentFrame().setReturnObject(ret);
@@ -599,7 +599,7 @@ void Interpreter::monitor_enter(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("monitor_enter on null object");
 	}
-	logger.warning(fmt::format("monitor_enter not implemented!"));
+	logger.warning("monitor_enter not implemented!");
 	//_rt.monitorEnter(obj);
 	frame.pc()++;
 }
@@ -611,7 +611,7 @@ void Interpreter::monitor_exit(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("monitor_exit on null object");
 	}
-	logger.warning(fmt::format("monitor_exit not implemented!"));
+	logger.warning("monitor_exit not implemented!");
 	//_rt.monitorExit(obj);
 	frame.pc()++;
 }
@@ -674,7 +674,7 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 		return;
 	}
 
-	logger.debug(fmt::format("new {}", cls.getFullname()));
+	logger.fdebug("new {}", cls.getFullname());
 	frame.setObjRegister(dest, Object::make(cls));
 	frame.pc() += 3;
 }
@@ -786,14 +786,14 @@ void Interpreter::throw_(const uint8_t* operand_) {
 				auto& classloader = _rt.getClassLoader();
 				auto& exceptionType = classloader.resolveClass(frame.getDexIdx(), exc.first);
 				if (exceptionType.isInstanceOf(obj)) {
-					logger.debug(fmt::format("Catch exception {} at {:x}", exceptionType.getName(), exc.second));
+					logger.fdebug("Catch exception {} at {:x}", exceptionType.getName(), exc.second);
 					frame.pc() = exc.second << 1;
 					frame.setException(obj);
 					return;
 				}
 			}
 			if (catchAllAddrress != 0) {
-				logger.debug(fmt::format("Catch all exception at {:x}", catchAllAddrress));
+				logger.fdebug("Catch all exception at {:x}", catchAllAddrress);
 				frame.pc() = catchAllAddrress << 1;
 				frame.setException(obj);
 				return;
@@ -1306,7 +1306,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	uint8_t indexReg = operand_[2];
 	auto& frame = _rt.currentFrame();
 
-	logger.debug(fmt::format("aput: valueReg: {}, arrayReg: {}, indexReg: {}", valueReg, arrayReg, indexReg));
+	logger.fdebug("aput: valueReg: {}, arrayReg: {}, indexReg: {}", valueReg, arrayReg, indexReg);
 
 	auto arrayObj = frame.getObjRegister(arrayReg);
 	if (arrayObj->isNull()) {
@@ -1492,7 +1492,7 @@ void Interpreter::iget(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("iget: Field {} is not a number object", field.getName()));
 	}
 	int32_t value = static_cast<int32_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
-	logger.debug(fmt::format("iget {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iget {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1519,7 +1519,7 @@ void Interpreter::iget_wide(const uint8_t* operand_) {
 	}
 
 	auto value = std::dynamic_pointer_cast<NumberObject>(fieldObj)->getLongValue();
-	logger.debug(fmt::format("iget_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iget_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1543,7 +1543,7 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 	}
 
 	auto fieldObj = obj->getField(field.getName());
-	logger.debug(fmt::format("iget_object {}.{}={}", field.getClass().getFullname(), field.getName(), fieldObj ? fieldObj->debug() : "null"));
+	logger.fdebug("iget_object {}.{}={}", field.getClass().getFullname(), field.getName(), fieldObj ? fieldObj->debug() : "null");
 	frame.setObjRegister(dest, fieldObj);
 	frame.pc() += 3;
 }
@@ -1570,7 +1570,7 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("iget_boolean: Field {} is not a number object", field.getName()));
 	}
 	bool value = static_cast<bool>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
-	logger.debug(fmt::format("iget_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iget_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1597,7 +1597,7 @@ void Interpreter::iget_byte(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
 	int8_t value = static_cast<int8_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
-	logger.debug(fmt::format("iget_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iget_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1624,7 +1624,7 @@ void Interpreter::iget_char(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
 	uint16_t value = static_cast<uint16_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
-	logger.debug(fmt::format("iget_char {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iget_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1651,7 +1651,7 @@ void Interpreter::iget_short(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
 	int16_t value = static_cast<int16_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
-	logger.debug(fmt::format("iget_short {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iget_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1673,7 +1673,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("iput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType()));
 	}
 	int32_t value = frame.getIntRegister(src);
-	logger.debug(fmt::format("iput {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iput {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	obj->setField(field.getName(), Object::make(value));
 	frame.pc() += 3;
 }
@@ -1700,7 +1700,7 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 	}
 
 	int64_t value = frame.getLongRegister(src);
-	logger.debug(fmt::format("iput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	obj->setField(field.getName(), Object::make(value));
 	frame.pc() += 3;
 }
@@ -1728,7 +1728,7 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 	}
 
 	auto value = frame.getObjRegister(src);
-	logger.debug(fmt::format("iput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug()));
+	logger.fdebug("iput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug());
 	obj->setField(field.getName(), value);
 	frame.pc() += 3;
 }
@@ -1751,7 +1751,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 	}
 
 	bool value = frame.getIntRegister(src) != 0;
-	logger.debug(fmt::format("iput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	obj->setField(field.getName(), Object::make(value));
 	frame.pc() += 3;
 }
@@ -1774,7 +1774,7 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 	}
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
-	logger.debug(fmt::format("iput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	obj->setField(field.getName(), Object::make(value));
 	frame.pc() += 3;
 }
@@ -1797,7 +1797,7 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 	}
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
-	logger.debug(fmt::format("iput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	obj->setField(field.getName(), Object::make(value));
 	frame.pc() += 3;
 }
@@ -1820,7 +1820,7 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 	}
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
-	logger.debug(fmt::format("iput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("iput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	obj->setField(field.getName(), Object::make(value));
 	frame.pc() += 3;
 }
@@ -1866,6 +1866,7 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 	std::string classname, fieldname;
 	try {
 		auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname);
+		logger.fdebug("sget_object: Resolving field {}", field.str());
 		if (!field.isStatic()) {
 			throw std::runtime_error("sget_object: Cannot use sget_object on a non-static field");
 		}
@@ -1883,13 +1884,7 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 		// set result of the sget-object to the destination register
 		frame.setObjRegister(dest, field.getObjectValue());
 	} catch (const std::exception& e) {
-		// if (_rt.handleClassFieldGetter(classname, fieldname)) {
-		//	// handle by vm
-		//	logger.warning(fmt::format("sget_object handle static field getter by vm for {}->{}!", classname, fieldname));
-		//	frame.setObjRegister(dest, Object::makeVmObject(classname + "." + fieldname));
-		// } else {
 		throw std::runtime_error(fmt::format("sget_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what()));
-		//}
 	}
 	frame.pc() += 3;
 }
@@ -1974,7 +1969,7 @@ void Interpreter::sput(const uint8_t* operand_) {
 	}
 
 	int32_t value = frame.getIntRegister(src);
-	logger.debug(fmt::format("sput {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("sput {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -1995,7 +1990,7 @@ void Interpreter::sput_wide(const uint8_t* operand_) {
 	}
 
 	int64_t value = frame.getLongRegister(src);
-	logger.debug(fmt::format("sput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("sput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	field.setLongValue(value);
 	frame.pc() += 3;
 }
@@ -2026,7 +2021,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 		auto& fieldclass = classloader.getOrLoad(field.getPrettyType());
 		// set result of the sput-object
 		auto value = frame.getObjRegister(src);
-		logger.debug(fmt::format("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug()));
+		logger.fdebug("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug());
 		// @todo : this is a hack to handle setting null to an object field. Need to properly handle this case.
 		if (value->isNumberObject() && (std::dynamic_pointer_cast<NumberObject>(value)->getValue() == 0)) {
 			auto obj = Object::make(fieldclass);
@@ -2056,7 +2051,7 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 	}
 
 	bool value = frame.getIntRegister(src) != 0;
-	logger.debug(fmt::format("sput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("sput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2077,7 +2072,7 @@ void Interpreter::sput_byte(const uint8_t* operand_) {
 	}
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
-	logger.debug(fmt::format("sput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("sput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2098,7 +2093,7 @@ void Interpreter::sput_char(const uint8_t* operand_) {
 	}
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
-	logger.debug(fmt::format("sput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("sput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2119,7 +2114,7 @@ void Interpreter::sput_short(const uint8_t* operand_) {
 	}
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
-	logger.debug(fmt::format("sput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value));
+	logger.fdebug("sput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2175,7 +2170,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			vmethod = &instance->getMethod(methodname, signature);
 			break;  // Method found, exit loop
 		} catch (std::exception& e) {
-			logger.debug(fmt::format("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature));
+			logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
 			if (instance->hasSuperClass()) {
 				// If the method is not found in the current class, try the superclass
 				instance = &classloader.getOrLoad(instance->getSuperClassname());
@@ -2192,13 +2187,13 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	}
 	if (vmethod) {
 		if (!vmethod->isVirtual()) {
-			logger.error(fmt::format("invoke-virtual: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), methodname, signature));
+			logger.ferror("invoke-virtual: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), methodname, signature);
 		}
+		logger.fok("invoke-virtual call method {}->{}{}{} on instance {}", instance->getFullname(), methodname, signature, args_str,
+		           this_ptr_class->getClass().getFullname());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
 		} else {
-			logger.ok(fmt::format("invoke-virtual call method {}->{}{}{} on instance {}", instance->getFullname(), methodname, signature, args_str,
-			                      this_ptr_class->getClass().getFullname()));
 			if (vmethod->hasBytecode()) {
 				auto& newframe = _rt.newFrame(*vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
@@ -2263,7 +2258,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 		if (method.getBytecode() == nullptr) {
 			method.execute(frame, args);
 		} else {
-			logger.ok(fmt::format("invoke-direct call method {} static={}", method_str, method.isStatic()));
+			logger.fok("invoke-direct call method {} static={}", method_str, method.isStatic());
 			auto& newframe = _rt.newFrame(method);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
@@ -2329,13 +2324,13 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	Method* vmethod = nullptr;
 	while (1) {
 		try {
-			logger.debug(fmt::format("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
-			                         interface.getSignature(), interface_str));
+			logger.fdebug("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
+			              interface.getSignature(), interface_str);
 			vmethod = &instance->getMethod(interface.getName(), interface.getSignature());
 			break;  // Method found, exit loop
 		} catch (std::exception& e) {
-			logger.debug(fmt::format("invoke-interface: class {} does not implement interface {}.{}{} not found, trying superclass", instance->getFullname(),
-			                         interface.getName(), interface.getSignature(), interface_str));
+			logger.fdebug("invoke-interface: class {} does not implement interface {}.{}{} not found, trying superclass", instance->getFullname(),
+			              interface.getName(), interface.getSignature(), interface_str);
 			if (instance->hasSuperClass()) {
 				// If the method is not found in the current class, try the superclass
 				instance = &classloader.getOrLoad(instance->getSuperClassname());
@@ -2361,14 +2356,14 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	}
 	if (vmethod) {
 		if (!vmethod->isVirtual()) {
-			logger.error(fmt::format("invoke-interface: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), interface.getName(),
-			                         interface.getSignature()));
+			logger.ferror("invoke-interface: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), interface.getName(),
+			              interface.getSignature());
 		}
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
 		} else {
-			logger.ok(fmt::format("invoke-interface call method {}->{}{}{} on instance {}", instance->getFullname(), interface.getName(),
-			                      interface.getSignature(), interface_str, this_ptr_class->getClass().getFullname()));
+			logger.fok("invoke-interface call method {}->{}{}{} on instance {}", instance->getFullname(), interface.getName(), interface.getSignature(),
+			           interface_str, this_ptr_class->getClass().getFullname());
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
 			for (uint32_t i = 0; i < vA; i++) {
@@ -2419,8 +2414,8 @@ void Interpreter::invoke_direct_range(const uint8_t* operand_) {
 		if (method.getBytecode() == nullptr) {
 			method.execute(frame, args);
 		} else {
-			logger.ok(fmt::format("invoke-static-range call method {}.{}{} with {} arguments", method.getClass().getFullname(), method.getName(),
-			                      method.getSignature(), regCount));
+			logger.fok("invoke-static-range call method {}.{}{} with {} arguments", method.getClass().getFullname(), method.getName(), method.getSignature(),
+			           regCount);
 			auto& newframe = _rt.newFrame(method);
 			for (uint8_t i = 0; i < regCount; ++i) {
 				newframe.setObjRegister(method.getNbRegisters() - regCount + i, frame.getObjRegister(startReg + i));

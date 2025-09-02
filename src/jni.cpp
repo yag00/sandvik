@@ -828,7 +828,7 @@ const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolea
 	if (obj == nullptr) {
 		throw std::runtime_error("NullPointerException");
 	}
-	logger.debug(fmt::format("env->GetStringUTFChars {}", obj->debug()));
+	logger.fdebug("env->GetStringUTFChars {}", obj->debug());
 	char *utf = new char[obj->str().length() + 1];
 	std::strncpy(utf, obj->str().c_str(), obj->str().length());
 	utf[obj->str().length()] = '\0';  // Null-terminate the string
@@ -842,7 +842,7 @@ void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char
 	if (obj == nullptr) {
 		throw std::runtime_error("NullPointerException");
 	}
-	logger.debug(fmt::format("env->ReleaseStringUTFChars {}", obj->debug()));
+	logger.fdebug("env->ReleaseStringUTFChars {}", obj->debug());
 	if (chars) {
 		// If we allocated memory for chars, we should delete it
 		delete[] chars;
@@ -994,7 +994,7 @@ jint NativeInterface::RegisterNatives(JNIEnv *env, jclass clazz, const JNINative
 	}
 	for (int i = 0; i < nMethods; i++) {
 		const JNINativeMethod *method = &methods[i];
-		logger.debug(fmt::format("JNI: RegisterNatives {}{} -> {}", method->name, method->signature, method->fnPtr));
+		logger.fdebug("JNI: RegisterNatives {}{} -> {}", method->name, method->signature, method->fnPtr);
 	}
 	return JNI_OK;
 }

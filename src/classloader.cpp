@@ -43,9 +43,9 @@ ClassLoader::~ClassLoader() {
 void ClassLoader::loadRt(const std::string& rt_) {
 	try {
 		rtld::load(rt_, _dexs);
-		logger.debug(fmt::format("RT loaded: {}", rt_));
+		logger.fdebug("RT loaded: {}", rt_);
 	} catch (const std::exception& e) {
-		logger.error(fmt::format("Failed to load DEX: {}", e.what()));
+		logger.ferror("Failed to load DEX: {}", e.what());
 		return;
 	}
 }
@@ -53,10 +53,10 @@ void ClassLoader::loadRt(const std::string& rt_) {
 void ClassLoader::loadDex(const std::string& dex_) {
 	try {
 		auto dex = std::make_unique<Dex>(dex_);
-		logger.debug(fmt::format("DEX loaded: {}", dex->getPath()));
+		logger.fdebug("DEX loaded: {}", dex->getPath());
 		_dexs.push_back(std::move(dex));
 	} catch (const std::exception& e) {
-		logger.error(fmt::format("Failed to load DEX: {}", e.what()));
+		logger.ferror("Failed to load DEX: {}", e.what());
 		return;
 	}
 }
@@ -65,21 +65,21 @@ void ClassLoader::loadApk(const std::string& apk_) {
 	try {
 		auto dex = std::make_unique<Dex>();
 		auto apk = std::make_unique<Apk>(apk_, *dex);
-		logger.debug(fmt::format("APK loaded: {}", apk->getPath()));
+		logger.fdebug("APK loaded: {}", apk->getPath());
 		_apks.push_back(std::move(apk));
 		_dexs.push_back(std::move(dex));
 	} catch (const std::exception& e) {
-		logger.error(fmt::format("Failed to load APK: {}", e.what()));
+		logger.ferror("Failed to load APK: {}", e.what());
 		return;
 	}
 }
 
 void ClassLoader::addClassPath(const std::string& classpath_) {
 	if (std::find(_classpath.begin(), _classpath.end(), classpath_) == _classpath.end()) {
-		logger.debug(fmt::format("classpath add {}", classpath_));
+		logger.fdebug("classpath add {}", classpath_);
 		_classpath.push_back(classpath_);
 	} else {
-		logger.debug(fmt::format("classpath already exists: {}", classpath_));
+		logger.fdebug("classpath already exists: {}", classpath_);
 	}
 }
 
@@ -155,7 +155,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 				auto dex = std::make_unique<Dex>(fullPath);
 				_classes[classname_] = dex->findClass(*this, classname_);
 				_dexs.push_back(std::move(dex));
-				logger.ok(fmt::format("class {} loaded", classname_));
+				logger.fok("class {} loaded", classname_);
 				return *(_classes[classname_]);
 			}
 		} catch (std::exception& e) {

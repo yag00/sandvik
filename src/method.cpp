@@ -84,10 +84,10 @@ uint32_t Method::getIndex() const {
 
 std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t pc_, uint32_t& catchAllAddr_) const {
 	uint16_t pc = pc_ >> 1;
-	logger.debug(fmt::format("getExceptionHandler: pc={:x} size={}", pc, _trycatch_items.size()));
+	logger.fdebug("getExceptionHandler: pc={:x} size={}", pc, _trycatch_items.size());
 	for (const auto& exc : _trycatch_items) {
-		logger.debug(fmt::format("{}: Exception handler: start_addr: {:x}, insn_count: {:x}, catch_all_addr: {:x}", getName(), exc.start_addr, exc.insn_count,
-		                         exc.catch_all_addr));
+		logger.fdebug("{}: Exception handler: start_addr: {:x}, insn_count: {:x}, catch_all_addr: {:x}", getName(), exc.start_addr, exc.insn_count,
+		              exc.catch_all_addr);
 		if (pc >= exc.start_addr && pc < exc.start_addr + exc.insn_count) {
 			catchAllAddr_ = exc.catch_all_addr;
 			return exc.handlers;

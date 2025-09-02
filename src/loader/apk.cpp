@@ -191,7 +191,7 @@ std::string Apk::findMainActivity() const {
 
 		return mainActivity;
 	} catch (const std::exception& e) {
-		logger.error(fmt::format("AXML parsing failed: {}", e.what()));
+		logger.ferror("AXML parsing failed: {}", e.what());
 		return "";
 	}
 }

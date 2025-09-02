@@ -30,7 +30,7 @@ extern "C" {
 				default:
 					ssize_t written = write(fd, nativeStr, strlen(nativeStr));
 					if (written == -1) {
-						logger.warning(fmt::format("Failed to write {} to file descriptor {}", nativeStr, fd));
+						logger.fwarning("Failed to write {} to file descriptor {}", nativeStr, fd);
 					}
 					break;
 			}
@@ -56,7 +56,7 @@ extern "C" {
 				default:
 					ssize_t written = write(fd, nativeStr, strlen(nativeStr));
 					if (written == -1) {
-						logger.warning(fmt::format("Failed to write {} to file descriptor {}", nativeStr, fd));
+						logger.fwarning("Failed to write {} to file descriptor {}", nativeStr, fd);
 					}
 					break;
 			}

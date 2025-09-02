@@ -210,7 +210,7 @@ std::vector<std::pair<std::string, uint32_t>> Dex::resolveArray(uint16_t idx) {
 		if (type.type() != LIEF::DEX::Type::TYPES::ARRAY) {
 			throw DexLoaderException(fmt::format("Type at index {} is not a array", idx));
 		}
-		logger.debug(fmt::format("Array {} [{}] :", get_type_descriptor(type), type.dim()));
+		logger.fdebug("Array {} [{}] :", get_type_descriptor(type), type.dim());
 		for (const auto& item : type.array()) {
 			switch (item.type()) {
 				case LIEF::DEX::Type::TYPES::PRIMITIVE:

@@ -186,7 +186,7 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 	for (const auto& fieldname : _class.getFieldList()) {
 		auto& field = _class.getField(fieldname);
 		if (!field.isStatic()) {
-			logger.debug(fmt::format("New instance of {}: Adding field {} type={}", _class.getFullname(), fieldname, field.getType()));
+			logger.fdebug("New instance of {}: Adding field {} type={}", _class.getFullname(), fieldname, field.getType());
 			switch (field.getType()[0]) {
 				case 'I':
 				case 'Z':
@@ -206,13 +206,13 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 	}
 	Class* current = &_class;
 	while (current->hasSuperClass()) {
-		logger.debug(fmt::format("super class {}", current->getSuperClassname()));
+		logger.fdebug("super class {}", current->getSuperClassname());
 		current = &current->getSuperClass();
 		for (const auto& fieldname : current->getFieldList()) {
 			auto& field = current->getField(fieldname);
 			if (!field.isStatic()) {
-				logger.debug(fmt::format("New instance of {} inherits from ({}): Adding field {} type={}", _class.getFullname(), current->getFullname(),
-				                         fieldname, field.getType()));
+				logger.fdebug("New instance of {} inherits from ({}): Adding field {} type={}", _class.getFullname(), current->getFullname(), fieldname,
+				              field.getType());
 				switch (field.getType()[0]) {
 					case 'I':
 					case 'Z':
