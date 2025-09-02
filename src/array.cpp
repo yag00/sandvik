@@ -22,6 +22,7 @@
 
 #include <algorithm>
 
+#include "class.hpp"
 #include "object.hpp"
 
 using namespace sandvik;
@@ -64,4 +65,71 @@ std::shared_ptr<Object> Array::getArrayElement(uint32_t index_) const {
 		throw std::out_of_range("Array index out of bounds");
 	}
 	return _data[index_];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<Object> MultiArray::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
+	return std::make_shared<MultiArray>(classtype_, dimensions_);
+}
+
+MultiArray::MultiArray(const Class& classtype_, const std::vector<uint32_t>& dimensions_) : Object(), _classtype(classtype_), _dimensions(dimensions_) {
+	uint32_t totalSize = 1;
+	for (auto d : _dimensions) {
+		totalSize *= d;
+	}
+	_data.resize(totalSize);
+	std::generate(_data.begin(), _data.end(), []() { return Object::makeNull(); });
+}
+
+MultiArray::MultiArray(const MultiArray& other) : Object(other), _classtype(other._classtype), _dimensions(other._dimensions), _data(other._data) {
+}
+
+std::shared_ptr<Object> MultiArray::clone() const {
+	return std::make_shared<MultiArray>(*this);
+}
+
+std::string MultiArray::debug() const {
+	std::string dims;
+	for (size_t i = 0; i < _dimensions.size(); ++i) {
+		dims += std::to_string(_dimensions[i]);
+		if (i + 1 < _dimensions.size()) dims += "x";
+	}
+	return fmt::format("MultiArray type={}, dimensions={}", _classtype.getFullname(), dims);
+}
+
+uint32_t MultiArray::getArrayLength() const {
+	return _data.size();
+}
+
+void MultiArray::setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Object> value_) {
+	uint32_t idx = flattenIndex(indices_);
+	if (idx >= _data.size()) {
+		throw std::out_of_range("MultiArray index out of bounds");
+	}
+	_data[idx] = value_;
+}
+
+std::shared_ptr<Object> MultiArray::getElement(const std::vector<uint32_t>& indices_) const {
+	uint32_t idx = flattenIndex(indices_);
+	if (idx >= _data.size()) {
+		throw std::out_of_range("MultiArray index out of bounds");
+	}
+	return _data[idx];
+}
+
+uint32_t MultiArray::flattenIndex(const std::vector<uint32_t>& indices_) const {
+	if (indices_.size() != _dimensions.size()) {
+		throw std::invalid_argument("Incorrect number of indices for MultiArray");
+	}
+	uint32_t idx = 0;
+	uint32_t stride = 1;
+	for (int i = _dimensions.size() - 1; i >= 0; --i) {
+		if (indices_[i] >= _dimensions[i]) {
+			throw std::out_of_range("MultiArray index out of bounds");
+		}
+		idx += indices_[i] * stride;
+		stride *= _dimensions[i];
+	}
+	return idx;
 }

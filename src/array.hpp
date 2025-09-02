@@ -44,6 +44,26 @@ namespace sandvik {
 			uint32_t _size;
 			std::vector<std::shared_ptr<Object>> _data;
 	};
+	class MultiArray : public Object {
+		public:
+			static std::shared_ptr<Object> make(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
+			explicit MultiArray(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
+			MultiArray(const MultiArray& other);
+			~MultiArray() = default;
+			std::shared_ptr<Object> clone() const override;
+			std::string debug() const override;
+			uint32_t getArrayLength() const override;
+
+			void setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Object> value_);
+			std::shared_ptr<Object> getElement(const std::vector<uint32_t>& indices_) const;
+
+		private:
+			const Class& _classtype;
+			std::vector<uint32_t> _dimensions;
+			std::vector<std::shared_ptr<Object>> _data;
+
+			uint32_t flattenIndex(const std::vector<uint32_t>& indices_) const;
+	};
 }  // namespace sandvik
 
 #endif  // __ARRAY_HPP__

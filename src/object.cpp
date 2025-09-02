@@ -22,6 +22,7 @@
 
 #include <stdexcept>
 
+#include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "field.hpp"
@@ -48,6 +49,10 @@ std::shared_ptr<Object> Object::makeNull() {
 std::shared_ptr<Object> Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
 	return std::make_shared<ConstClassObject>(clazz, classtype_);
+}
+
+std::shared_ptr<Object> Object::makeMultiArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
+	return std::make_shared<MultiArray>(classtype_, dimensions_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
