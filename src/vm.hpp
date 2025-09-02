@@ -56,6 +56,7 @@ namespace sandvik {
 			std::vector<std::string> _ldpath;
 			std::vector<std::unique_ptr<SharedLibrary>> _sharedlibs;
 			std::unique_ptr<NativeInterface> _jnienv;
+			bool _isPrimitiveClassInitialized;
 	};
 }  // namespace sandvik
 

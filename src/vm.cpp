@@ -26,6 +26,7 @@
 
 #include "array.hpp"
 #include "class.hpp"
+#include "classbuilder.hpp"
 #include "classloader.hpp"
 #include "field.hpp"
 #include "frame.hpp"
@@ -40,14 +41,55 @@
 
 using namespace sandvik;
 
-Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
+Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)), _isPrimitiveClassInitialized(false) {
 	logger.info("VM instance created.");
+
+	ClassBuilder(*_classloader, "", "boolean").finalize();
+	ClassBuilder(*_classloader, "", "byte").finalize();
+	ClassBuilder(*_classloader, "", "char").finalize();
+	ClassBuilder(*_classloader, "", "short").finalize();
+	ClassBuilder(*_classloader, "", "int").finalize();
+	ClassBuilder(*_classloader, "", "long").finalize();
+	ClassBuilder(*_classloader, "", "float").finalize();
+	ClassBuilder(*_classloader, "", "double").finalize();
+	ClassBuilder(*_classloader, "", "void").finalize();
+
 	// load self as a shared library to be able to resolve native methods
 	loadLibrary("");
 }
 
 void Vm::loadRt(const std::string& path) {
 	_classloader->loadRt(path);
+	if (!_isPrimitiveClassInitialized) {
+		_isPrimitiveClassInitialized = true;
+		/*
+		| Wrapper Class         | Primitive Type | Descriptor | `TYPE` should point to… |
+		| --------------------- | -------------- | ---------- | ----------------------- |
+		| `java/lang/Boolean`   | `boolean`      | `Z`        | `boolean.class`         |
+		| `java/lang/Byte`      | `byte`         | `B`        | `byte.class`            |
+		| `java/lang/Character` | `char`         | `C`        | `char.class`            |
+		| `java/lang/Short`     | `short`        | `S`        | `short.class`           |
+		| `java/lang/Integer`   | `int`          | `I`        | `int.class`             |
+		| `java/lang/Long`      | `long`         | `J`        | `long.class`            |
+		| `java/lang/Float`     | `float`        | `F`        | `float.class`           |
+		| `java/lang/Double`    | `double`       | `D`        | `double.class`          |
+		| `java/lang/Void`      | `void`         | `V`        | `void.class`            |
+		*/
+		// Initialize primitive types and set TYPE field for each wrapper class
+		const std::vector<std::pair<std::string, std::string>> primitives = {
+		    {"java.lang.Boolean", "boolean"}, {"java.lang.Byte", "byte"},     {"java.lang.Character", "char"},
+		    {"java.lang.Short", "short"},     {"java.lang.Integer", "int"},   {"java.lang.Long", "long"},
+		    {"java.lang.Float", "float"},     {"java.lang.Double", "double"}, {"java.lang.Void", "void"}};
+		for (const auto& [wrapper, primitive] : primitives) {
+			try {
+				auto& wrapperCls = _classloader->getOrLoad(wrapper);
+				auto& primitiveCls = _classloader->getOrLoad(primitive);
+				wrapperCls.getField("TYPE").setObjectValue(Object::makeConstClass(*_classloader, primitiveCls));
+			} catch (const std::exception& e) {
+				logger.error(e.what());
+			}
+		}
+	}
 }
 
 void Vm::loadDex(const std::string& path) {
