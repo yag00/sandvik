@@ -45,7 +45,7 @@ namespace sandvik {
 			static std::shared_ptr<Object> make(const std::exception& e_);
 			static std::shared_ptr<Object> makeConstClass(ClassLoader& classloader_, Class& classtype_);  // for Class<?> object
 			static std::shared_ptr<Object> makeNull();
-			static std::shared_ptr<Object> makeMultiArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_);
+			static std::shared_ptr<Object> makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 
 			virtual std::string debug() const;
 

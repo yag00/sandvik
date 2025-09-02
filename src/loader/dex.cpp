@@ -33,6 +33,7 @@
 #include "field.hpp"
 #include "method.hpp"
 #include "system/logger.hpp"
+#include "types.hpp"
 #include "utils.hpp"
 
 using namespace sandvik;
@@ -145,10 +146,22 @@ void Dex::resolveClass(uint16_t idx, std::string& class_) {
 
 		// Get the specific type
 		const auto& type = type_items[idx];
-		if (type.type() != LIEF::DEX::Type::TYPES::CLASS) {
-			throw DexLoaderException(fmt::format("Type at index {} is not a class", idx));
+
+		switch (type.type()) {
+			case LIEF::DEX::Type::TYPES::CLASS:
+				class_ = type.cls().pretty_name();
+				return;
+			case LIEF::DEX::Type::TYPES::PRIMITIVE:
+				class_ = get_type_descriptor(type);
+				return;
+			case LIEF::DEX::Type::TYPES::ARRAY:
+				class_ = get_type_descriptor(type);
+				return;
+			case LIEF::DEX::Type::TYPES::UNKNOWN:
+			default:
+				throw DexLoaderException(fmt::format("Unknown type at index {}", idx));
+				break;
 		}
-		class_ = type.cls().pretty_name();
 	} catch (const std::exception& e) {
 		throw DexLoaderException(fmt::format("Failed to resolve class at index {}: {}", idx, e.what()));
 	}
@@ -170,6 +183,36 @@ void Dex::resolveField(uint16_t idx, std::string& class_, std::string& field_) {
 		class_ = it->cls()->pretty_name();
 	} catch (const std::exception& e) {
 		throw DexLoaderException(fmt::format("Failed to resolve field at index {}: {}", idx, e.what()));
+	}
+}
+
+std::string Dex::resolveType(uint16_t idx, TYPES& type_) {
+	if (!_dex) {
+		throw DexLoaderException("No DEX file loaded");
+	}
+	// Get the type_id item first
+	const auto& type_items = _dex->types();
+	if (idx >= type_items.size()) {
+		throw DexLoaderException(fmt::format("Type index {} out of range", idx));
+	}
+
+	// Get the specific type
+	const auto& type = type_items[idx];
+
+	switch (type.type()) {
+		case LIEF::DEX::Type::TYPES::CLASS:
+			type_ = TYPES::CLASS;
+			return type.cls().pretty_name();
+		case LIEF::DEX::Type::TYPES::PRIMITIVE:
+			type_ = TYPES::PRIMITIVE;
+			return get_primitive_type(get_type_descriptor(type));
+		case LIEF::DEX::Type::TYPES::ARRAY:
+			type_ = TYPES::ARRAY;
+			return get_type_descriptor(type);
+		case LIEF::DEX::Type::TYPES::UNKNOWN:
+		default:
+			type_ = TYPES::UNKNOWN;
+			return "<unknown>";
 	}
 }
 
@@ -210,15 +253,32 @@ std::vector<std::pair<std::string, uint32_t>> Dex::resolveArray(uint16_t idx) {
 		if (type.type() != LIEF::DEX::Type::TYPES::ARRAY) {
 			throw DexLoaderException(fmt::format("Type at index {} is not a array", idx));
 		}
-		logger.fdebug("Array {} [{}] :", get_type_descriptor(type), type.dim());
+		// remove first [
+		auto descriptor = get_type_descriptor(type).substr(1);
 		for (const auto& item : type.array()) {
 			switch (item.type()) {
 				case LIEF::DEX::Type::TYPES::PRIMITIVE:
-					_array.push_back({get_type_descriptor(item), item.dim()});
+					_array.push_back({get_primitive_type(descriptor), item.dim()});
 					break;
-				case LIEF::DEX::Type::TYPES::CLASS:
-					_array.push_back({get_type_descriptor(item), item.dim()});
+				case LIEF::DEX::Type::TYPES::CLASS: {
+					if (!descriptor.empty()) {
+						if (descriptor.front() == 'L') {
+							descriptor = descriptor.substr(1);  // remove 'L'
+						} else {
+							logger.error("Expected class descriptor to start with 'L', got '{}'", descriptor);
+						}
+						if (descriptor.back() == ';') {
+							descriptor.pop_back();
+						} else {
+							logger.error("Expected class descriptor to end with ';', got '{}'", descriptor);
+						}
+						std::replace(descriptor.begin(), descriptor.end(), '/', '.');
+						_array.push_back({descriptor, item.dim()});
+					} else {
+						throw DexLoaderException("Empty class descriptor in array type");
+					}
 					break;
+				}
 				case LIEF::DEX::Type::TYPES::ARRAY:
 					throw DexLoaderException(fmt::format("Nested array type: {} [{}] not supported", get_type_descriptor(item), item.dim()));
 					break;

@@ -34,6 +34,7 @@ namespace LIEF {
 namespace sandvik {
 	class ClassLoader;
 	class Class;
+	enum class TYPES;
 	class Dex {
 		public:
 			// Custom exception class
@@ -63,6 +64,7 @@ namespace sandvik {
 			void resolveMethod(uint16_t idx, std::string& class_, std::string& method_, std::string& sig_);
 			void resolveClass(uint16_t idx, std::string& class_);
 			void resolveField(uint16_t idx, std::string& class_, std::string& field_);
+			std::string resolveType(uint16_t idx, TYPES& type_);
 			std::string resolveString(uint16_t idx);
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint16_t idx);
 

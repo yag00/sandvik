@@ -110,8 +110,14 @@ std::string Class::getFullname() const {
 	return _fullname;
 }
 
-bool Class::isInstanceOf(const std::string& class_) const {
-	if (getFullname() == class_) {
+bool Class::isInstanceOf(const std::string& classname_) const {
+	if (getFullname() == classname_) {
+		return true;
+	}
+	return false;
+}
+bool Class::isInstanceOf(const Class& class_) const {
+	if (getFullname() == class_.getFullname()) {
 		return true;
 	}
 	return false;

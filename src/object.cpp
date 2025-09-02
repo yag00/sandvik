@@ -51,8 +51,8 @@ std::shared_ptr<Object> Object::makeConstClass(ClassLoader& classloader_, Class&
 	return std::make_shared<ConstClassObject>(clazz, classtype_);
 }
 
-std::shared_ptr<Object> Object::makeMultiArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
-	return std::make_shared<MultiArray>(classtype_, dimensions_);
+std::shared_ptr<Object> Object::makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
+	return std::make_shared<Array>(classtype_, dimensions_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

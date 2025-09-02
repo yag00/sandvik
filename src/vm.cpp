@@ -181,10 +181,11 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	}
 
 	// Set the arguments for the main method
-	auto args = Array::make("String", args_.size());
+	const auto& stringClass = _classloader->getOrLoad("java.lang.String");
+	auto args = Array::make(stringClass, args_.size());
 	for (size_t i = 0; i < args_.size(); ++i) {
 		auto strObj = StringObject::make(*_classloader, args_[i]);
-		std::static_pointer_cast<Array>(args)->setArrayElement(i, strObj);
+		std::static_pointer_cast<Array>(args)->setElement(i, strObj);
 	}
 	mainThread.currentFrame().setObjRegister(nbRegisters, args);
 	try {

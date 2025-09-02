@@ -36,7 +36,7 @@ extern "C" {
 		}
 		logger.fdebug("Array dimensions: {}", dimArray->getArrayLength());
 		for (size_t i = 0; i < dimArray->getArrayLength(); ++i) {
-			auto numObj = std::dynamic_pointer_cast<sandvik::NumberObject>(dimArray->getArrayElement(i));
+			auto numObj = std::dynamic_pointer_cast<sandvik::NumberObject>(dimArray->getElement(i));
 			if (!numObj) {
 				throw std::runtime_error(fmt::format("Dimension at index {} is not a NumberObject", i));
 			}
@@ -46,7 +46,7 @@ extern "C" {
 
 		// Create the multi-dimensional array
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
-		auto arrObj = sandvik::Object::makeMultiArray(classloader, cls->getClassType(), dimensions);
+		auto arrObj = sandvik::Object::makeArray(classloader, cls->getClassType(), dimensions);
 
 		// Return as jobject
 		return jenv->getHandles().toJObject(arrObj);

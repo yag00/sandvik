@@ -30,6 +30,7 @@ namespace sandvik {
 	class Field;
 	class Apk;
 	class Dex;
+	enum class TYPES;
 	/** @brief Class Loader class
 	 */
 	class ClassLoader {
@@ -54,6 +55,7 @@ namespace sandvik {
 			Class& resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_);
 			Field& resolveField(uint32_t dex_, uint16_t idx_);
 			Field& resolveField(uint32_t dex_, uint16_t idx_, std::string& classname, std::string& field);
+			std::string resolveType(uint32_t dex_, uint16_t idx_, TYPES& type_);
 			std::string resolveString(uint32_t dex_, uint16_t idx_);
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint32_t dex_, uint16_t idx_);
 

@@ -38,6 +38,7 @@
 #include "native_call.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "types.hpp"
 #include "vm.hpp"
 
 using namespace sandvik;
@@ -624,10 +625,56 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("check_cast on null object");
 	}
+
 	auto& classloader = _rt.getClassLoader();
-	auto& targetClass = classloader.resolveClass(frame.getDexIdx(), typeIndex);
-	if (!targetClass.isInstanceOf(obj)) {
-		throw std::runtime_error(fmt::format("Cannot cast object to {}", targetClass.getName()));
+	TYPES type = TYPES::UNKNOWN;
+	std::string type_name = classloader.resolveType(frame.getDexIdx(), typeIndex, type);
+	switch (type) {
+		case TYPES::PRIMITIVE:
+			// Primitive types: no casting needed, always valid
+			logger.fdebug("@todo check-cast to primitive type {}", type_name);
+			break;
+		case TYPES::CLASS: {
+			auto& targetClass = classloader.resolveClass(frame.getDexIdx(), typeIndex);
+			if (!targetClass.isInstanceOf(obj)) {
+				throw std::runtime_error(fmt::format("Cannot cast object to {}", targetClass.getName()));
+			}
+			break;
+		}
+		case TYPES::ARRAY: {
+			auto array = std::dynamic_pointer_cast<Array>(obj);
+			if (!array) {
+				throw std::runtime_error("check_cast: Object is not an array");
+			}
+			size_t array_dims = 0;
+			size_t pos = 0;
+			while (pos < type_name.size() && type_name[pos] == '[') {
+				array_dims++;
+				pos++;
+			}
+			std::string element_type_name = type_name.substr(pos);
+			logger.fdebug("Array type: {} dimensions, element type {}", array_dims, element_type_name);
+			// check object has good dimensions
+			if (array->getDimensions() != array_dims) {
+				throw std::runtime_error(fmt::format("Cannot cast array of {} dimensions to {}", array->getDimensions(), array_dims));
+			}
+			// check if element type is class or primitive
+			if (element_type_name[0] == 'L') {
+				auto classname = element_type_name.substr(1);  // remove 'L'
+				classname.pop_back();                          // remove ';'
+				std::replace(classname.begin(), classname.end(), '/', '.');
+				auto& targetClass = classloader.getOrLoad(classname);
+				if (!targetClass.isInstanceOf(array->getClassType())) {
+					throw std::runtime_error(fmt::format("Cannot cast array to {}", targetClass.getName()));
+				}
+			} else {
+				// Primitive types: no casting needed, always valid
+				logger.fdebug("@todo check-cast to array of primitive type {}", element_type_name);
+			}
+			break;
+		}
+		default:
+			throw std::runtime_error(fmt::format("check-cast: Unsupported type {}", type_name));
 	}
 	frame.pc() += 3;
 }
@@ -693,7 +740,8 @@ void Interpreter::new_array(const uint8_t* operand_) {
 	if (size < 0) {
 		throw std::runtime_error("new_array: Array size cannot be negative");
 	}
-	auto arrayObj = Array::make(arrayType[0].first, size);
+	const auto& type = classloader.getOrLoad(arrayType[0].first);
+	auto arrayObj = Array::make(type, size);
 	frame.setObjRegister(dest, arrayObj);
 	frame.pc() += 3;
 }
@@ -740,25 +788,25 @@ void Interpreter::fill_array_data(const uint8_t* operand_) {
 		switch (elementSize) {
 			case 1: {
 				int8_t value = *reinterpret_cast<const int8_t*>(arrayData);
-				array->setArrayElement(i, Object::make(value));
+				array->setElement(i, Object::make(value));
 				arrayData += 1;
 				break;
 			}
 			case 2: {
 				int16_t value = *reinterpret_cast<const int16_t*>(arrayData);
-				array->setArrayElement(i, Object::make(value));
+				array->setElement(i, Object::make(value));
 				arrayData += 2;
 				break;
 			}
 			case 4: {
 				int32_t value = *reinterpret_cast<const int32_t*>(arrayData);
-				array->setArrayElement(i, Object::make(value));
+				array->setElement(i, Object::make(value));
 				arrayData += 4;
 				break;
 			}
 			case 8: {
 				int64_t value = *reinterpret_cast<const int64_t*>(arrayData);
-				array->setArrayElement(i, Object::make(value));
+				array->setElement(i, Object::make(value));
 				arrayData += 8;
 				break;
 			}
@@ -1123,7 +1171,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aget: Array index out of bounds");
 	}
-	auto obj = array->getArrayElement(index);
+	auto obj = array->getElement(index);
 	if (!obj->isNumberObject()) {
 		throw std::runtime_error("aget: Array does not contain number");
 	}
@@ -1154,7 +1202,7 @@ void Interpreter::aget_wide(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aget-wide: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getArrayElement(index));
+	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
 		throw std::runtime_error("aget-wide: Array element is not a number object");
 	}
@@ -1182,7 +1230,7 @@ void Interpreter::aget_object(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aget-object: Array index out of bounds");
 	}
-	auto value = array->getArrayElement(index);
+	auto value = array->getElement(index);
 	frame.setObjRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1206,7 +1254,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aget-boolean: Array index out of bounds");
 	}
-	auto element = array->getArrayElement(index);
+	auto element = array->getElement(index);
 	auto numberObj = std::dynamic_pointer_cast<NumberObject>(element);
 	if (!numberObj) {
 		throw std::runtime_error("aget-boolean: Array element is not a number object");
@@ -1235,7 +1283,7 @@ void Interpreter::aget_byte(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aget-byte: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getArrayElement(index));
+	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
 		throw std::runtime_error("aget-byte: Array element is not a number object");
 	}
@@ -1263,7 +1311,7 @@ void Interpreter::aget_char(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aget-char: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getArrayElement(index));
+	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
 		throw std::runtime_error("aget-char: Array element is not a number object");
 	}
@@ -1291,7 +1339,7 @@ void Interpreter::aget_short(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aget-short: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getArrayElement(index));
+	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
 		throw std::runtime_error("aget-short: Array element is not a number object");
 	}
@@ -1322,7 +1370,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aput: Array index out of bounds");
 	}
-	array->setArrayElement(index, Object::make(value));
+	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
 }
 // aput-wide vAA, vBB, vCC
@@ -1346,7 +1394,7 @@ void Interpreter::aput_wide(const uint8_t* operand_) {
 		throw std::runtime_error("aput-wide: Array index out of bounds");
 	}
 	auto value = frame.getLongRegister(valueReg);
-	array->setArrayElement(index, Object::make(value));
+	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
 }
 // aput-object vAA, vBB, vCC
@@ -1370,7 +1418,7 @@ void Interpreter::aput_object(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aput-object: Array index out of bounds");
 	}
-	array->setArrayElement(index, value);
+	array->setElement(index, value);
 	frame.pc() += 3;
 }
 // aput-boolean vAA, vBB, vCC
@@ -1394,7 +1442,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aput-boolean: Array index out of bounds");
 	}
-	array->setArrayElement(index, Object::make(value));
+	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
 }
 // aput-byte vAA, vBB, vCC
@@ -1418,7 +1466,7 @@ void Interpreter::aput_byte(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aput-byte: Array index out of bounds");
 	}
-	array->setArrayElement(index, Object::make(value));
+	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
 }
 // aput-char vAA, vBB, vCC
@@ -1442,7 +1490,7 @@ void Interpreter::aput_char(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aput-char: Array index out of bounds");
 	}
-	array->setArrayElement(index, Object::make(value));
+	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
 }
 // aput-short vAA, vBB, vCC
@@ -1466,7 +1514,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw std::runtime_error("aput-short: Array index out of bounds");
 	}
-	array->setArrayElement(index, Object::make(value));
+	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
 }
 // iget vA, vB, field@CCCC

@@ -24,6 +24,7 @@
 #include <LIEF/DEX/Method.hpp>
 #include <LIEF/DEX/Prototype.hpp>
 #include <LIEF/DEX/Type.hpp>
+#include <map>
 #include <sstream>
 
 using namespace LIEF::DEX;
@@ -80,4 +81,16 @@ std::string sandvik::get_method_descriptor(const Method& method) {
 	oss << ')';
 	oss << get_type_descriptor(*method.prototype()->return_type());
 	return oss.str();
+}
+
+std::string sandvik::get_primitive_type(const std::string& descriptor) {
+	static std::map<std::string, std::string> descriptors = {{"Z", "boolean"}, {"B", "byte"},  {"C", "char"},   {"S", "short"}, {"I", "int"},
+	                                                         {"J", "long"},    {"F", "float"}, {"D", "double"}, {"V", "void"}};
+	return descriptors[descriptor];
+}
+
+bool sandvik::is_primitive_type(const std::string& classname) {
+	static std::map<std::string, bool> primitive_types = {{"boolean", true}, {"byte", true},  {"char", true},   {"short", true}, {"int", true},
+	                                                      {"long", true},    {"float", true}, {"double", true}, {"void", true}};
+	return primitive_types[classname];
 }

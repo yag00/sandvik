@@ -31,6 +31,7 @@
 #include "loader/rtld.hpp"
 #include "method.hpp"
 #include "system/logger.hpp"
+#include "types.hpp"
 
 using namespace sandvik;
 
@@ -224,6 +225,17 @@ Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_, std::string& clas
 		return cls.getField(field);
 	} catch (std::exception& e) {
 		throw std::runtime_error(fmt::format("Field not found: {} ({})", idx_, e.what()));
+	}
+}
+
+std::string ClassLoader::resolveType(uint32_t dex_, uint16_t idx_, TYPES& type_) {
+	if (dex_ >= _dexs.size()) {
+		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
+	}
+	try {
+		return _dexs[dex_]->resolveType(idx_, type_);
+	} catch (const std::exception& e) {
+		throw std::runtime_error(fmt::format("Type not found: {} ({})", idx_, e.what()));
 	}
 }
 

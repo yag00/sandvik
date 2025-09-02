@@ -27,53 +27,14 @@
 
 using namespace sandvik;
 
-std::shared_ptr<Object> Array::make(const std::string& type_, uint32_t size_) {
-	return std::make_shared<Array>(type_, size_);
+std::shared_ptr<Object> Array::make(const Class& classtype_, uint32_t size_) {
+	return std::make_shared<Array>(classtype_, std::vector<uint32_t>{size_});
 }
-Array::Array(const std::string& type_, uint32_t size_) : Object(), _type(type_), _size(size_) {
-	_data.resize(size_);
-	std::generate(_data.begin(), _data.end(), []() { return Object::makeNull(); });
-}
-
-Array::Array(const Array& other) : Object(other), _type(other._type), _size(other._size), _data(other._data) {
+std::shared_ptr<Object> Array::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
+	return std::make_shared<Array>(classtype_, dimensions_);
 }
 
-std::shared_ptr<Object> Array::clone() const {
-	return std::make_shared<Array>(*this);
-}
-
-std::string Array::debug() const {
-	return fmt::format("Array type={}, size={}", _type, _size);
-}
-
-uint32_t Array::getArrayLength() const {
-	return _size;
-}
-
-void Array::setArrayElement(uint32_t index_, std::shared_ptr<Object> value_) {
-	if (index_ >= _size) {
-		throw std::out_of_range("Array index out of bounds");
-	}
-	// todo check type
-	// if (value_ == nullptr || value_->getType() != _type) {
-	//	throw std::invalid_argument("Invalid object type for array element");
-	//}
-	_data[index_] = value_;
-}
-std::shared_ptr<Object> Array::getArrayElement(uint32_t index_) const {
-	if (index_ >= _size) {
-		throw std::out_of_range("Array index out of bounds");
-	}
-	return _data[index_];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-std::shared_ptr<Object> MultiArray::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
-	return std::make_shared<MultiArray>(classtype_, dimensions_);
-}
-
-MultiArray::MultiArray(const Class& classtype_, const std::vector<uint32_t>& dimensions_) : Object(), _classtype(classtype_), _dimensions(dimensions_) {
+Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_) : Object(), _classtype(classtype_), _dimensions(dimensions_) {
 	uint32_t totalSize = 1;
 	for (auto d : _dimensions) {
 		totalSize *= d;
@@ -82,51 +43,86 @@ MultiArray::MultiArray(const Class& classtype_, const std::vector<uint32_t>& dim
 	std::generate(_data.begin(), _data.end(), []() { return Object::makeNull(); });
 }
 
-MultiArray::MultiArray(const MultiArray& other) : Object(other), _classtype(other._classtype), _dimensions(other._dimensions), _data(other._data) {
+Array::Array(const Array& other) : Object(other), _classtype(other._classtype), _dimensions(other._dimensions), _data(other._data) {
 }
 
-std::shared_ptr<Object> MultiArray::clone() const {
-	return std::make_shared<MultiArray>(*this);
+std::shared_ptr<Object> Array::clone() const {
+	return std::make_shared<Array>(*this);
 }
 
-std::string MultiArray::debug() const {
+const Class& Array::getClassType() const {
+	return _classtype;
+}
+
+std::string Array::debug() const {
 	std::string dims;
 	for (size_t i = 0; i < _dimensions.size(); ++i) {
 		dims += std::to_string(_dimensions[i]);
 		if (i + 1 < _dimensions.size()) dims += "x";
 	}
-	return fmt::format("MultiArray type={}, dimensions={}", _classtype.getFullname(), dims);
+	return fmt::format("Array type={}, dimensions={}", _classtype.getFullname(), dims);
 }
 
-uint32_t MultiArray::getArrayLength() const {
-	return _data.size();
+uint32_t Array::getDimensions() const {
+	return _dimensions.size();
 }
 
-void MultiArray::setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Object> value_) {
+uint32_t Array::getDimension(uint32_t index_) const {
+	if (index_ >= _dimensions.size()) {
+		throw std::out_of_range("Array dimension index out of bounds");
+	}
+	return _dimensions[index_];
+}
+
+uint32_t Array::getArrayLength() const {
+	return getDimension(0);
+}
+
+void Array::setElement(uint32_t idx_, std::shared_ptr<Object> value_) {
+	if (_dimensions.size() != 1) {
+		throw std::invalid_argument("Use multi-dimensional setElement for arrays with more than one dimension");
+	}
+	if (idx_ >= _data.size()) {
+		throw std::out_of_range("Array index out of bounds");
+	}
+	_data[idx_] = value_;
+}
+
+std::shared_ptr<Object> Array::getElement(uint32_t idx_) const {
+	if (_dimensions.size() != 1) {
+		throw std::invalid_argument("Use multi-dimensional getElement for arrays with more than one dimension");
+	}
+	if (idx_ >= _data.size()) {
+		throw std::out_of_range("Array index out of bounds");
+	}
+	return _data[idx_];
+}
+
+void Array::setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Object> value_) {
 	uint32_t idx = flattenIndex(indices_);
 	if (idx >= _data.size()) {
-		throw std::out_of_range("MultiArray index out of bounds");
+		throw std::out_of_range("Array index out of bounds");
 	}
 	_data[idx] = value_;
 }
 
-std::shared_ptr<Object> MultiArray::getElement(const std::vector<uint32_t>& indices_) const {
+std::shared_ptr<Object> Array::getElement(const std::vector<uint32_t>& indices_) const {
 	uint32_t idx = flattenIndex(indices_);
 	if (idx >= _data.size()) {
-		throw std::out_of_range("MultiArray index out of bounds");
+		throw std::out_of_range("Array index out of bounds");
 	}
 	return _data[idx];
 }
 
-uint32_t MultiArray::flattenIndex(const std::vector<uint32_t>& indices_) const {
+uint32_t Array::flattenIndex(const std::vector<uint32_t>& indices_) const {
 	if (indices_.size() != _dimensions.size()) {
-		throw std::invalid_argument("Incorrect number of indices for MultiArray");
+		throw std::invalid_argument("Incorrect number of indices for Array");
 	}
 	uint32_t idx = 0;
 	uint32_t stride = 1;
 	for (int i = _dimensions.size() - 1; i >= 0; --i) {
 		if (indices_[i] >= _dimensions[i]) {
-			throw std::out_of_range("MultiArray index out of bounds");
+			throw std::out_of_range("Array index out of bounds");
 		}
 		idx += indices_[i] * stride;
 		stride *= _dimensions[i];

@@ -16,23 +16,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __UTILS_HPP__
-#define __UTILS_HPP__
-
-#include <string>
-
-namespace LIEF {
-	namespace DEX {
-		class Type;
-		class Method;
-	}  // namespace DEX
-}  // namespace LIEF
+#ifndef __TYPES_HPP__
+#define __TYPES_HPP__
 
 namespace sandvik {
-	std::string get_type_descriptor(const LIEF::DEX::Type& type);
-	std::string get_method_descriptor(const LIEF::DEX::Method& method);
-	std::string get_primitive_type(const std::string& descriptor);
-	bool is_primitive_type(const std::string& classname);
+	enum class TYPES {
+		UNKNOWN = 0,
+		PRIMITIVE = 1,
+		CLASS = 2,
+		ARRAY = 3,
+	};
 }  // namespace sandvik
 
-#endif  // __CLASS_HPP__
+#endif

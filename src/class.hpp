@@ -59,7 +59,8 @@ namespace sandvik {
 			Field& getField(uint32_t idx_);
 			std::vector<std::string> getFieldList();
 
-			bool isInstanceOf(const std::string& class_) const;
+			bool isInstanceOf(const std::string& classname_) const;
+			bool isInstanceOf(const Class& class_) const;
 			bool isInstanceOf(std::shared_ptr<Object>& class_) const;
 			bool isExternal() const;
 			bool isAbstract() const;
