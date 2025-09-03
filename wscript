@@ -38,6 +38,7 @@ def configure(conf):
 
 	conf.git_submodule_update()
 
+	conf.load('rc', tooldir='wtools')
 	conf.load('doxygen')
 
 	# set clang/clang++ as default compiler
@@ -118,7 +119,6 @@ def build(bld):
 	#-------------------------------------------------
 	# build java runtime sanddirt.jar
 	#-------------------------------------------------
-
 	bld(features   = 'javac jar d8',
 		srcdir     = 'sanddirt/', # folder containing the sources to compile
 		outdir     = 'sanddirt', # folder where to output the classes (in the build directory)
@@ -130,10 +130,11 @@ def build(bld):
 		destfile   = 'sanddirt.jar', # do not put the destfile in the folder of the java classes!
 	)
 	#-------------------------------------------------
-	# build sandvik static/shared library
+	# build sandvik library
 	#-------------------------------------------------
 	sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c'], excl=['src/main.cpp'])
 	bld.shlib(
+		features        = 'resources',
 		source          = sources,
 		name            = APPNAME,
 		target          = APPNAME,
@@ -141,19 +142,10 @@ def build(bld):
 		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
 		linkflags       = ["-Wl,-z,defs"],
 		install_path    = '${PREFIX}/lib',
+		resources       = 'sanddirt.dex.jar',
 	)
-	bld.stlib(
-		source          = sources,
-		name            = APPNAME + '_static',
-		target          = APPNAME,
-		includes        = ['src'],
-		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
-		linkflags       = ["-Wl,-z,defs"],
-		install_path    = '${PREFIX}/lib',
-	)
-
 	#-------------------------------------------------
-	# build sandvik runtime environment
+	# build sandvik main executable
 	#-------------------------------------------------
 	bld.program(
 		source          = 'src/main.cpp',

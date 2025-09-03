@@ -28,16 +28,32 @@
 #include "system/logger.hpp"
 #include "system/zip.hpp"
 
+extern "C" {
+	extern const unsigned char _binary_sanddirt_dex_jar_start[];
+	extern const unsigned char _binary_sanddirt_dex_jar_end[];
+	extern const size_t _binary_sanddirt_dex_jar_size;
+}
+
 using namespace sandvik;
 
 /** Constructor: Loads the JAR file */
 void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) {
-	if (!ZipReader::isValidArchive(path_)) {
-		throw std::runtime_error(fmt::format("Invalid RT file: {}", path_));
+	auto zip = std::make_unique<ZipReader>();
+	if (path_.empty()) {
+		size_t size = (size_t)&_binary_sanddirt_dex_jar_size;
+		// paranoia check
+		size_t size2 = _binary_sanddirt_dex_jar_end - _binary_sanddirt_dex_jar_start;
+		if (size != size2) {
+			throw std::runtime_error(fmt::format("Internal error: embedded RT size mismatch {} != {}", size, size2));
+		}
+		zip->open((uint8_t*)_binary_sanddirt_dex_jar_start, size);
+	} else {
+		if (!ZipReader::isValidArchive(path_)) {
+			throw std::runtime_error(fmt::format("Invalid RT file: {}", path_));
+		}
+		zip->open(path_);
 	}
 
-	auto zip = std::make_unique<ZipReader>();
-	zip->open(path_);
 	// load all *.dex files
 	for (const auto& file : zip->getList()) {
 		if (file.size() >= 4 && file.substr(file.size() - 4) == ".dex") {

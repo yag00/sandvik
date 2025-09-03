@@ -37,6 +37,11 @@ namespace sandvik {
 			 * @param zipfile_ zip archive name
 			 * @throw std::exception */
 			void open(const std::string& zipfile_);
+			/** open an existing zip archive from memory
+			 * @param data_ zip archive data
+			 * @param size_ size of data
+			 * @throw std::exception */
+			void open(uint8_t* data_, size_t size_);
 			/** finalize and close the zip file
 			 * @throw std::exception */
 			void close();
