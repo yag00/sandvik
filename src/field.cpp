@@ -47,13 +47,18 @@ std::string Field::str() const {
 	return fmt::format("({}){}.{}", _type, _class.getFullname(), _name);
 }
 
-std::string Field::getPrettyType() const {
-	if (_type.size() > 2 && _type[0] == 'L' && _type.back() == ';') {
-		std::string prettyType = _type.substr(1, _type.size() - 2);
+std::string Field::getFieldTypeClassname() const {
+	// Handles array types like "[Lcom/example/Foo;" and normal object types "Lcom/example/Foo;"
+	std::string type = _type;
+	while (!type.empty() && type[0] == '[') {
+		type = type.substr(1);
+	}
+	if (type.size() > 2 && type[0] == 'L' && type.back() == ';') {
+		std::string prettyType = type.substr(1, type.size() - 2);
 		std::replace(prettyType.begin(), prettyType.end(), '/', '.');
 		return prettyType;
 	}
-	return _type;
+	return type;
 }
 
 Class& Field::getClass() const {

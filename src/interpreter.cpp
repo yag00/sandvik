@@ -1090,10 +1090,19 @@ void Interpreter::if_eqz(const uint8_t* operand_) {
 	uint8_t regA = operand_[0];
 	int16_t offset = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
-	if (frame.getIntRegister(regA) == 0) {
-		frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+	auto obj = frame.getObjRegister(regA);
+	if (obj && obj->isNumberObject()) {
+		if (frame.getIntRegister(regA) == 0) {
+			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+		} else {
+			frame.pc() += 3;
+		}
 	} else {
-		frame.pc() += 3;
+		if (obj->isNull()) {
+			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+		} else {
+			frame.pc() += 3;
+		}
 	}
 }
 // if-nez vAA, +BBBB
@@ -1101,10 +1110,19 @@ void Interpreter::if_nez(const uint8_t* operand_) {
 	uint8_t regA = operand_[0];
 	int16_t offset = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
-	if (frame.getIntRegister(regA) != 0) {
-		frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+	auto obj = frame.getObjRegister(regA);
+	if (obj && obj->isNumberObject()) {
+		if (frame.getIntRegister(regA) != 0) {
+			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+		} else {
+			frame.pc() += 3;
+		}
 	} else {
-		frame.pc() += 3;
+		if (!obj->isNull()) {
+			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+		} else {
+			frame.pc() += 3;
+		}
 	}
 }
 // if-ltz vAA, +BBBB
@@ -2071,7 +2089,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 			executeClinit(clazz);
 			return;
 		}
-		auto& fieldclass = classloader.getOrLoad(field.getPrettyType());
+		auto& fieldclass = classloader.getOrLoad(field.getFieldTypeClassname());
 		// set result of the sput-object
 		auto value = frame.getObjRegister(src);
 		logger.fdebug("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug());

@@ -75,20 +75,20 @@ void Frame::setIntRegister(uint32_t reg, int32_t value) {
 }
 
 int32_t Frame::getIntRegister(uint32_t reg) {
-	logger.fdebug("getIntRegister: reg={}", reg);
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getIntRegister: reg={} out of bounds", reg));
 	}
 	auto obj = _registers[reg];
-	if (std::dynamic_pointer_cast<NumberObject>(obj)) {
-		return std::dynamic_pointer_cast<NumberObject>(obj)->getValue();
-	} else {
-		logger.fdebug("getIntRegister: obj ptr=<{:x}>", (uintptr_t)obj.get());
+	if (obj->isNull()) {
+		logger.fdebug("getIntRegister: reg={} -> null", reg);
+		return 0;
 	}
 	if (!obj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("Register does not contain an NumberObject {}", obj->debug()));
 	}
-	return std::dynamic_pointer_cast<NumberObject>(obj)->getValue();
+	auto number = std::dynamic_pointer_cast<NumberObject>(obj)->getValue();
+	logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
+	return number;
 }
 
 void Frame::setLongRegister(uint32_t reg, int64_t value) {

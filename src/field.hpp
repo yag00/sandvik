@@ -39,7 +39,8 @@ namespace sandvik {
 			~Field() = default;
 
 			std::string str() const;
-			std::string getPrettyType() const;
+
+			std::string getFieldTypeClassname() const;
 
 			uint32_t getIntValue() const;
 			uint64_t getLongValue() const;
