@@ -34,16 +34,32 @@ std::shared_ptr<Object> Array::make(const Class& classtype_, const std::vector<u
 	return std::make_shared<Array>(classtype_, dimensions_);
 }
 
-Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_) : Object(), _classtype(classtype_), _dimensions(dimensions_) {
+Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_)
+    : Object(), _classtype(classtype_), _dimensions(dimensions_), _offset(0), _length(0) {
 	uint32_t totalSize = 1;
 	for (auto d : _dimensions) {
 		totalSize *= d;
 	}
-	_data.resize(totalSize);
-	std::generate(_data.begin(), _data.end(), []() { return Object::makeNull(); });
+	_length = totalSize;
+	_data = std::make_shared<ObjectVector>();
+	_data->resize(totalSize);
+	std::generate(_data->begin(), _data->end(), []() { return Object::makeNull(); });
 }
 
-Array::Array(const Array& other) : Object(other), _classtype(other._classtype), _dimensions(other._dimensions), _data(other._data) {
+Array::Array(const Array& other)
+    : Object(other), _classtype(other._classtype), _dimensions(other._dimensions), _data(other._data), _offset(other._offset), _length(other._length) {
+}
+
+Array::Array(std::shared_ptr<ObjectVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_)
+    : Object(), _classtype(classtype_), _dimensions(dimensions_), _data(data_), _offset(offset_) {
+	uint32_t totalSize = 1;
+	for (auto d : _dimensions) {
+		totalSize *= d;
+	}
+	_length = totalSize;
+	if (_offset + _length > _data->size()) {
+		throw std::out_of_range("Subarray out of range");
+	}
 }
 
 std::shared_ptr<Object> Array::clone() const {
@@ -82,36 +98,36 @@ void Array::setElement(uint32_t idx_, std::shared_ptr<Object> value_) {
 	if (_dimensions.size() != 1) {
 		throw std::invalid_argument("Use multi-dimensional setElement for arrays with more than one dimension");
 	}
-	if (idx_ >= _data.size()) {
+	if (idx_ >= getArrayLength()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	_data[idx_] = value_;
+	(*_data)[_offset + idx_] = value_;
 }
 
 std::shared_ptr<Object> Array::getElement(uint32_t idx_) const {
 	if (_dimensions.size() != 1) {
-		throw std::invalid_argument("Use multi-dimensional getElement for arrays with more than one dimension");
+		return getArray(idx_);
 	}
-	if (idx_ >= _data.size()) {
+	if (idx_ >= getArrayLength()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	return _data[idx_];
+	return (*_data)[_offset + idx_];
 }
 
 void Array::setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Object> value_) {
 	uint32_t idx = flattenIndex(indices_);
-	if (idx >= _data.size()) {
+	if (idx >= _data->size()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	_data[idx] = value_;
+	(*_data)[idx] = value_;
 }
 
 std::shared_ptr<Object> Array::getElement(const std::vector<uint32_t>& indices_) const {
 	uint32_t idx = flattenIndex(indices_);
-	if (idx >= _data.size()) {
+	if (idx >= _data->size()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	return _data[idx];
+	return (*_data)[idx];
 }
 
 uint32_t Array::flattenIndex(const std::vector<uint32_t>& indices_) const {
@@ -128,4 +144,24 @@ uint32_t Array::flattenIndex(const std::vector<uint32_t>& indices_) const {
 		stride *= _dimensions[i];
 	}
 	return idx;
+}
+
+std::shared_ptr<Array> Array::getArray(uint32_t idx_) const {
+	// Ensure the array is multi-dimensional
+	if (_dimensions.size() <= 1) {
+		throw std::invalid_argument("Cannot get a sub-array from a one-dimensional array");
+	}
+	// Check if the index is within bounds
+	if (idx_ >= _dimensions[0]) {
+		throw std::out_of_range("Array index out of bounds");
+	}
+	// Calculate the size of the sub-array
+	uint32_t subArraySize = 1;
+	for (size_t i = 1; i < _dimensions.size(); ++i) {
+		subArraySize *= _dimensions[i];
+	}
+	// Calculate the starting index of the sub-array in the flattened data
+	uint32_t startIdx = idx_ * subArraySize;
+	// Create a sub-array that references the original data
+	return std::make_shared<Array>(_data, _classtype, std::vector<uint32_t>(_dimensions.begin() + 1, _dimensions.end()), _offset + startIdx);
 }

@@ -28,15 +28,22 @@
 namespace sandvik {
 	class Array : public Object {
 		public:
+			using ObjectVector = std::vector<std::shared_ptr<Object>>;
+
 			static std::shared_ptr<Object> make(const Class& classtype_, uint32_t size_);
 			static std::shared_ptr<Object> make(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 			explicit Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 			Array(const Array& other);
+			// Constructor for subarray view
+			Array(std::shared_ptr<ObjectVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
 			~Array() = default;
+
 			std::shared_ptr<Object> clone() const override;
 			std::string debug() const override;
 
 			const Class& getClassType() const;
+
+			std::shared_ptr<Array> getArray(uint32_t idx_) const;
 
 			uint32_t getDimensions() const;
 			uint32_t getDimension(uint32_t index_) const;
@@ -49,11 +56,14 @@ namespace sandvik {
 			std::shared_ptr<Object> getElement(const std::vector<uint32_t>& indices_) const;
 
 		private:
+			uint32_t flattenIndex(const std::vector<uint32_t>& indices_) const;
+
 			const Class& _classtype;
 			std::vector<uint32_t> _dimensions;
-			std::vector<std::shared_ptr<Object>> _data;
+			std::shared_ptr<ObjectVector> _data;
 
-			uint32_t flattenIndex(const std::vector<uint32_t>& indices_) const;
+			size_t _offset;
+			size_t _length;
 	};
 }  // namespace sandvik
 

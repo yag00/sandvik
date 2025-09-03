@@ -1172,14 +1172,19 @@ void Interpreter::aget(const uint8_t* operand_) {
 		throw std::runtime_error("aget: Array index out of bounds");
 	}
 	auto obj = array->getElement(index);
+	int32_t value = 0;
 	if (!obj->isNumberObject()) {
-		throw std::runtime_error("aget: Array does not contain number");
+		if (!obj->isNull()) {
+			throw std::runtime_error("aget: Array does not contain number");
+		}
+	} else {
+		auto numberObj = std::dynamic_pointer_cast<NumberObject>(obj);
+		if (!numberObj) {
+			throw std::runtime_error("aget: Array element is not a number object");
+		}
+		value = numberObj->getValue();
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(obj);
-	if (!numberObj) {
-		throw std::runtime_error("aget: Array element is not a number object");
-	}
-	frame.setIntRegister(dest, numberObj->getValue());
+	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
 // aget-wide vAA, vBB, vCC
