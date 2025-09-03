@@ -78,7 +78,7 @@ TEST(VM, fibonacci) {
 	ASSERT_EQ(actualOutput, expectedOutput) << "The actual output does not match the expected output.";
 	fclose(file);
 }
-/* @todo restore after fixing java missing classes
+
 TEST(VM, dalvik) {
 	logger.setLevel(Logger::LogLevel::NONE);
 	Vm vm;
@@ -102,7 +102,7 @@ TEST(VM, dalvik) {
 	refFile.close();
 	ASSERT_EQ(actualOutput, expectedOutput) << "The actual output does not match the expected output.";
 	fclose(file);
-}*/
+}
 
 TEST(VM, native) {
 	logger.setLevel(Logger::LogLevel::NONE);

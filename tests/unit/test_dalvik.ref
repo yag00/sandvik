@@ -169,11 +169,20 @@ Running array operation tests...
 [OK] long array element 4
 [OK] long array element 5
 [OK] long array element 6
+[OK] 2D array A[0][0]
+[OK] 2D array A[0][1]
+[OK] 2D array A[0][2]
+[OK] 2D array A[1][0]
+[OK] 2D array A[1][1]
+[OK] 2D array A[1][2]
+[OK] 2D array A[2][0]
+[OK] 2D array A[2][1]
+[OK] 2D array A[2][2]
 [OK] invoke
 [OK] invoke-super
 [OK] invoke-interface
 Running exception tests...
 [OK] RuntimeException Exception caught
 [OK] IllegalArgumentException Exception caught
-Tests passed: 167
+Tests passed: 176
 Tests failed: 0
