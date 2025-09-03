@@ -4654,7 +4654,8 @@ public class Collections {
         public Collection<V> values() { return emptySet(); }
         public Set<Map.Entry<K, V>> entrySet() { return emptySet(); }
 
-        public boolean equals(Object o) { return (o instanceof Map) && ((Map<?, ?>) o).isEmpty(); }
+        public boolean equals(Object o) { return (o instanceof Map) && ((Map<?, ?>) o).isEmpty();
+        }
 
         public int hashCode() { return 0; }
 

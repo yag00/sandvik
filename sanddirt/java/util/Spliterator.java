@@ -690,9 +690,9 @@ public interface Spliterator<T> {
                 forEachRemaining((IntConsumer) action);
             } else {
                 if (Tripwire.ENABLED)
-                    Tripwire.trip(
-                        getClass(),
-                        "{0} calling Spliterator.OfInt.forEachRemaining((IntConsumer) action::accept)");
+                    Tripwire.trip(getClass(),
+                                  "{0} calling Spliterator.OfInt.forEachRemaining((IntConsumer) "
+                                      + "action::accept)");
                 forEachRemaining((IntConsumer) action::accept);
             }
         }
@@ -752,9 +752,9 @@ public interface Spliterator<T> {
                 forEachRemaining((LongConsumer) action);
             } else {
                 if (Tripwire.ENABLED)
-                    Tripwire.trip(
-                        getClass(),
-                        "{0} calling Spliterator.OfLong.forEachRemaining((LongConsumer) action::accept)");
+                    Tripwire.trip(getClass(),
+                                  "{0} calling Spliterator.OfLong.forEachRemaining((LongConsumer) "
+                                      + "action::accept)");
                 forEachRemaining((LongConsumer) action::accept);
             }
         }
@@ -791,9 +791,9 @@ public interface Spliterator<T> {
                 return tryAdvance((DoubleConsumer) action);
             } else {
                 if (Tripwire.ENABLED)
-                    Tripwire.trip(
-                        getClass(),
-                        "{0} calling Spliterator.OfDouble.tryAdvance((DoubleConsumer) action::accept)");
+                    Tripwire.trip(getClass(),
+                                  "{0} calling Spliterator.OfDouble.tryAdvance((DoubleConsumer) "
+                                      + "action::accept)");
                 return tryAdvance((DoubleConsumer) action::accept);
             }
         }
@@ -817,7 +817,8 @@ public interface Spliterator<T> {
                 if (Tripwire.ENABLED)
                     Tripwire.trip(
                         getClass(),
-                        "{0} calling Spliterator.OfDouble.forEachRemaining((DoubleConsumer) action::accept)");
+                        "{0} calling Spliterator.OfDouble.forEachRemaining((DoubleConsumer) "
+                            + "action::accept)");
                 forEachRemaining((DoubleConsumer) action::accept);
             }
         }
