@@ -6,14 +6,33 @@ from waflib import Task
 from waflib.TaskGen import feature
 from waflib.Configure import conf
 import os
+import requests
 
 def configure(conf):
-	conf.find_program('clang-format', mandatory=True)
+	path = os.path.abspath('ext')
+	try:
+		conf.find_program('clang-format', path_list=[path], mandatory=True)
+		version = conf.cmd_and_log(f"{conf.env['CLANG_FORMAT'][0]} --version").strip().split('version')[1].strip()
+		conf.msg('Checking for clang-format version', version)
+	except Exception as e:
+		url = 'https://github.com/cpp-linter/clang-tools-static-binaries/releases/download/master-6e612956/clang-format-21_linux-amd64'
+		conf.msg('Downloading clang-format', url)
+		clangformat = os.path.abspath('ext/clang-format')
+		with requests.get(url, stream=True) as r:
+			r.raise_for_status()
+			with open(clangformat, 'wb') as f:
+				for chunk in r.iter_content(chunk_size=8192):
+					f.write(chunk)
+		os.chmod(clangformat, 0o755)
+		conf.find_program('clang-format', path_list=[path], mandatory=True)
+		version = conf.cmd_and_log(f"{conf.env['CLANG_FORMAT'][0]} --version").strip().split('version')[1].strip()
+		conf.msg('Checking for clang-format version', version)
+
 
 
 class clang_format(Task.Task):
 	color   = 'YELLOW'
-	run_str = 'clang-format -style=file:${FORMATFILE} -i ${SRC}'
+	run_str = '${CLANG_FORMAT} -style=file:${FORMATFILE} -i ${SRC}'
 	shell = False
 
 @feature('checkstyle')
