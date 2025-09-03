@@ -13,7 +13,7 @@ def configure(conf):
 	d8_path = os.path.abspath('ext/android/build-tools/36.0.0')
 	try:
 		conf.find_program('d8', var='D8', path_list=[d8_path], mandatory=True)
-		version = conf.cmd_and_log(f'{conf.env['D8'][0]} --version').strip().split(' ')[1]
+		version = conf.cmd_and_log(f"{conf.env['D8'][0]} --version").strip().split(' ')[1]
 		conf.msg('Checking for d8 version', version)
 	except Exception as e:
 		# Install Android SDK command-line tools
@@ -44,7 +44,7 @@ def configure(conf):
 		conf.cmd_and_log(f'{android_home}/cmdline-tools/bin/sdkmanager --sdk_root={android_home} "platform-tools" "build-tools;36.0.0"')
 
 		conf.find_program('d8', var='D8', path_list=[d8_path], mandatory=True)
-		version = conf.cmd_and_log(f'{conf.env['D8'][0]} --version').strip().split(' ')[1]
+		version = conf.cmd_and_log(f"{conf.env['D8'][0]} --version").strip().split(' ')[1]
 		conf.msg('Checking for d8 version', version)
 
 class d8(Task.Task):

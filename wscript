@@ -32,7 +32,7 @@ def configure(conf):
 	conf.check_python_version((3,0,0))
 
 	conf.load('java')
-	version = conf.cmd_and_log(f'{conf.env['JAVAC'][0]} --version').strip().split(' ')[1]
+	version = conf.cmd_and_log(f"{conf.env['JAVAC'][0]} --version").strip().split(' ')[1]
 	conf.msg('Checking for javac version', version)
 	conf.load('d8', tooldir='wtools')
 
