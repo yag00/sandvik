@@ -29,7 +29,7 @@
 
 using namespace sandvik;
 
-TEST(VM, add) {
+TEST(VM, Add) {
 	logger.setLevel(Logger::LogLevel::NONE);
 	Vm vm;
 
@@ -37,7 +37,7 @@ TEST(VM, add) {
 	FILE* file = freopen("test_add.out", "w", stdout);
 	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
 
-	vm.loadRt("sanddirt.dex.jar");
+	vm.loadRt();
 	vm.loadDex("../tests/java/add/classes.dex");
 	vm.run("Add", {"5", "10"});
 
@@ -54,7 +54,7 @@ TEST(VM, add) {
 	fclose(file);
 }
 
-TEST(VM, fibonacci) {
+TEST(VM, Fibonacci) {
 	logger.setLevel(Logger::LogLevel::NONE);
 	Vm vm;
 
@@ -62,7 +62,7 @@ TEST(VM, fibonacci) {
 	FILE* file = freopen("test_fibonacci.out", "w", stdout);
 	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
 
-	vm.loadRt("sanddirt.dex.jar");
+	vm.loadRt();
 	vm.loadDex("../tests/java/fib/classes.dex");
 	vm.run("Fibonacci", {});
 
@@ -79,7 +79,7 @@ TEST(VM, fibonacci) {
 	fclose(file);
 }
 
-TEST(VM, dalvik) {
+TEST(VM, Dalvik) {
 	logger.setLevel(Logger::LogLevel::NONE);
 	Vm vm;
 
@@ -104,7 +104,7 @@ TEST(VM, dalvik) {
 	fclose(file);
 }
 
-TEST(VM, native) {
+TEST(VM, Native) {
 	logger.setLevel(Logger::LogLevel::NONE);
 	Vm vm;
 
@@ -112,7 +112,7 @@ TEST(VM, native) {
 	FILE* file = freopen("test_native.out", "w", stdout);
 	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
 
-	vm.loadRt("sanddirt.dex.jar");
+	vm.loadRt();
 	vm.loadDex("../tests/java/native/classes.dex");
 	vm.run("Native", {});
 
@@ -128,3 +128,103 @@ TEST(VM, native) {
 	ASSERT_EQ(actualOutput, expectedOutput) << "The actual output does not match the expected output.";
 	fclose(file);
 }
+
+
+void run_common_test(const std::string& mainclassname) {
+	logger.setLevel(Logger::LogLevel::NONE);
+	Vm vm;
+
+	// Redirect stdout to output.txt
+	FILE* file = freopen("test_DefaultMethods.out", "w", stdout);
+	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
+
+	vm.loadRt();
+	vm.loadRt("../tests/java/unit/TestUnitDex.jar");
+	vm.run(mainclassname, {});
+
+	std::ifstream outputFile("test_DefaultMethods.out");
+	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)),
+							 std::istreambuf_iterator<char>());
+	outputFile.close();
+
+	ASSERT_EQ(actualOutput, "ok\n") << "The actual output does not match the expected output.";
+
+	fclose(file);
+}
+
+TEST(VM, DefaultMethods) {
+	run_common_test("TestDefaultMethods");
+}
+TEST(VM, AbstractClass) {
+	run_common_test("TestAbstractClass");
+}
+TEST(VM, MultiLevel) {
+	run_common_test("TestMultiLevel");
+}
+TEST(VM, InterfaceConstants) {
+	run_common_test("TestInterfaceConstants");
+}
+TEST(VM, InterfaceStatic) {
+	run_common_test("TestInterfaceStatic");
+}
+TEST(VM, MethodConflict) {
+	run_common_test("TestMethodConflict");
+}
+TEST(VM, Anonymous) {
+	run_common_test("TestAnonymous");
+}
+TEST(VM, Arithmetic) {
+	run_common_test("TestArithmetic");
+}
+TEST(VM, Arrays) {
+	run_common_test("TestArrays");
+}
+TEST(VM, Exceptions) {
+	run_common_test("TestExceptions");
+}
+TEST(VM, Loops) {
+	run_common_test("TestLoops");
+}
+TEST(VM, Strings) {
+	run_common_test("TestStrings");
+}
+TEST(VM, Statics) {
+	run_common_test("TestStatics");
+}
+TEST(VM, DeepLoops) {
+	run_common_test("TestDeepLoops");
+}
+TEST(VM, EdgeNumbers) {
+	run_common_test("TestEdgeNumbers");
+}
+TEST(VM, Final) {
+	run_common_test("TestFinal");
+}
+
+TEST(VM, SwitchCase) {
+	run_common_test("TestSwitchCase");
+}
+TEST(VM, LargeSwitchDense) {
+	run_common_test("TestLargeSwitchDense");
+}
+TEST(VM, LargeSwitchSparse) {
+	run_common_test("TestLargeSwitchSparse");
+}
+TEST(VM, Polymorphism) {
+	run_common_test("TestPolymorphism");
+}
+
+/** @todo enable these test when interfaces are supported
+TEST(VM, Interfaces) {
+	run_common_test("TestInterfaces");
+}
+TEST(VM, Diamond) {
+	run_common_test("TestDiamond");
+}
+TEST(VM, InterfaceArray) {
+	run_common_test("TestInterfaceArray");
+}
+TEST(VM, InstanceOf) {
+	run_common_test("TestInstanceOf");
+}
+*/
