@@ -7,46 +7,56 @@ package java.lang;
  */
 public class String
     implements java.io.Serializable, java.lang.Comparable<String>, java.lang.CharSequence {
+    private native void initialize(java.lang.String str);
+    private native void initialize(byte[] val);
+    private native void initialize(byte[] val, int offset, int count);
+    private native void initialize(char[] val);
+    private native void initialize(char[] val, int offset, int count);
+    private native void initialize(int[] val, int offset, int count);
+    private native void initialize(byte[] val, int hibyte, int offset, int count);
+    private native void initialize(byte[] val, int offset, int count, java.lang.String charSet);
+    private native void initialize(java.lang.StringBuffer str);
+    private native void initialize(java.lang.StringBuilder str);
     /**
      * Create an empty string
      */
-    public String() {}
+    public String() { initialize(""); }
     /**
      * Create a copy of a given string.
      * @param str the string to copy
      */
-    public String(java.lang.String str) {}
+    public String(java.lang.String str) { initialize(str); }
     /**
      * Create a string from an array of byte.
      * @param val array of byte
      */
-    public String(byte[] val) {}
+    public String(byte[] val) { initialize(val); }
     /**
      * Create a string from a part of array of byte.
      * @param val array of byte
      * @param offset index of the first byte
      * @param count number of byte to copy
      */
-    public String(byte[] val, int offset, int count) {}
+    public String(byte[] val, int offset, int count) { initialize(val, offset, count); }
     /**
      * Create a string from an array of char.
      * @param val array of char
      */
-    public String(char[] val) {}
+    public String(char[] val) { initialize(val); }
     /**
      * Create a string from a part of array of char.
      * @param val array of char
      * @param offset index of the first char
      * @param count number of char to copy
      */
-    public String(char[] val, int offset, int count) {}
+    public String(char[] val, int offset, int count) { initialize(val, offset, count); }
     /**
      * Create a string from a part of array of codePoint.
      * @param val array of codePoint
      * @param offset index of the first codePoint
      * @param count number of codePoint to copy
      */
-    public String(int[] val, int offset, int count) {}
+    public String(int[] val, int offset, int count) { initialize(val, offset, count); }
     /**
      * Create a string from a part of array of byte.
      * @param val array of byte
@@ -54,7 +64,9 @@ public class String
      * @param offset index of the first byte
      * @param count number of byte to copy
      */
-    public String(byte[] val, int hibyte, int offset, int count) {}
+    public String(byte[] val, int hibyte, int offset, int count) {
+        initialize(val, hibyte, offset, count);
+    }
     /**
      * Create a string from a part of array of byte.
      * @param val array of byte
@@ -62,17 +74,19 @@ public class String
      * @param count number of byte to copy
      * @param charSet not taken into account
      */
-    public String(byte[] val, int offset, int count, java.lang.String charSet) {}
+    public String(byte[] val, int offset, int count, java.lang.String charSet) {
+        initialize(val, offset, count, charSet);
+    }
     /**
      * Create a copy of a given string.
      * @param str the string to copy
      */
-    public String(java.lang.StringBuffer str) {}
+    public String(java.lang.StringBuffer str) { initialize(str); }
     /**
      * Create a copy of a given string.
      * @param str the string to copy
      */
-    public String(java.lang.StringBuilder str) {}
+    public String(java.lang.StringBuilder str) { initialize(str); }
     /**
      * Return the character at the specified index.
      * @param pos index in the String
