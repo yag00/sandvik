@@ -9,4 +9,9 @@ Native doubleadd called with:
   Double b: 0x400999999999999a 3.200000
   Double r: 0x402099999999999a 8.300000
 Native add function returned: 8.300000
+Native floatadd called with:
+  Float a: 0x40b00000 5.500000
+  Float b: 0xbf8ccccd -1.100000
+  Float r: 0x408ccccd 4.400000
+Native add function returned: 4.400000
 Native add function returned: 30000000000

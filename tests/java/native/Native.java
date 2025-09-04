@@ -31,8 +31,9 @@ public class Native {
 
     // Declare the native method
     public native int test(String str, int a, int b);
-    public native double doubleadd(double a, double b);
     public native long longadd(long a, long b);
+    public native float floatadd(float a, float b);
+    public native double doubleadd(double a, double b);
 
     public static void main(String[] args) {
         Native example = new Native();
@@ -41,12 +42,14 @@ public class Native {
         String inputString = "HelloNative";
         int x = 10;
         int y = 20;
-
+        float f = 5.5f;
+        float f2 = -1.1f;
         // Call the native method
         int result = example.test(inputString, x, y);
 
         System.out.println("Native test function returned: " + result);
         System.out.println("Native add function returned: " + example.doubleadd(5.1, 3.2));
+        System.out.println("Native add function returned: " + example.floatadd(f, f2));
         System.out.println("Native add function returned: " + example.longadd(10000000000L, 20000000000L));
     }
 }

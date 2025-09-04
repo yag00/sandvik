@@ -45,7 +45,24 @@ extern "C" {
 		}
 		return obj;
 	}
+	JNIEXPORT jobject JNICALL Java_java_lang_StringBuilder_append__F(JNIEnv* env, jobject obj, jfloat f) {
+		sandvik::Object* this_ptr = (sandvik::Object*)obj;
+		if (this_ptr == nullptr) {
+			throw std::runtime_error("NullPointerException");
+		}
+		sandvik::NativeInterface* jenv = static_cast<sandvik::NativeInterface*>(env);
+		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 
+		std::string floatStr = std::to_string(f);
+
+		if (this_ptr->getField("string")->isNull()) {
+			this_ptr->setField("string", sandvik::Object::make(classloader, floatStr));
+		} else {
+			auto current = static_cast<sandvik::StringObject*>(this_ptr->getField("string").get());
+			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + floatStr));
+		}
+		return obj;
+	}
 	JNIEXPORT jobject JNICALL Java_java_lang_StringBuilder_append__D(JNIEnv* env, jobject obj, jdouble d) {
 		sandvik::Object* this_ptr = (sandvik::Object*)obj;
 		if (this_ptr == nullptr) {

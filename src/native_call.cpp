@@ -122,7 +122,8 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 		case 'Z':
 		case 'B':
 		case 'S':
-		case 'C': {
+		case 'C':
+		case 'F': {
 			auto number = std::dynamic_pointer_cast<NumberObject>(*it);
 			++it;
 			if (!number) {
@@ -130,30 +131,7 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 			}
 			return static_cast<uintptr_t>(number->getValue());
 		}
-		case 'J': {
-			auto lsb = std::dynamic_pointer_cast<NumberObject>(*it);
-			++it;
-			auto msb = std::dynamic_pointer_cast<NumberObject>(*it);
-			++it;
-			if (!lsb || !msb) {
-				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
-			}
-			uint32_t lsb_value = lsb->getValue();
-			uint32_t msb_value = msb->getValue();
-			uintptr_t result = (static_cast<uintptr_t>(msb_value) << 32) | static_cast<uintptr_t>(lsb_value);
-			return result;
-		}
-		case 'F': {
-			auto number = std::dynamic_pointer_cast<NumberObject>(*it);
-			++it;
-			if (!number) {
-				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
-			}
-			uintptr_t result;
-			float value = number->getFloatValue();
-			std::memcpy(&result, &value, sizeof(value));
-			return result;
-		}
+		case 'J':
 		case 'D': {
 			auto lsb = std::dynamic_pointer_cast<NumberObject>(*it);
 			++it;

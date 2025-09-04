@@ -58,3 +58,16 @@ JNIEXPORT jlong JNICALL Java_Native_longadd(
     jlong result = a + b;
     return result;
 }
+JNIEXPORT jfloat JNICALL Java_Native_floatadd(
+    JNIEnv *env,        // JNI environment pointer
+    jobject obj,        // Java object this is attached to
+    jfloat a,             // First integer parameter
+    jfloat b              // Second integer parameter
+) {
+    printf("Native floatadd called with:\n");
+    printf("  Float a: 0x%x %f\n", *(uint32_t*)&a, a);
+    printf("  Float b: 0x%x %f\n", *(uint32_t*)&b, b);
+    jfloat result = a + b;
+    printf("  Float r: 0x%x %f\n", *(uint32_t*)&result, result);
+    return result;
+}
