@@ -128,10 +128,18 @@ bool Class::isInstanceOf(std::shared_ptr<Object>& class_) const {
 	}
 	auto clazz = std::dynamic_pointer_cast<ObjectClass>(class_);
 	if (clazz) {
-		logger.fdebug("isInstanceOf: {}", clazz->getClass().getFullname());
-		if (clazz->getClass().getFullname() == getFullname()) {
-			return true;
+		// check class and super classes
+		while (1) {
+			logger.fdebug("{} is instance of {} ?", clazz->getClass().getFullname(), getFullname());
+			if (clazz->getClass().getFullname() == getFullname()) {
+				return true;
+			}
+			if (!clazz->getClass().hasSuperClass()) break;
+			clazz = std::dynamic_pointer_cast<ObjectClass>(Object::make(clazz->getClass().getSuperClass()));
 		}
+		// check if class implements interfaces
+		// @todo
+		logger.warning("isInstanceOf: does not check for interfaces yet : not implemented");
 	}
 	return false;
 }

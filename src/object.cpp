@@ -31,6 +31,9 @@
 using namespace sandvik;
 
 std::shared_ptr<Object> Object::make(Class& class_) {
+	if (class_.getFullname() == "java.lang.String") {
+		return std::make_shared<StringObject>(class_, "");
+	}
 	return std::make_shared<ObjectClass>(class_);
 }
 std::shared_ptr<Object> Object::make(uint64_t number_) {
@@ -39,9 +42,6 @@ std::shared_ptr<Object> Object::make(uint64_t number_) {
 std::shared_ptr<Object> Object::make(ClassLoader& classloader_, const std::string& str_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.String");
 	return std::make_shared<StringObject>(clazz, str_);
-}
-std::shared_ptr<Object> Object::make(const std::exception& e_) {
-	return std::make_shared<ThrowableObject>(e_);
 }
 std::shared_ptr<Object> Object::makeNull() {
 	return std::make_shared<NullObject>();
@@ -185,6 +185,10 @@ std::string StringObject::str() const {
 std::string StringObject::debug() const {
 	return "String=" + _value;
 }
+void StringObject::set(const std::string& str_) {
+	_value = str_;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ObjectClass::ObjectClass(Class& class_) : _class(class_) {

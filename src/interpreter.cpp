@@ -307,7 +307,16 @@ void Interpreter::execute() {
 	logger.finfo("{:04x}: {:<80} {:<20} ", frame.pc() / 2, inst, func);
 	frame.pc()++;
 	_instcoverage[*bytecode]++;
-	_dispatch[*bytecode](bytecode + 1);
+	try {
+		_dispatch[*bytecode](bytecode + 1);
+	} catch (JavaException& e) {
+		// ClassLoader& classloader = _rt.getClassLoader();
+		auto exctype = e.getExceptionType();
+		logger.fdebug("handling exception {} ({}) in method {}", exctype, e.what(), func);
+		auto exc = Object::make(_rt.getClassLoader().getOrLoad(exctype));
+		exc->setField("detailMessage", Object::make(_rt.getClassLoader(), e.getMessage()));
+		handleException(exc);
+	}
 }
 
 void Interpreter::executeClinit(Class& class_) {
@@ -360,6 +369,54 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 	auto caller = std::make_unique<NativeCallHelper>(*_rt.vm().getJNIEnv());
 	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
 	_rt.currentFrame().setReturnObject(ret);
+}
+
+void Interpreter::handleException(std::shared_ptr<Object> exception_) {
+	auto exception = std::dynamic_pointer_cast<ObjectClass>(exception_);
+	while (1) {
+		try {
+			auto& frame = _rt.currentFrame();
+			auto& method = frame.getMethod();
+			uint32_t catchAllAddrress = 0;
+			auto exceptionHandler = method.getExceptionHandler(frame.pc() - 1, catchAllAddrress);
+			for (auto& exc : exceptionHandler) {
+				auto& classloader = _rt.getClassLoader();
+				auto& exceptionType = classloader.resolveClass(frame.getDexIdx(), exc.first);
+				if (exceptionType.isInstanceOf(exception_)) {
+					logger.fdebug("Catch exception {} at {:x}", exceptionType.getName(), exc.second);
+					frame.pc() = exc.second << 1;
+					frame.setException(exception_);
+					return;
+				}
+			}
+			if (catchAllAddrress != 0) {
+				logger.fdebug("Catch all exception at {:x}", catchAllAddrress);
+				frame.pc() = catchAllAddrress << 1;
+				frame.setException(exception_);
+				return;
+			}
+			// No handler found - propagate to caller
+			_rt.popFrame();
+			if (_rt.stackDepth() == 0) {
+				// uncaught exception
+				auto msgObj = std::dynamic_pointer_cast<StringObject>(exception->getField("detailMessage"));
+				std::string msg = msgObj ? msgObj->str() : "";
+				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
+				break;
+			}
+			_rt.currentFrame().setException(exception_);
+		} catch (const std::exception& e) {
+			_rt.popFrame();
+			if (_rt.stackDepth() == 0) {
+				// uncaught exception
+				auto msgObj = std::dynamic_pointer_cast<StringObject>(exception->getField("detailMessage"));
+				std::string msg = msgObj ? msgObj->str() : "";
+				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
+				break;
+			}
+			_rt.currentFrame().setException(exception_);
+		}
+	}
 }
 
 // nop
@@ -637,14 +694,14 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 		case TYPES::CLASS: {
 			auto& targetClass = classloader.resolveClass(frame.getDexIdx(), typeIndex);
 			if (!targetClass.isInstanceOf(obj)) {
-				throw std::runtime_error(fmt::format("Cannot cast object to {}", targetClass.getName()));
+				throw ClassCastException(fmt::format("Cannot cast object to {}", targetClass.getName()));
 			}
 			break;
 		}
 		case TYPES::ARRAY: {
 			auto array = std::dynamic_pointer_cast<Array>(obj);
 			if (!array) {
-				throw std::runtime_error("check_cast: Object is not an array");
+				throw ClassCastException("Object is not an array");
 			}
 			size_t array_dims = 0;
 			size_t pos = 0;
@@ -656,7 +713,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 			logger.fdebug("Array type: {} dimensions, element type {}", array_dims, element_type_name);
 			// check object has good dimensions
 			if (array->getDimensions() != array_dims) {
-				throw std::runtime_error(fmt::format("Cannot cast array of {} dimensions to {}", array->getDimensions(), array_dims));
+				throw ClassCastException(fmt::format("Cannot cast array of {} dimensions to {}", array->getDimensions(), array_dims));
 			}
 			// check if element type is class or primitive
 			if (element_type_name[0] == 'L') {
@@ -665,7 +722,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 				std::replace(classname.begin(), classname.end(), '/', '.');
 				auto& targetClass = classloader.getOrLoad(classname);
 				if (!targetClass.isInstanceOf(array->getClassType())) {
-					throw std::runtime_error(fmt::format("Cannot cast array to {}", targetClass.getName()));
+					throw ClassCastException(fmt::format("Cannot cast array to {}", targetClass.getName()));
 				}
 			} else {
 				// Primitive types: no casting needed, always valid
@@ -687,7 +744,7 @@ void Interpreter::instance_of(const uint8_t* operand_) {
 	auto obj = frame.getObjRegister(src);
 	auto& classloader = _rt.getClassLoader();
 	auto& targetClass = classloader.resolveClass(frame.getDexIdx(), typeIndex);
-	frame.setIntRegister(dest, !obj->isNull() && targetClass.isInstanceOf(obj) ? 1 : 0);
+	frame.setIntRegister(dest, targetClass.isInstanceOf(obj) ? 1 : 0);
 	frame.pc() += 3;
 }
 // array-length vA, vB
@@ -712,7 +769,7 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 	auto& cls = classloader.resolveClass(frame.getDexIdx(), typeIndex);
 
 	if (cls.isAbstract() || cls.isInterface()) {
-		throw std::runtime_error(fmt::format("Cannot instantiate abstract class or interface: {}", cls.getName()));
+		throw InstantiationException(fmt::format("Cannot instantiate abstract class or interface: {}", cls.getName()));
 	}
 
 	if (!cls.isStaticInitialized()) {
@@ -738,7 +795,7 @@ void Interpreter::new_array(const uint8_t* operand_) {
 	// Get the array size from the source register
 	int32_t size = frame.getIntRegister(src);
 	if (size < 0) {
-		throw std::runtime_error("new_array: Array size cannot be negative");
+		throw NegativeArraySizeException("new_array: Array size cannot be negative");
 	}
 	const auto& type = classloader.getOrLoad(arrayType[0].first);
 	auto arrayObj = Array::make(type, size);
@@ -823,42 +880,7 @@ void Interpreter::throw_(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("throw on null object");
 	}
-
-	while (1) {
-		try {
-			auto& frame = _rt.currentFrame();
-			auto& method = frame.getMethod();
-			uint32_t catchAllAddrress = 0;
-			auto exceptionHandler = method.getExceptionHandler(frame.pc() - 1, catchAllAddrress);
-			for (auto& exc : exceptionHandler) {
-				auto& classloader = _rt.getClassLoader();
-				auto& exceptionType = classloader.resolveClass(frame.getDexIdx(), exc.first);
-				if (exceptionType.isInstanceOf(obj)) {
-					logger.fdebug("Catch exception {} at {:x}", exceptionType.getName(), exc.second);
-					frame.pc() = exc.second << 1;
-					frame.setException(obj);
-					return;
-				}
-			}
-			if (catchAllAddrress != 0) {
-				logger.fdebug("Catch all exception at {:x}", catchAllAddrress);
-				frame.pc() = catchAllAddrress << 1;
-				frame.setException(obj);
-				return;
-			}
-			// No handler found - propagate to caller
-			_rt.popFrame();
-			_rt.currentFrame().setException(obj);
-		} catch (const std::exception& e) {
-			try {
-				_rt.popFrame();
-				_rt.currentFrame().setException(obj);
-				continue;
-			} catch (const std::exception& e) {
-				throw std::runtime_error(fmt::format("Unhandled exception {}", obj->debug()));
-			}
-		}
-	}
+	handleException(obj);
 }
 // goto +AA
 void Interpreter::goto_(const uint8_t* operand_) {
@@ -892,7 +914,7 @@ void Interpreter::packed_switch(const uint8_t* operand_) {
 	}
 	int32_t size = switchData[1];
 	if (size <= 0) {
-		throw std::runtime_error("packed-switch: Invalid size in switch data");
+		throw ArrayIndexOutOfBoundsException("packed-switch: Invalid size in switch data");
 	}
 
 	auto base = *reinterpret_cast<const int32_t*>(&switchData[2]);
@@ -923,7 +945,7 @@ void Interpreter::sparse_switch(const uint8_t* operand_) {
 	}
 	int32_t size = switchData[1];
 	if (size <= 0) {
-		throw std::runtime_error("sparse-switch: Invalid size in switch data");
+		throw ArrayIndexOutOfBoundsException("sparse-switch: Invalid size in switch data");
 	}
 
 	auto keys = reinterpret_cast<const int32_t*>(&switchData[2]);
@@ -1187,7 +1209,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aget: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aget: Array index out of bounds");
 	}
 	auto obj = array->getElement(index);
 	int32_t value = 0;
@@ -1223,7 +1245,7 @@ void Interpreter::aget_wide(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aget-wide: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aget-wide: Array index out of bounds");
 	}
 	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
@@ -1251,7 +1273,7 @@ void Interpreter::aget_object(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aget-object: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aget-object: Array index out of bounds");
 	}
 	auto value = array->getElement(index);
 	frame.setObjRegister(dest, value);
@@ -1275,7 +1297,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aget-boolean: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aget-boolean: Array index out of bounds");
 	}
 	auto element = array->getElement(index);
 	auto numberObj = std::dynamic_pointer_cast<NumberObject>(element);
@@ -1304,7 +1326,7 @@ void Interpreter::aget_byte(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aget-byte: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aget-byte: Array index out of bounds");
 	}
 	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
@@ -1332,7 +1354,7 @@ void Interpreter::aget_char(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aget-char: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aget-char: Array index out of bounds");
 	}
 	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
@@ -1360,7 +1382,7 @@ void Interpreter::aget_short(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aget-short: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aget-short: Array index out of bounds");
 	}
 	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
 	if (!numberObj) {
@@ -1391,7 +1413,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	int32_t index = frame.getIntRegister(indexReg);
 	int32_t value = frame.getIntRegister(valueReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aput: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aput: Array index out of bounds");
 	}
 	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
@@ -1414,7 +1436,7 @@ void Interpreter::aput_wide(const uint8_t* operand_) {
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aput-wide: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aput-wide: Array index out of bounds");
 	}
 	auto value = frame.getLongRegister(valueReg);
 	array->setElement(index, Object::make(value));
@@ -1439,7 +1461,7 @@ void Interpreter::aput_object(const uint8_t* operand_) {
 	int32_t index = frame.getIntRegister(indexReg);
 	auto value = frame.getObjRegister(valueReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aput-object: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aput-object: Array index out of bounds");
 	}
 	array->setElement(index, value);
 	frame.pc() += 3;
@@ -1463,7 +1485,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	int32_t index = frame.getIntRegister(indexReg);
 	bool value = frame.getIntRegister(valueReg) != 0;
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aput-boolean: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aput-boolean: Array index out of bounds");
 	}
 	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
@@ -1487,7 +1509,7 @@ void Interpreter::aput_byte(const uint8_t* operand_) {
 	int32_t index = frame.getIntRegister(indexReg);
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(valueReg));
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aput-byte: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aput-byte: Array index out of bounds");
 	}
 	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
@@ -1511,7 +1533,7 @@ void Interpreter::aput_char(const uint8_t* operand_) {
 	int32_t index = frame.getIntRegister(indexReg);
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(valueReg));
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aput-char: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aput-char: Array index out of bounds");
 	}
 	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
@@ -1535,7 +1557,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 	int32_t index = frame.getIntRegister(indexReg);
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(valueReg));
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
-		throw std::runtime_error("aput-short: Array index out of bounds");
+		throw ArrayIndexOutOfBoundsException("aput-short: Array index out of bounds");
 	}
 	array->setElement(index, Object::make(value));
 	frame.pc() += 3;
@@ -2731,7 +2753,7 @@ void Interpreter::div_int(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int32_t divisor = frame.getIntRegister(src2);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in div-int");
+		throw ArithmeticException("Division by zero in div-int");
 	}
 	int32_t result = frame.getIntRegister(src1) / divisor;
 	frame.setIntRegister(dest, result);
@@ -2745,7 +2767,7 @@ void Interpreter::rem_int(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int32_t divisor = frame.getIntRegister(src2);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in rem-int");
+		throw ArithmeticException("Division by zero in rem-int");
 	}
 	int32_t result = frame.getIntRegister(src1) % divisor;
 	frame.setIntRegister(dest, result);
@@ -2850,7 +2872,7 @@ void Interpreter::div_long(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int64_t divisor = frame.getLongRegister(src2);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in div-long");
+		throw ArithmeticException("Division by zero in div-long");
 	}
 	int64_t result = frame.getLongRegister(src1) / divisor;
 	frame.setLongRegister(dest, result);
@@ -2864,7 +2886,7 @@ void Interpreter::rem_long(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int64_t divisor = frame.getLongRegister(src2);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in rem-long");
+		throw ArithmeticException("Division by zero in rem-long");
 	}
 	int64_t result = frame.getLongRegister(src1) % divisor;
 	frame.setLongRegister(dest, result);
@@ -2969,7 +2991,7 @@ void Interpreter::div_float(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	float divisor = frame.getFloatRegister(src2);
 	if (divisor == 0.0f) {
-		throw std::runtime_error("Division by zero in div-float");
+		throw ArithmeticException("Division by zero in div-float");
 	}
 	float result = frame.getFloatRegister(src1) / divisor;
 	frame.setFloatRegister(dest, result);
@@ -2983,7 +3005,7 @@ void Interpreter::rem_float(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	float divisor = frame.getFloatRegister(src2);
 	if (divisor == 0.0f) {
-		throw std::runtime_error("Division by zero in rem-float");
+		throw ArithmeticException("Division by zero in rem-float");
 	}
 	float result = std::fmod(frame.getFloatRegister(src1), divisor);
 	frame.setFloatRegister(dest, result);
@@ -3027,7 +3049,7 @@ void Interpreter::div_double(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	double divisor = frame.getDoubleRegister(src2);
 	if (divisor == 0.0) {
-		throw std::runtime_error("Division by zero in div-double");
+		throw ArithmeticException("Division by zero in div-double");
 	}
 	double result = frame.getDoubleRegister(src1) / divisor;
 	frame.setDoubleRegister(dest, result);
@@ -3041,7 +3063,7 @@ void Interpreter::rem_double(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	double divisor = frame.getDoubleRegister(src2);
 	if (divisor == 0.0) {
-		throw std::runtime_error("Division by zero in rem-double");
+		throw ArithmeticException("Division by zero in rem-double");
 	}
 	double result = std::fmod(frame.getDoubleRegister(src1), divisor);
 	frame.setDoubleRegister(dest, result);
@@ -3081,7 +3103,7 @@ void Interpreter::div_int_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int32_t divisor = frame.getIntRegister(src);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in div-int/2addr");
+		throw ArithmeticException("Division by zero in div-int/2addr");
 	}
 	int32_t result = frame.getIntRegister(dest) / divisor;
 	frame.setIntRegister(dest, result);
@@ -3094,7 +3116,7 @@ void Interpreter::rem_int_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int32_t divisor = frame.getIntRegister(src);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in rem-int/2addr");
+		throw ArithmeticException("Division by zero in rem-int/2addr");
 	}
 	int32_t result = frame.getIntRegister(dest) % divisor;
 	frame.setIntRegister(dest, result);
@@ -3189,7 +3211,7 @@ void Interpreter::div_long_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int64_t divisor = frame.getLongRegister(src);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in div-long/2addr");
+		throw ArithmeticException("Division by zero in div-long/2addr");
 	}
 	int64_t result = frame.getLongRegister(dest) / divisor;
 	frame.setLongRegister(dest, result);
@@ -3202,7 +3224,7 @@ void Interpreter::rem_long_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	int64_t divisor = frame.getLongRegister(src);
 	if (divisor == 0) {
-		throw std::runtime_error("Division by zero in rem-long/2addr");
+		throw ArithmeticException("Division by zero in rem-long/2addr");
 	}
 	int64_t result = frame.getLongRegister(dest) % divisor;
 	frame.setLongRegister(dest, result);
@@ -3297,7 +3319,7 @@ void Interpreter::div_float_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	float divisor = frame.getFloatRegister(src);
 	if (divisor == 0.0f) {
-		throw std::runtime_error("Division by zero in div-float/2addr");
+		throw ArithmeticException("Division by zero in div-float/2addr");
 	}
 	float result = frame.getFloatRegister(dest) / divisor;
 	frame.setFloatRegister(dest, result);
@@ -3310,7 +3332,7 @@ void Interpreter::rem_float_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	float divisor = frame.getFloatRegister(src);
 	if (divisor == 0.0f) {
-		throw std::runtime_error("Division by zero in rem-float/2addr");
+		throw ArithmeticException("Division by zero in rem-float/2addr");
 	}
 	float result = std::fmod(frame.getFloatRegister(dest), divisor);
 	frame.setFloatRegister(dest, result);
@@ -3350,7 +3372,7 @@ void Interpreter::div_double_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	double divisor = frame.getDoubleRegister(src);
 	if (divisor == 0.0) {
-		throw std::runtime_error("Division by zero in div-double/2addr");
+		throw ArithmeticException("Division by zero in div-double/2addr");
 	}
 	double result = frame.getDoubleRegister(dest) / divisor;
 	frame.setDoubleRegister(dest, result);
@@ -3363,7 +3385,7 @@ void Interpreter::rem_double_2addr(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	double divisor = frame.getDoubleRegister(src);
 	if (divisor == 0.0) {
-		throw std::runtime_error("Division by zero in rem-double/2addr");
+		throw ArithmeticException("Division by zero in rem-double/2addr");
 	}
 	double result = std::fmod(frame.getDoubleRegister(dest), divisor);
 	frame.setDoubleRegister(dest, result);
@@ -3406,7 +3428,7 @@ void Interpreter::div_int_lit16(const uint8_t* operand_) {
 	int16_t literal = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
 	if (literal == 0) {
-		throw std::runtime_error("Division by zero in div-int/lit16");
+		throw ArithmeticException("Division by zero in div-int/lit16");
 	}
 	int32_t result = frame.getIntRegister(src) / literal;
 	frame.setIntRegister(dest, result);
@@ -3419,7 +3441,7 @@ void Interpreter::rem_int_lit16(const uint8_t* operand_) {
 	int16_t literal = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
 	if (literal == 0) {
-		throw std::runtime_error("Division by zero in rem-int/lit16");
+		throw ArithmeticException("Division by zero in rem-int/lit16");
 	}
 	int32_t result = frame.getIntRegister(src) % literal;
 	frame.setIntRegister(dest, result);
@@ -3492,7 +3514,7 @@ void Interpreter::div_int_lit8(const uint8_t* operand_) {
 	int8_t literal = static_cast<int8_t>(operand_[2]);
 	auto& frame = _rt.currentFrame();
 	if (literal == 0) {
-		throw std::runtime_error("Division by zero in div-int/lit8");
+		throw ArithmeticException("Division by zero in div-int/lit8");
 	}
 	int32_t result = frame.getIntRegister(src) / literal;
 	frame.setIntRegister(dest, result);
@@ -3505,7 +3527,7 @@ void Interpreter::rem_int_lit8(const uint8_t* operand_) {
 	int8_t literal = static_cast<int8_t>(operand_[2]);
 	auto& frame = _rt.currentFrame();
 	if (literal == 0) {
-		throw std::runtime_error("Division by zero in rem-int/lit8");
+		throw ArithmeticException("Division by zero in rem-int/lit8");
 	}
 	int32_t result = frame.getIntRegister(src) % literal;
 	frame.setIntRegister(dest, result);

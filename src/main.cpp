@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
 	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
 	args::ValueFlag<std::string> dexFile(parser, "file", "Specify the DEX file to load", {"dex"}, "");
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
+	args::ValueFlag<std::string> jarFile(parser, "file", "Specify the Jar files to load", {"jar"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
 	args::ValueFlag<std::string> runTime(parser, "runtime", "Specify path to override the default java runtime", {"runtime"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
@@ -93,8 +94,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	if (args::get(dexFile).empty() && args::get(apkFile).empty()) {
-		std::cerr << "Either --dex or --apk must be specified" << std::endl << std::endl;
+	if (args::get(dexFile).empty() && args::get(apkFile).empty() && args::get(jarFile).empty()) {
+		std::cerr << "Either --dex, --jar or --apk must be specified" << std::endl << std::endl;
 		std::cerr << parser;
 		return 1;
 	}
@@ -108,6 +109,8 @@ int main(int argc, char** argv) {
 	vm.loadRt(args::get(runTime));
 	if (!args::get(dexFile).empty()) {
 		vm.loadDex(args::get(dexFile));
+	} else if (!args::get(jarFile).empty()) {
+		vm.loadRt(args::get(jarFile));
 	} else if (!args::get(apkFile).empty()) {
 		vm.loadApk(args::get(apkFile));
 	} else {

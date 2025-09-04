@@ -22,34 +22,15 @@
 
 using namespace sandvik;
 
-StackOverflowError::StackOverflowError() {
+JavaException::JavaException(const std::string& type_, const std::string& message_) : _type(type_), _message(message_) {
 }
 
-StackOverflowError::~StackOverflowError() noexcept {
-}
-
-const char* StackOverflowError::what() const noexcept {
-	return "StackOverflowError";
-}
-
-///////////////////////////////////////////////////////////////////////////////
-OutOfMemoryError::OutOfMemoryError() {
-}
-
-OutOfMemoryError::~OutOfMemoryError() noexcept {
-}
-
-const char* OutOfMemoryError::what() const noexcept {
-	return "OutOfMemoryError";
-}
-///////////////////////////////////////////////////////////////////////////////
-NullPointerException::NullPointerException(const std::string& message) {
-	_message = fmt::format("NullPointerException: {}", message);
-}
-
-NullPointerException::~NullPointerException() noexcept {
-}
-
-const char* NullPointerException::what() const noexcept {
+const char* JavaException::what() const noexcept {
 	return _message.c_str();
+}
+std::string JavaException::getExceptionType() const {
+	return _type;
+}
+std::string JavaException::getMessage() const {
+	return _message;
 }

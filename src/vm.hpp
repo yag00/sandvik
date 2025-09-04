@@ -33,7 +33,7 @@ namespace sandvik {
 			explicit Vm();
 			~Vm() = default;
 
-			void loadRt(const std::string& path);
+			void loadRt(const std::string& path = "");
 			void loadDex(const std::string& path);
 			void loadApk(const std::string& path);
 			void addClassPath(const std::string& classpath_);

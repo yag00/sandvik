@@ -42,7 +42,6 @@ namespace sandvik {
 			static std::shared_ptr<Object> make(Class& class_);
 			static std::shared_ptr<Object> make(uint64_t number_);
 			static std::shared_ptr<Object> make(ClassLoader& classloader_, const std::string& str_);
-			static std::shared_ptr<Object> make(const std::exception& e_);
 			static std::shared_ptr<Object> makeConstClass(ClassLoader& classloader_, Class& classtype_);  // for Class<?> object
 			static std::shared_ptr<Object> makeNull();
 			static std::shared_ptr<Object> makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_);
@@ -125,6 +124,7 @@ namespace sandvik {
 			StringObject& operator=(const StringObject& other);
 			std::shared_ptr<Object> clone() const override;
 
+			void set(const std::string& str_);
 			std::string str() const;
 			std::string debug() const override;
 

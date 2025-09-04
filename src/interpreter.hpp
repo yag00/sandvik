@@ -485,6 +485,7 @@ namespace sandvik {
 
 			std::vector<std::function<void(const uint8_t* operand_)>> _dispatch;
 
+			void handleException(std::shared_ptr<Object> exception_);
 			void executeClinit(Class& class_);
 			void executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_);
 
