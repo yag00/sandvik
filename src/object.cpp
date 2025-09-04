@@ -30,39 +30,32 @@
 
 using namespace sandvik;
 
-std::shared_ptr<Object> Object::make(Class& class_) {
+ObjectRef Object::make(Class& class_) {
 	if (class_.getFullname() == "java.lang.String") {
 		return std::make_shared<StringObject>(class_, "");
 	}
 	return std::make_shared<ObjectClass>(class_);
 }
-std::shared_ptr<Object> Object::make(uint64_t number_) {
+ObjectRef Object::make(uint64_t number_) {
 	return std::make_shared<NumberObject>(number_);
 }
-std::shared_ptr<Object> Object::make(ClassLoader& classloader_, const std::string& str_) {
+ObjectRef Object::make(ClassLoader& classloader_, const std::string& str_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.String");
 	return std::make_shared<StringObject>(clazz, str_);
 }
-std::shared_ptr<Object> Object::makeNull() {
+ObjectRef Object::makeNull() {
 	return std::make_shared<NullObject>();
 }
-std::shared_ptr<Object> Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
+ObjectRef Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
 	return std::make_shared<ConstClassObject>(clazz, classtype_);
 }
 
-std::shared_ptr<Object> Object::makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
+ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
 	return std::make_shared<Array>(classtype_, dimensions_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-Object::Object(const Object& other) {
-	_fields.clear();
-	for (const auto& field : other._fields) {
-		_fields[field.first] = field.second->clone();
-	}
-}
-
 bool Object::operator==(const Object& other) const {
 	if (this == &other) {
 		return true;
@@ -110,7 +103,7 @@ bool Object::isInstanceOf(const std::string& instance_) const {
 	return false;
 }
 
-std::shared_ptr<Object> Object::getField(const std::string& name_) const {
+ObjectRef Object::getField(const std::string& name_) const {
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
 		return it->second;
@@ -118,14 +111,12 @@ std::shared_ptr<Object> Object::getField(const std::string& name_) const {
 	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->debug()));
 }
 
-void Object::setField(const std::string& name_, std::shared_ptr<Object> value_) {
+void Object::setField(const std::string& name_, ObjectRef value_) {
 	_fields[name_] = value_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 NumberObject::NumberObject(uint64_t value_) : _value(value_) {
-}
-NumberObject::NumberObject(const NumberObject& other) : Object(other), _value(other._value) {
 }
 
 bool NumberObject::operator==(const Object& other) const {
@@ -139,9 +130,6 @@ bool NumberObject::operator==(const Object& other) const {
 	return _value == otherNumber._value;
 }
 
-std::shared_ptr<Object> NumberObject::clone() const {
-	return std::make_shared<NumberObject>(*this);
-}
 int32_t NumberObject::getValue() const {
 	return (int32_t)(int64_t)_value;
 }
@@ -162,8 +150,6 @@ std::string NumberObject::debug() const {
 StringObject::StringObject(Class& class_, const std::string& value_) : ObjectClass(class_), _value(value_) {
 }
 
-StringObject::StringObject(const StringObject& other) : ObjectClass(other), _value(other._value) {
-}
 bool StringObject::operator==(const Object& other) const {
 	if (this == &other) {
 		return true;
@@ -173,10 +159,6 @@ bool StringObject::operator==(const Object& other) const {
 		return false;
 	}
 	return _value == otherString->_value;
-}
-
-std::shared_ptr<Object> StringObject::clone() const {
-	return std::make_shared<StringObject>(*this);
 }
 
 std::string StringObject::str() const {
@@ -242,13 +224,6 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 	}
 }
 
-ObjectClass::ObjectClass(const ObjectClass& other) : Object(other), _class(other._class) {
-	logger.error("ObjectClass Copy constructor");
-}
-
-std::shared_ptr<Object> ObjectClass::clone() const {
-	return std::make_shared<ObjectClass>(_class);
-}
 Class& ObjectClass::getClass() const {
 	return _class;
 }
@@ -262,8 +237,6 @@ bool ObjectClass::isInstanceOf(const std::string& instance_) const {
 ConstClassObject::ConstClassObject(Class& class_, Class& classtype_) : ObjectClass(class_), _type(classtype_) {
 }
 
-ConstClassObject::ConstClassObject(const ConstClassObject& other) : ObjectClass(other), _type(other._type) {
-}
 bool ConstClassObject::operator==(const Object& other) const {
 	if (this == &other) {
 		return true;
@@ -279,33 +252,10 @@ Class& ConstClassObject::getClassType() const {
 	return _type;
 }
 
-std::shared_ptr<Object> ConstClassObject::clone() const {
-	return std::make_shared<ConstClassObject>(*this);
-}
-
 std::string ConstClassObject::debug() const {
 	return fmt::format("Class<? {}>", _type.getFullname());
 }
 ///////////////////////////////////////////////////////////////////////////////
-
-ThrowableObject::ThrowableObject(const std::exception& e_) : _e(e_) {
-}
-ThrowableObject::ThrowableObject(const ThrowableObject& other) : Object(other), _e(other._e) {
-}
-
-std::shared_ptr<Object> ThrowableObject::clone() const {
-	return std::make_shared<ThrowableObject>(_e);
-}
-void ThrowableObject::throwException() {
-	throw _e;
-}
-std::string ThrowableObject::debug() const {
-	return fmt::format("ThrowableObject: {}", _e.what());
-}
-///////////////////////////////////////////////////////////////////////////////
-std::shared_ptr<Object> NullObject::clone() const {
-	return std::make_shared<NullObject>();
-}
 bool NullObject::operator==(std::nullptr_t) const {
 	return true;
 }

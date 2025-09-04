@@ -19,7 +19,6 @@
 #ifndef __OBJECT_HPP__
 #define __OBJECT_HPP__
 
-#include <any>
 #include <map>
 #include <memory>
 #include <string>
@@ -28,23 +27,27 @@
 namespace sandvik {
 	class ClassLoader;
 	class Class;
+	class Object;
+	class NumberObject;
+	class StringObject;
+
+	using ObjectRef = std::shared_ptr<Object>;
+
 	class Object {
 		public:
 			Object() = default;
 			virtual ~Object() = default;
-			Object(const Object&);
+			Object(const Object&) = delete;
 			Object& operator=(const Object&) = delete;
 			Object(Object&& other) noexcept = delete;
 			Object& operator=(Object&& other) noexcept = delete;
 
-			virtual std::shared_ptr<Object> clone() const = 0;
-
-			static std::shared_ptr<Object> make(Class& class_);
-			static std::shared_ptr<Object> make(uint64_t number_);
-			static std::shared_ptr<Object> make(ClassLoader& classloader_, const std::string& str_);
-			static std::shared_ptr<Object> makeConstClass(ClassLoader& classloader_, Class& classtype_);  // for Class<?> object
-			static std::shared_ptr<Object> makeNull();
-			static std::shared_ptr<Object> makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_);
+			static ObjectRef make(Class& class_);
+			static ObjectRef make(uint64_t number_);
+			static ObjectRef make(ClassLoader& classloader_, const std::string& str_);
+			static ObjectRef makeConstClass(ClassLoader& classloader_, Class& classtype_);  // for Class<?> object
+			static ObjectRef makeNull();
+			static ObjectRef makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 
 			virtual std::string debug() const;
 
@@ -57,24 +60,11 @@ namespace sandvik {
 			virtual bool operator==(const Object& other) const;
 			virtual bool operator==(std::nullptr_t) const;
 
-			void setField(const std::string& name_, std::shared_ptr<Object> value_);
-			std::shared_ptr<Object> getField(const std::string& name_) const;
-
-			template <typename T>
-			void setObjectData(std::shared_ptr<T> data) {
-				_data = std::move(data);
-			}
-			template <typename T>
-			std::shared_ptr<T> getObjectData() const {
-				if (auto ptr = std::any_cast<std::shared_ptr<T>>(&_data)) {
-					return *ptr;
-				}
-				return nullptr;
-			}
+			void setField(const std::string& name_, ObjectRef value_);
+			ObjectRef getField(const std::string& name_) const;
 
 		protected:
-			std::map<std::string, std::shared_ptr<Object>> _fields;
-			std::any _data;
+			std::map<std::string, ObjectRef> _fields;
 	};
 
 	class NumberObject : public Object {
@@ -84,7 +74,6 @@ namespace sandvik {
 
 			NumberObject(const NumberObject& other);
 			NumberObject& operator=(const NumberObject& other);
-			std::shared_ptr<Object> clone() const override;
 
 			bool isNumberObject() const override;
 			int32_t getValue() const;
@@ -105,7 +94,6 @@ namespace sandvik {
 
 			ObjectClass(const ObjectClass& other);
 			ObjectClass& operator=(const ObjectClass& other);
-			std::shared_ptr<Object> clone() const override;
 			bool isInstanceOf(const std::string& instance_) const override;
 
 			Class& getClass() const;
@@ -122,7 +110,6 @@ namespace sandvik {
 
 			StringObject(const StringObject& other);
 			StringObject& operator=(const StringObject& other);
-			std::shared_ptr<Object> clone() const override;
 
 			void set(const std::string& str_);
 			std::string str() const;
@@ -140,7 +127,6 @@ namespace sandvik {
 
 			ConstClassObject(const ConstClassObject& other);
 			ConstClassObject& operator=(const ConstClassObject& other);
-			std::shared_ptr<Object> clone() const override;
 
 			Class& getClassType() const;
 			std::string debug() const override;
@@ -151,22 +137,6 @@ namespace sandvik {
 			Class& _type;
 	};
 
-	class ThrowableObject : public Object {
-		public:
-			ThrowableObject(const std::exception& e_);
-			~ThrowableObject() override = default;
-
-			ThrowableObject(const ThrowableObject& other);
-			ThrowableObject& operator=(const ThrowableObject& other);
-			std::shared_ptr<Object> clone() const override;
-
-			void throwException();
-			std::string debug() const override;
-
-		private:
-			std::exception _e;
-	};
-
 	class NullObject : public Object {
 		public:
 			NullObject() = default;
@@ -174,7 +144,6 @@ namespace sandvik {
 
 			NullObject(const NullObject& other) = default;
 			NullObject& operator=(const NullObject& other) = default;
-			std::shared_ptr<Object> clone() const override;
 
 			bool operator==(std::nullptr_t) const override;
 			bool isNull() const override;

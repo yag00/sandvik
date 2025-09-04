@@ -27,10 +27,10 @@
 
 using namespace sandvik;
 
-std::shared_ptr<Object> Array::make(const Class& classtype_, uint32_t size_) {
+ObjectRef Array::make(const Class& classtype_, uint32_t size_) {
 	return std::make_shared<Array>(classtype_, std::vector<uint32_t>{size_});
 }
-std::shared_ptr<Object> Array::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
+ObjectRef Array::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
 	return std::make_shared<Array>(classtype_, dimensions_);
 }
 
@@ -41,16 +41,12 @@ Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_)
 		totalSize *= d;
 	}
 	_length = totalSize;
-	_data = std::make_shared<ObjectVector>();
+	_data = std::make_shared<ObjectRefVector>();
 	_data->resize(totalSize);
 	std::generate(_data->begin(), _data->end(), []() { return Object::makeNull(); });
 }
 
-Array::Array(const Array& other)
-    : Object(other), _classtype(other._classtype), _dimensions(other._dimensions), _data(other._data), _offset(other._offset), _length(other._length) {
-}
-
-Array::Array(std::shared_ptr<ObjectVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_)
+Array::Array(std::shared_ptr<ObjectRefVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_)
     : Object(), _classtype(classtype_), _dimensions(dimensions_), _data(data_), _offset(offset_) {
 	uint32_t totalSize = 1;
 	for (auto d : _dimensions) {
@@ -60,10 +56,6 @@ Array::Array(std::shared_ptr<ObjectVector> data_, const Class& classtype_, const
 	if (_offset + _length > _data->size()) {
 		throw std::out_of_range("Subarray out of range");
 	}
-}
-
-std::shared_ptr<Object> Array::clone() const {
-	return std::make_shared<Array>(*this);
 }
 
 const Class& Array::getClassType() const {
@@ -94,7 +86,7 @@ uint32_t Array::getArrayLength() const {
 	return getDimension(0);
 }
 
-void Array::setElement(uint32_t idx_, std::shared_ptr<Object> value_) {
+void Array::setElement(uint32_t idx_, ObjectRef value_) {
 	if (_dimensions.size() != 1) {
 		throw std::invalid_argument("Use multi-dimensional setElement for arrays with more than one dimension");
 	}
@@ -104,7 +96,7 @@ void Array::setElement(uint32_t idx_, std::shared_ptr<Object> value_) {
 	(*_data)[_offset + idx_] = value_;
 }
 
-std::shared_ptr<Object> Array::getElement(uint32_t idx_) const {
+ObjectRef Array::getElement(uint32_t idx_) const {
 	if (_dimensions.size() != 1) {
 		return getArray(idx_);
 	}
@@ -114,7 +106,7 @@ std::shared_ptr<Object> Array::getElement(uint32_t idx_) const {
 	return (*_data)[_offset + idx_];
 }
 
-void Array::setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Object> value_) {
+void Array::setElement(const std::vector<uint32_t>& indices_, ObjectRef value_) {
 	uint32_t idx = flattenIndex(indices_);
 	if (idx >= _data->size()) {
 		throw std::out_of_range("Array index out of bounds");
@@ -122,7 +114,7 @@ void Array::setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Ob
 	(*_data)[idx] = value_;
 }
 
-std::shared_ptr<Object> Array::getElement(const std::vector<uint32_t>& indices_) const {
+ObjectRef Array::getElement(const std::vector<uint32_t>& indices_) const {
 	uint32_t idx = flattenIndex(indices_);
 	if (idx >= _data->size()) {
 		throw std::out_of_range("Array index out of bounds");

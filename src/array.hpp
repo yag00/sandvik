@@ -28,17 +28,16 @@
 namespace sandvik {
 	class Array : public Object {
 		public:
-			using ObjectVector = std::vector<std::shared_ptr<Object>>;
+			using ObjectRefVector = std::vector<ObjectRef>;
 
-			static std::shared_ptr<Object> make(const Class& classtype_, uint32_t size_);
-			static std::shared_ptr<Object> make(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
+			static ObjectRef make(const Class& classtype_, uint32_t size_);
+			static ObjectRef make(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 			explicit Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 			Array(const Array& other);
 			// Constructor for subarray view
-			Array(std::shared_ptr<ObjectVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
+			Array(std::shared_ptr<ObjectRefVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
 			~Array() = default;
 
-			std::shared_ptr<Object> clone() const override;
 			std::string debug() const override;
 
 			const Class& getClassType() const;
@@ -49,18 +48,18 @@ namespace sandvik {
 			uint32_t getDimension(uint32_t index_) const;
 			uint32_t getArrayLength() const override;
 
-			void setElement(uint32_t idx_, std::shared_ptr<Object> value_);
-			std::shared_ptr<Object> getElement(uint32_t idx_) const;
+			void setElement(uint32_t idx_, ObjectRef value_);
+			ObjectRef getElement(uint32_t idx_) const;
 
-			void setElement(const std::vector<uint32_t>& indices_, std::shared_ptr<Object> value_);
-			std::shared_ptr<Object> getElement(const std::vector<uint32_t>& indices_) const;
+			void setElement(const std::vector<uint32_t>& indices_, ObjectRef value_);
+			ObjectRef getElement(const std::vector<uint32_t>& indices_) const;
 
 		private:
 			uint32_t flattenIndex(const std::vector<uint32_t>& indices_) const;
 
 			const Class& _classtype;
 			std::vector<uint32_t> _dimensions;
-			std::shared_ptr<ObjectVector> _data;
+			std::shared_ptr<ObjectRefVector> _data;
 
 			size_t _offset;
 			size_t _length;
