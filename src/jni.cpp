@@ -28,6 +28,7 @@
 
 #include "class.hpp"
 #include "classloader.hpp"
+#include "exceptions.hpp"
 #include "jnihandlemap.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -824,9 +825,12 @@ jsize NativeInterface::GetStringUTFLength(JNIEnv *env, jstring str) {
 }
 
 const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolean *isCopy) {
-	StringObject *obj = (StringObject *)str;
+	Object *obj = (Object *)str;
 	if (obj == nullptr) {
-		throw std::runtime_error("NullPointerException");
+		throw NullPointerException("GetStringUTFChars on null object");
+	}
+	if (!obj->isString()) {
+		throw ClassCastException("Not a string");
 	}
 	logger.fdebug("env->GetStringUTFChars {}", obj->debug());
 	char *utf = new char[obj->str().length() + 1];
@@ -838,9 +842,9 @@ const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolea
 	return utf;
 }
 void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char *chars) {
-	StringObject *obj = (StringObject *)str;
+	Object *obj = (Object *)str;
 	if (obj == nullptr) {
-		throw std::runtime_error("NullPointerException");
+		throw NullPointerException("ReleaseStringUTFChars on null object");
 	}
 	logger.fdebug("env->ReleaseStringUTFChars {}", obj->debug());
 	if (chars) {

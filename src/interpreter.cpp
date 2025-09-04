@@ -372,7 +372,10 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 }
 
 void Interpreter::handleException(std::shared_ptr<Object> exception_) {
-	auto exception = std::dynamic_pointer_cast<ObjectClass>(exception_);
+	auto exception = exception_;
+	if (!exception->isClass()) {
+		throw std::runtime_error("throw operand is not an object!");
+	}
 	while (1) {
 		try {
 			auto& frame = _rt.currentFrame();
@@ -399,8 +402,8 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 			_rt.popFrame();
 			if (_rt.stackDepth() == 0) {
 				// uncaught exception
-				auto msgObj = std::dynamic_pointer_cast<StringObject>(exception->getField("detailMessage"));
-				std::string msg = msgObj ? msgObj->str() : "";
+				auto detailMessage = exception->getField("detailMessage");
+				std::string msg = detailMessage->isString() ? detailMessage->str() : "";
 				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
 				break;
 			}
@@ -409,8 +412,8 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 			_rt.popFrame();
 			if (_rt.stackDepth() == 0) {
 				// uncaught exception
-				auto msgObj = std::dynamic_pointer_cast<StringObject>(exception->getField("detailMessage"));
-				std::string msg = msgObj ? msgObj->str() : "";
+				auto detailMessage = exception->getField("detailMessage");
+				std::string msg = detailMessage->isString() ? detailMessage->str() : "";
 				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
 				break;
 			}
@@ -834,11 +837,11 @@ void Interpreter::fill_array_data(const uint8_t* operand_) {
 
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("fill_array_data: Object is not an array");
+		throw ClassCastException("fill_array_data: Object is not an array");
 	}
 
 	if (array->getArrayLength() != elementCount) {
-		throw std::runtime_error("fill_array_data: Array length mismatch");
+		throw ClassCastException("fill_array_data: Array length mismatch");
 	}
 
 	for (uint32_t i = 0; i < elementCount; ++i) {
@@ -868,7 +871,7 @@ void Interpreter::fill_array_data(const uint8_t* operand_) {
 				break;
 			}
 			default:
-				throw std::runtime_error(fmt::format("fill_array_data: Unsupported element size: {}", elementSize));
+				throw ArrayStoreException(fmt::format("fill_array_data: Unsupported element size: {}", elementSize));
 		}
 	}
 	frame.pc() += 5;
@@ -1204,7 +1207,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aget: Object is not an array");
+		throw ClassCastException("aget: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1218,11 +1221,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 			throw std::runtime_error("aget: Array does not contain number");
 		}
 	} else {
-		auto numberObj = std::dynamic_pointer_cast<NumberObject>(obj);
-		if (!numberObj) {
-			throw std::runtime_error("aget: Array element is not a number object");
-		}
-		value = numberObj->getValue();
+		value = obj->getValue();
 	}
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -1240,18 +1239,18 @@ void Interpreter::aget_wide(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aget-wide: Object is not an array");
+		throw ClassCastException("aget-wide: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-wide: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
-	if (!numberObj) {
+	auto element = array->getElement(index);
+	if (!element->isNumberObject()) {
 		throw std::runtime_error("aget-wide: Array element is not a number object");
 	}
-	int64_t value = numberObj->getLongValue();
+	int64_t value = element->getLongValue();
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1268,7 +1267,7 @@ void Interpreter::aget_object(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aget-object: Object is not an array");
+		throw ClassCastException("aget-object: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1292,7 +1291,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aget-boolean: Object is not an array");
+		throw ClassCastException("aget-boolean: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1300,11 +1299,10 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 		throw ArrayIndexOutOfBoundsException("aget-boolean: Array index out of bounds");
 	}
 	auto element = array->getElement(index);
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(element);
-	if (!numberObj) {
+	if (!element->isNumberObject()) {
 		throw std::runtime_error("aget-boolean: Array element is not a number object");
 	}
-	bool value = numberObj->getValue() != 0;
+	bool value = element->getValue() != 0;
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1321,18 +1319,18 @@ void Interpreter::aget_byte(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aget-byte: Object is not an array");
+		throw ClassCastException("aget-byte: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-byte: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
-	if (!numberObj) {
+	auto element = array->getElement(index);
+	if (!element->isNumberObject()) {
 		throw std::runtime_error("aget-byte: Array element is not a number object");
 	}
-	int8_t value = static_cast<int8_t>(numberObj->getValue());
+	int8_t value = static_cast<int8_t>(element->getValue());
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1349,18 +1347,18 @@ void Interpreter::aget_char(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aget-char: Object is not an array");
+		throw ClassCastException("aget-char: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-char: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
-	if (!numberObj) {
+	auto element = array->getElement(index);
+	if (!element->isNumberObject()) {
 		throw std::runtime_error("aget-char: Array element is not a number object");
 	}
-	uint16_t value = static_cast<uint16_t>(numberObj->getValue());
+	uint16_t value = static_cast<uint16_t>(element->getValue());
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1377,18 +1375,18 @@ void Interpreter::aget_short(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aget-short: Object is not an array");
+		throw ClassCastException("aget-short: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-short: Array index out of bounds");
 	}
-	auto numberObj = std::dynamic_pointer_cast<NumberObject>(array->getElement(index));
-	if (!numberObj) {
+	auto element = array->getElement(index);
+	if (!element->isNumberObject()) {
 		throw std::runtime_error("aget-short: Array element is not a number object");
 	}
-	int16_t value = static_cast<int16_t>(numberObj->getValue());
+	int16_t value = static_cast<int16_t>(element->getValue());
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1407,7 +1405,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aput: Object is not an array");
+		throw ClassCastException("aput: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1431,7 +1429,7 @@ void Interpreter::aput_wide(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aput-wide: Object is not an array");
+		throw ClassCastException("aput-wide: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1455,7 +1453,7 @@ void Interpreter::aput_object(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aput-object: Object is not an array");
+		throw ClassCastException("aput-object: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1479,7 +1477,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aput-boolean: Object is not an array");
+		throw ClassCastException("aput-boolean: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1503,7 +1501,7 @@ void Interpreter::aput_byte(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aput-byte: Object is not an array");
+		throw ClassCastException("aput-byte: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1527,7 +1525,7 @@ void Interpreter::aput_char(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aput-char: Object is not an array");
+		throw ClassCastException("aput-char: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1551,7 +1549,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 	}
 	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
 	if (!array) {
-		throw std::runtime_error("aput-short: Object is not an array");
+		throw ClassCastException("aput-short: Object is not an array");
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
@@ -1584,7 +1582,7 @@ void Interpreter::iget(const uint8_t* operand_) {
 	if (!fieldObj || !fieldObj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("iget: Field {} is not a number object", field.getName()));
 	}
-	int32_t value = static_cast<int32_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
+	int32_t value = static_cast<int32_t>(fieldObj->getValue());
 	logger.fdebug("iget {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -1611,7 +1609,7 @@ void Interpreter::iget_wide(const uint8_t* operand_) {
 		throw std::runtime_error(fmt::format("iget_wide: Field {} is not a number object", field.getName()));
 	}
 
-	auto value = std::dynamic_pointer_cast<NumberObject>(fieldObj)->getLongValue();
+	auto value = fieldObj->getLongValue();
 	logger.fdebug("iget_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
@@ -1662,7 +1660,7 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 	if (!fieldObj || !fieldObj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("iget_boolean: Field {} is not a number object", field.getName()));
 	}
-	bool value = static_cast<bool>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
+	bool value = static_cast<bool>(fieldObj->getValue());
 	logger.fdebug("iget_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -1689,7 +1687,7 @@ void Interpreter::iget_byte(const uint8_t* operand_) {
 	if (!fieldObj || !fieldObj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
-	int8_t value = static_cast<int8_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
+	int8_t value = static_cast<int8_t>(fieldObj->getValue());
 	logger.fdebug("iget_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -1716,7 +1714,7 @@ void Interpreter::iget_char(const uint8_t* operand_) {
 	if (!fieldObj || !fieldObj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
-	uint16_t value = static_cast<uint16_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
+	uint16_t value = static_cast<uint16_t>(fieldObj->getValue());
 	logger.fdebug("iget_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -1743,7 +1741,7 @@ void Interpreter::iget_short(const uint8_t* operand_) {
 	if (!fieldObj || !fieldObj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("iget_byte: Field {} is not a number object", field.getName()));
 	}
-	int16_t value = static_cast<int16_t>(std::dynamic_pointer_cast<NumberObject>(fieldObj)->getValue());
+	int16_t value = static_cast<int16_t>(fieldObj->getValue());
 	logger.fdebug("iget_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -2116,7 +2114,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 		auto value = frame.getObjRegister(src);
 		logger.fdebug("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug());
 		// @todo : this is a hack to handle setting null to an object field. Need to properly handle this case.
-		if (value->isNumberObject() && (std::dynamic_pointer_cast<NumberObject>(value)->getValue() == 0)) {
+		if (value->isNumberObject() && (value->getValue() == 0)) {
 			auto obj = Object::make(fieldclass);
 			field.setObjectValue(obj);
 		} else {
@@ -2245,11 +2243,10 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	if (this_ptr->isNull()) {
 		throw NullPointerException("invoke-virtual on null object");
 	}
-	auto this_ptr_class = std::dynamic_pointer_cast<ObjectClass>(this_ptr);
-	if (this_ptr_class == nullptr) {
+	if (!this_ptr->isClass()) {
 		throw std::runtime_error(fmt::format("invoke-virtual: this pointer is not an ObjectClass, got {}", this_ptr->debug()));
 	}
-	Class* instance = &this_ptr_class->getClass();
+	Class* instance = &this_ptr->getClass();
 	if (!instance->isStaticInitialized()) {
 		throw std::runtime_error(fmt::format("invoke-virtual: class {} is not static initialized", instance->getFullname()));
 	}
@@ -2280,10 +2277,10 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	}
 	if (vmethod) {
 		if (!vmethod->isVirtual()) {
-			logger.ferror("invoke-virtual: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), methodname, signature);
+			logger.ferror("invoke-virtual: method {}->{}{} is not virtual", this_ptr->getClass().getFullname(), methodname, signature);
 		}
 		logger.fok("invoke-virtual call method {}->{}{}{} on instance {}", instance->getFullname(), methodname, signature, args_str,
-		           this_ptr_class->getClass().getFullname());
+		           this_ptr->getClass().getFullname());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
 		} else {
@@ -2300,7 +2297,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	} else {
 		// If no method found, throw an error
 		throw std::runtime_error(
-		    fmt::format("invoke-virtual: call method {}->{}{}{} not found", this_ptr_class->getClass().getFullname(), methodname, signature, args_str));
+		    fmt::format("invoke-virtual: call method {}->{}{}{} not found", this_ptr->getClass().getFullname(), methodname, signature, args_str));
 	}
 
 	frame.pc() += 5;
@@ -2396,15 +2393,14 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	}
 	interface_str += ")";
 
-	auto this_ptr = std::dynamic_pointer_cast<ObjectClass>(frame.getObjRegister(regs[0]));
+	auto this_ptr = frame.getObjRegister(regs[0]);
 	if (this_ptr->isNull()) {
 		throw NullPointerException("invoke_interface on null object");
 	}
-	auto this_ptr_class = std::dynamic_pointer_cast<ObjectClass>(this_ptr);
-	if (this_ptr_class == nullptr) {
+	if (!this_ptr->isClass()) {
 		throw std::runtime_error(fmt::format("invoke-interface: this pointer is not an ObjectClass, got {}", this_ptr->debug()));
 	}
-	Class* instance = &this_ptr_class->getClass();
+	Class* instance = &this_ptr->getClass();
 	if (!instance->isStaticInitialized()) {
 		throw std::runtime_error(fmt::format("invoke-interface: class {} is not static initialized", instance->getFullname()));
 	}
@@ -2449,14 +2445,14 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	}
 	if (vmethod) {
 		if (!vmethod->isVirtual()) {
-			logger.ferror("invoke-interface: method {}->{}{} is not virtual", this_ptr_class->getClass().getFullname(), interface.getName(),
+			logger.ferror("invoke-interface: method {}->{}{} is not virtual", this_ptr->getClass().getFullname(), interface.getName(),
 			              interface.getSignature());
 		}
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
 		} else {
 			logger.fok("invoke-interface call method {}->{}{}{} on instance {}", instance->getFullname(), interface.getName(), interface.getSignature(),
-			           interface_str, this_ptr_class->getClass().getFullname());
+			           interface_str, this_ptr->getClass().getFullname());
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
 			for (uint32_t i = 0; i < vA; i++) {
@@ -2465,8 +2461,8 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		}
 	} else {
 		// If no method found, throw an error
-		throw std::runtime_error(fmt::format("invoke-interface: call method {}->{}{}{} not found", this_ptr_class->getClass().getFullname(),
-		                                     interface.getName(), interface.getSignature(), interface_str));
+		throw std::runtime_error(fmt::format("invoke-interface: call method {}->{}{}{} not found", this_ptr->getClass().getFullname(), interface.getName(),
+		                                     interface.getSignature(), interface_str));
 	}
 	frame.pc() += 5;
 }

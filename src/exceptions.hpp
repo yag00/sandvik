@@ -137,6 +137,13 @@ namespace sandvik {
 			}
 			~NegativeArraySizeException() noexcept override = default;
 	};
+	/** @brief VerifyError exception class */
+	class VerifyError : public JavaException {
+		public:
+			VerifyError(const std::string& message = "") : JavaException("java.lang.VerifyError", message) {
+			}
+			~VerifyError() noexcept override = default;
+	};
 }  // namespace sandvik
 
 #endif

@@ -16,7 +16,7 @@ extern "C" {
 		if (this_ptr == nullptr) {
 			throw std::runtime_error("NullPointerException");
 		}
-		auto fileObj = std::static_pointer_cast<sandvik::NumberObject>(this_ptr->getField("file"));
+		auto fileObj = this_ptr->getField("file");
 		int fd = fileObj->getValue();
 		const char* nativeStr = env->GetStringUTFChars(str, nullptr);
 		if (nativeStr != nullptr) {
@@ -42,7 +42,7 @@ extern "C" {
 		if (this_ptr == nullptr) {
 			throw std::runtime_error("NullPointerException");
 		}
-		auto fileObj = std::static_pointer_cast<sandvik::NumberObject>(this_ptr->getField("file"));
+		auto fileObj = this_ptr->getField("file");
 		int fd = fileObj->getValue();
 		const char* nativeStr = env->GetStringUTFChars(str, nullptr);
 		if (nativeStr != nullptr) {
@@ -68,7 +68,7 @@ extern "C" {
 		if (this_ptr == nullptr) {
 			throw std::runtime_error("NullPointerException");
 		}
-		auto fileObj = std::static_pointer_cast<sandvik::NumberObject>(this_ptr->getField("file"));
+		auto fileObj = this_ptr->getField("file");
 		int fd = fileObj->getValue();
 		switch (fd) {
 			case 1:

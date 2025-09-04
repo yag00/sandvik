@@ -26,10 +26,11 @@
 #include "object.hpp"
 
 namespace sandvik {
+	using ObjectRefVector = std::vector<ObjectRef>;
+	using ArrayRef = std::shared_ptr<Array>;
+
 	class Array : public Object {
 		public:
-			using ObjectRefVector = std::vector<ObjectRef>;
-
 			static ObjectRef make(const Class& classtype_, uint32_t size_);
 			static ObjectRef make(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 			explicit Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
@@ -40,9 +41,9 @@ namespace sandvik {
 
 			std::string debug() const override;
 
-			const Class& getClassType() const;
+			const Class& getClassType() const override;
 
-			std::shared_ptr<Array> getArray(uint32_t idx_) const;
+			ArrayRef getArray(uint32_t idx_) const;
 
 			uint32_t getDimensions() const;
 			uint32_t getDimension(uint32_t index_) const;

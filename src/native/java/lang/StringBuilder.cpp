@@ -3,6 +3,7 @@
 
 #include "class.hpp"
 #include "classloader.hpp"
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
 #include "jnihandlemap.hpp"
@@ -13,7 +14,7 @@ extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_StringBuilder_append__Ljava_lang_String_2(JNIEnv* env, jobject obj, jstring str) {
 		sandvik::Object* this_ptr = (sandvik::Object*)obj;
 		if (this_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Append on null StringBuilder object");
 		}
 		sandvik::NativeInterface* jenv = static_cast<sandvik::NativeInterface*>(env);
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
@@ -23,7 +24,10 @@ extern "C" {
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, std::string(nativeStr)));
 		} else {
-			auto current = static_cast<sandvik::StringObject*>(this_ptr->getField("string").get());
+			auto current = this_ptr->getField("string");
+			if (!current->isString()) {
+				throw sandvik::ClassCastException("Field 'string' is not a StringObject");
+			}
 			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + std::string(nativeStr)));
 		}
 		return obj;
@@ -32,7 +36,7 @@ extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_StringBuilder_append__I(JNIEnv* env, jobject obj, jint i) {
 		sandvik::Object* this_ptr = (sandvik::Object*)obj;
 		if (this_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Append on null StringBuilder object");
 		}
 		sandvik::NativeInterface* jenv = static_cast<sandvik::NativeInterface*>(env);
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
@@ -40,7 +44,10 @@ extern "C" {
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, std::to_string(i)));
 		} else {
-			auto current = static_cast<sandvik::StringObject*>(this_ptr->getField("string").get());
+			auto current = this_ptr->getField("string");
+			if (!current->isString()) {
+				throw sandvik::ClassCastException("Field 'string' is not a StringObject");
+			}
 			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + std::to_string(i)));
 		}
 		return obj;
@@ -48,7 +55,7 @@ extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_StringBuilder_append__F(JNIEnv* env, jobject obj, jfloat f) {
 		sandvik::Object* this_ptr = (sandvik::Object*)obj;
 		if (this_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Append on null StringBuilder object");
 		}
 		sandvik::NativeInterface* jenv = static_cast<sandvik::NativeInterface*>(env);
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
@@ -58,7 +65,10 @@ extern "C" {
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, floatStr));
 		} else {
-			auto current = static_cast<sandvik::StringObject*>(this_ptr->getField("string").get());
+			auto current = this_ptr->getField("string");
+			if (!current->isString()) {
+				throw sandvik::ClassCastException("Field 'string' is not a StringObject");
+			}
 			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + floatStr));
 		}
 		return obj;
@@ -66,7 +76,7 @@ extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_StringBuilder_append__D(JNIEnv* env, jobject obj, jdouble d) {
 		sandvik::Object* this_ptr = (sandvik::Object*)obj;
 		if (this_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Append on null StringBuilder object");
 		}
 		sandvik::NativeInterface* jenv = static_cast<sandvik::NativeInterface*>(env);
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
@@ -76,7 +86,10 @@ extern "C" {
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, doubleStr));
 		} else {
-			auto current = static_cast<sandvik::StringObject*>(this_ptr->getField("string").get());
+			auto current = this_ptr->getField("string");
+			if (!current->isString()) {
+				throw sandvik::ClassCastException("Field 'string' is not a StringObject");
+			}
 			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + doubleStr));
 		}
 		return obj;
@@ -85,7 +98,7 @@ extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_StringBuilder_append__J(JNIEnv* env, jobject obj, jlong j) {
 		sandvik::Object* this_ptr = (sandvik::Object*)obj;
 		if (this_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Append on null StringBuilder object");
 		}
 		sandvik::NativeInterface* jenv = static_cast<sandvik::NativeInterface*>(env);
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
@@ -95,7 +108,10 @@ extern "C" {
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, longStr));
 		} else {
-			auto current = static_cast<sandvik::StringObject*>(this_ptr->getField("string").get());
+			auto current = this_ptr->getField("string");
+			if (!current->isString()) {
+				throw sandvik::ClassCastException("Field 'string' is not a StringObject");
+			}
 			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + longStr));
 		}
 		return obj;
@@ -108,18 +124,18 @@ extern "C" {
 		}
 		sandvik::Object* this_ptr = (sandvik::Object*)obj;
 		if (this_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Append on null StringBuilder object");
 		}
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 
 		if (this_ptr->getField("string")->isNull()) {
-			// @todo throw a Java exception here
-			logger.warning("@todo throw a Java exception here");
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Field 'string' is null");
 		}
-		auto str = static_cast<sandvik::StringObject*>(this_ptr->getField("string").get())->str();
-
-		auto strObj = sandvik::Object::make(classloader, str);
+		auto current = this_ptr->getField("string");
+		if (!current->isString()) {
+			throw sandvik::ClassCastException("Field 'string' is not a StringObject");
+		}
+		auto strObj = sandvik::Object::make(classloader, current->str());
 		jobject jstr = jenv->getHandles().toJObject(strObj);
 		return jstr;
 	}

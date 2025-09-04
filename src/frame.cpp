@@ -86,7 +86,7 @@ int32_t Frame::getIntRegister(uint32_t reg) {
 	if (!obj->isNumberObject()) {
 		throw std::runtime_error(fmt::format("Register does not contain an NumberObject {}", obj->debug()));
 	}
-	auto number = std::dynamic_pointer_cast<NumberObject>(obj)->getValue();
+	auto number = obj->getValue();
 	logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
 	return number;
 }
@@ -111,9 +111,9 @@ int64_t Frame::getLongRegister(uint32_t reg) {
 	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
 		throw std::runtime_error("Register does not contain valid NumberObjects");
 	}
-	uint64_t value = static_cast<uint32_t>(static_cast<NumberObject&>(msb).getValue());
+	uint64_t value = static_cast<uint32_t>(msb.getValue());
 	value <<= 32;
-	value |= static_cast<uint32_t>(static_cast<NumberObject&>(lsb).getValue());
+	value |= static_cast<uint32_t>(lsb.getValue());
 	logger.fdebug("getLongRegister: reg={} --> {:x}", reg, value);
 	return (int64_t)value;
 }
@@ -135,7 +135,7 @@ float Frame::getFloatRegister(uint32_t reg) {
 	if (!obj.isNumberObject()) {
 		throw std::runtime_error(fmt::format("Register does not contain an NumberObject {}", obj.debug()));
 	}
-	uint32_t intValue = static_cast<uint32_t>(static_cast<NumberObject&>(obj).getValue());
+	uint32_t intValue = static_cast<uint32_t>(obj.getValue());
 	return *reinterpret_cast<float*>(&intValue);
 }
 
@@ -161,9 +161,9 @@ double Frame::getDoubleRegister(uint32_t reg) {
 	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
 		throw std::runtime_error("Register does not contain valid NumberObjects");
 	}
-	uint64_t value = static_cast<uint32_t>(static_cast<NumberObject&>(msb).getValue());
+	uint64_t value = static_cast<uint32_t>(msb.getValue());
 	value <<= 32;
-	value |= static_cast<uint32_t>(static_cast<NumberObject&>(lsb).getValue());
+	value |= static_cast<uint32_t>(lsb.getValue());
 	return *reinterpret_cast<double*>(&value);
 }
 
@@ -204,14 +204,14 @@ int32_t Frame::getReturnValue() const {
 	if (!_objectReturn->isNumberObject()) {
 		throw std::runtime_error("Return object is not an NumberObject");
 	}
-	return static_cast<NumberObject&>(*_objectReturn).getValue();
+	return _objectReturn->getValue();
 }
 
 int64_t Frame::getReturnDoubleValue() const {
 	if (!_objectReturn->isNumberObject()) {
 		throw std::runtime_error("Return object is not a isNumberObject");
 	}
-	return static_cast<NumberObject&>(*_objectReturn).getLongValue();
+	return _objectReturn->getLongValue();
 }
 void Frame::setException(std::shared_ptr<Object> exception_) {
 	_exception = exception_;

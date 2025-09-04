@@ -124,20 +124,20 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 		case 'S':
 		case 'C':
 		case 'F': {
-			auto number = std::dynamic_pointer_cast<NumberObject>(*it);
+			auto obj = *it;
 			++it;
-			if (!number) {
+			if (!obj->isNumberObject()) {
 				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
 			}
-			return static_cast<uintptr_t>(number->getValue());
+			return static_cast<uintptr_t>(obj->getValue());
 		}
 		case 'J':
 		case 'D': {
-			auto lsb = std::dynamic_pointer_cast<NumberObject>(*it);
+			auto lsb = *it;
 			++it;
-			auto msb = std::dynamic_pointer_cast<NumberObject>(*it);
+			auto msb = *it;
 			++it;
-			if (!lsb || !msb) {
+			if (!lsb->isNumberObject() || !msb->isNumberObject()) {
 				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
 			}
 			uint32_t lsb_value = lsb->getValue();

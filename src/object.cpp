@@ -28,6 +28,75 @@
 #include "field.hpp"
 #include "system/logger.hpp"
 
+namespace sandvik {
+	class NumberObject : public Object {
+		public:
+			NumberObject(uint64_t value_);
+			~NumberObject() override = default;
+
+			bool isNumberObject() const override;
+			int32_t getValue() const override;
+			int64_t getLongValue() const override;
+			std::string debug() const override;
+
+			bool operator==(const Object& other) const override;
+
+		private:
+			uint64_t _value;
+	};
+	class ObjectClass : public Object {
+		public:
+			ObjectClass(Class& class_);
+			~ObjectClass() override = default;
+
+			bool isInstanceOf(const std::string& instance_) const override;
+
+			bool isClass() const override;
+			Class& getClass() const override;
+			std::string debug() const override;
+
+		private:
+			Class& _class;
+	};
+	class ConstClassObject : public ObjectClass {
+		public:
+			ConstClassObject(Class& class_, Class& type_);
+			~ConstClassObject() override = default;
+
+			const Class& getClassType() const override;
+			std::string debug() const override;
+
+			bool operator==(const Object& other) const override;
+
+		private:
+			Class& _type;
+	};
+	class StringObject : public ObjectClass {
+		public:
+			StringObject(Class& class_, const std::string& value_);
+			~StringObject() override = default;
+
+			bool isString() const override;
+			std::string str() const override;
+			void setString(const std::string& str_) override;
+			std::string debug() const override;
+
+			bool operator==(const Object& other) const override;
+
+		private:
+			std::string _value;
+	};
+	class NullObject : public Object {
+		public:
+			NullObject() = default;
+			~NullObject() override = default;
+
+			bool operator==(std::nullptr_t) const override;
+			bool isNull() const override;
+			std::string debug() const override;
+	};
+}  // namespace sandvik
+
 using namespace sandvik;
 
 ObjectRef Object::make(Class& class_) {
@@ -76,6 +145,7 @@ bool Object::operator==(const Object& other) const {
 	}
 	return true;
 }
+
 bool Object::operator==(std::nullptr_t) const {
 	return false;
 }
@@ -83,14 +153,47 @@ bool Object::operator==(std::nullptr_t) const {
 bool Object::isNumberObject() const {
 	return false;
 }
+
+int32_t Object::getValue() const {
+	throw std::bad_cast();
+}
+
+int64_t Object::getLongValue() const {
+	throw std::bad_cast();
+}
+
 bool Object::isArray() const {
 	return false;
 }
+uint32_t Object::getArrayLength() const {
+	throw std::bad_cast();
+}
+
 bool Object::isNull() const {
 	return false;
 }
-uint32_t Object::getArrayLength() const {
-	return 0;
+
+bool Object::isClass() const {
+	return false;
+}
+Class& Object::getClass() const {
+	throw std::bad_cast();
+}
+
+bool Object::isString() const {
+	return false;
+}
+
+std::string Object::str() const {
+	throw std::bad_cast();
+}
+
+void Object::setString(const std::string& str_) {
+	throw std::bad_cast();
+}
+
+const Class& Object::getClassType() const {
+	throw std::bad_cast();
 }
 
 std::string Object::debug() const {
@@ -136,10 +239,7 @@ int32_t NumberObject::getValue() const {
 int64_t NumberObject::getLongValue() const {
 	return (int64_t)_value;
 }
-float NumberObject::getFloatValue() const {
-	const uint32_t value = (uint32_t)_value;
-	return *reinterpret_cast<const float*>(&value);
-}
+
 bool NumberObject::isNumberObject() const {
 	return true;
 }
@@ -161,13 +261,16 @@ bool StringObject::operator==(const Object& other) const {
 	return _value == otherString->_value;
 }
 
+bool StringObject::isString() const {
+	return true;
+}
 std::string StringObject::str() const {
 	return _value;
 }
 std::string StringObject::debug() const {
 	return "String=" + _value;
 }
-void StringObject::set(const std::string& str_) {
+void StringObject::setString(const std::string& str_) {
 	_value = str_;
 }
 
@@ -223,7 +326,9 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 		}
 	}
 }
-
+bool ObjectClass::isClass() const {
+	return true;
+}
 Class& ObjectClass::getClass() const {
 	return _class;
 }
@@ -248,7 +353,7 @@ bool ConstClassObject::operator==(const Object& other) const {
 	return _type.getFullname() == otherClass->getClassType().getFullname();
 }
 
-Class& ConstClassObject::getClassType() const {
+const Class& ConstClassObject::getClassType() const {
 	return _type;
 }
 

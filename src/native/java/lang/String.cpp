@@ -17,15 +17,13 @@ extern "C" {
 		if (this_ptr == nullptr || other_ptr == nullptr) {
 			throw std::runtime_error("NullPointerException");
 		}
-		auto* this_string = dynamic_cast<sandvik::StringObject*>(this_ptr);
-		if (!this_string) {
+		if (!this_ptr->isString()) {
 			throw std::runtime_error("Object is not a java.lang.String");
 		}
-		auto* other_string = dynamic_cast<sandvik::StringObject*>(other_ptr);
-		if (!other_string) {
+		if (!other_ptr->isString()) {
 			throw std::runtime_error("Object is not a java.lang.String");
 		}
-		this_string->set(this_string->str() + other_string->str());
+		this_ptr->setString(this_ptr->str() + other_ptr->str());
 	}
 
 	JNIEXPORT jboolean JNICALL Java_java_lang_String_equals(JNIEnv* env, jobject obj, jobject other) {
@@ -44,10 +42,12 @@ extern "C" {
 		if (this_ptr->isNull() || other_ptr->isNull()) {
 			return JNI_FALSE;
 		}
-
+		if (!this_ptr->isString() || !other_ptr->isString()) {
+			return JNI_FALSE;
+		}
 		// Get the actual string values
-		auto this_str = static_cast<sandvik::StringObject*>(this_ptr)->str();
-		auto other_str = static_cast<sandvik::StringObject*>(other_ptr)->str();
+		auto this_str = this_ptr->str();
+		auto other_str = other_ptr->str();
 		// Compare the strings for equality
 		return this_str == other_str ? JNI_TRUE : JNI_FALSE;
 	}

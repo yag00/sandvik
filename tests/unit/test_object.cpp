@@ -35,27 +35,24 @@ namespace {
 	class String {
 		public:
 			static void equals(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
-				auto str0 = std::dynamic_pointer_cast<StringObject>(args_[0]);
-				auto str1 = std::dynamic_pointer_cast<StringObject>(args_[1]);
-				if (str0 != nullptr && str1 != nullptr) {
+				auto str0 = args_[0];
+				auto str1 = args_[1];
+				if (str0->isString() && str1->isString()) {
 					if (str0->str() == str1->str()) {
 						frame_.setReturnValue(1);
-					} else {
-						frame_.setReturnValue(0);
 					}
-				} else {
-					throw std::runtime_error("First or second argument is not an instance of java.lang.String");
 				}
+				frame_.setReturnValue(0);
 			}
 			static void length(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
 				if (args_.size() < 1) {
 					throw std::runtime_error("Not enough arguments");
 				}
-				auto clazz = std::dynamic_pointer_cast<StringObject>(args_[0]);
-				if (!clazz) {
+				auto strobj = args_[0];
+				if (!strobj->isString()) {
 					throw std::runtime_error("First argument is not an instance of java.lang.String");
 				}
-				frame_.setReturnValue(clazz->str().length());
+				frame_.setReturnValue(strobj->str().length());
 			}
 	};
 }  // namespace
@@ -168,19 +165,17 @@ TEST(object, array) {
 		for (uint32_t j = 0; j < 3; ++j) {
 			auto elem = subarray->getElement(j);
 			logger.fdebug("Element [{}][{}]: {}", i, j, elem->debug());
-			auto num_elem = std::dynamic_pointer_cast<NumberObject>(elem);
-			ASSERT_NE(num_elem, nullptr);
-			EXPECT_EQ(num_elem->getValue(), static_cast<int32_t>(i * 3 + j + 1));
-			subarray->setElement(j, Object::make(num_elem->getValue() + 0x10));
+			ASSERT_NE(elem, nullptr);
+			EXPECT_EQ(elem->getValue(), static_cast<int32_t>(i * 3 + j + 1));
+			subarray->setElement(j, Object::make(elem->getValue() + 0x10));
 		}
 	}
 	for (uint32_t i = 0; i < 3; ++i) {
 		for (uint32_t j = 0; j < 3; ++j) {
 			auto elem = array->getElement({i, j});
 			logger.fdebug("Element [{}][{}]: {}", i, j, elem->debug());
-			auto num_elem = std::dynamic_pointer_cast<NumberObject>(elem);
-			ASSERT_NE(num_elem, nullptr);
-			EXPECT_EQ(num_elem->getValue(), static_cast<int32_t>(i * 3 + j + 0x11));
+			ASSERT_NE(elem, nullptr);
+			EXPECT_EQ(elem->getValue(), static_cast<int32_t>(i * 3 + j + 0x11));
 		}
 	}
 }

@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
 #include "jnihandlemap.hpp"
@@ -17,10 +18,9 @@ extern "C" {
 		}
 		sandvik::Object* ptr = (sandvik::Object*)obj;
 		if (ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
+			throw sandvik::NullPointerException("Class.getName() called on null object");
 		}
-		sandvik::ConstClassObject* classObj = dynamic_cast<sandvik::ConstClassObject*>(ptr);
-		std::string name = classObj->getClassType().getFullname();
+		std::string name = ptr->getClassType().getFullname();
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 		auto strObj = sandvik::Object::make(classloader, name);
 		jobject jstr = jenv->getHandles().toJObject(strObj);
