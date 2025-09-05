@@ -298,7 +298,7 @@ jint NativeInterface::GetVersion(JNIEnv *env) {
 	return JNI_VERSION_1_6;
 }
 jclass NativeInterface::DefineClass(JNIEnv *env, const char *name, jobject loader, const jbyte *buf, jsize len) {
-	throw std::runtime_error("DefineClass not implemented");
+	throw VmException("DefineClass not implemented");
 }
 jclass NativeInterface::FindClass(JNIEnv *env, const char *name) {
 	NativeInterface *this_ptr = static_cast<NativeInterface *>(env);
@@ -307,521 +307,521 @@ jclass NativeInterface::FindClass(JNIEnv *env, const char *name) {
 	return (jclass)&cls;
 }
 jmethodID NativeInterface::FromReflectedMethod(JNIEnv *env, jobject method) {
-	throw std::runtime_error("FromReflectedMethod not implemented");
+	throw VmException("FromReflectedMethod not implemented");
 }
 jfieldID NativeInterface::FromReflectedField(JNIEnv *env, jobject field) {
-	throw std::runtime_error("FromReflectedField not implemented");
+	throw VmException("FromReflectedField not implemented");
 }
 jobject NativeInterface::ToReflectedMethod(JNIEnv *env, jclass cls, jmethodID methodID, jboolean isStatic) {
-	throw std::runtime_error("ToReflectedMethod not implemented");
+	throw VmException("ToReflectedMethod not implemented");
 }
 jclass NativeInterface::GetSuperclass(JNIEnv *env, jclass sub) {
-	throw std::runtime_error("GetSuperclass not implemented");
+	throw VmException("GetSuperclass not implemented");
 }
 jboolean NativeInterface::IsAssignableFrom(JNIEnv *env, jclass sub, jclass sup) {
-	throw std::runtime_error("IsAssignableFrom not implemented");
+	throw VmException("IsAssignableFrom not implemented");
 }
 jobject NativeInterface::ToReflectedField(JNIEnv *env, jclass cls, jfieldID fieldID, jboolean isStatic) {
-	throw std::runtime_error("ToReflectedField not implemented");
+	throw VmException("ToReflectedField not implemented");
 }
 
 jint NativeInterface::Throw(JNIEnv *env, jthrowable obj) {
-	throw std::runtime_error("Throw not implemented");
+	throw VmException("Throw not implemented");
 }
 jint NativeInterface::ThrowNew(JNIEnv *env, jclass clazz, const char *msg) {
-	throw std::runtime_error("ThrowNew not implemented");
+	throw VmException("ThrowNew not implemented");
 }
 jthrowable NativeInterface::ExceptionOccurred(JNIEnv *env) {
-	throw std::runtime_error("ExceptionOccurred not implemented");
+	throw VmException("ExceptionOccurred not implemented");
 }
 void NativeInterface::ExceptionDescribe(JNIEnv *env) {
-	throw std::runtime_error("ExceptionDescribe not implemented");
+	throw VmException("ExceptionDescribe not implemented");
 }
 void NativeInterface::ExceptionClear(JNIEnv *env) {
-	throw std::runtime_error("ExceptionClear not implemented");
+	throw VmException("ExceptionClear not implemented");
 }
 void NativeInterface::FatalError(JNIEnv *env, const char *msg) {
-	throw std::runtime_error("FatalError not implemented");
+	throw VmException("FatalError not implemented");
 }
 
 jint NativeInterface::PushLocalFrame(JNIEnv *env, jint capacity) {
-	throw std::runtime_error("PushLocalFrame not implemented");
+	throw VmException("PushLocalFrame not implemented");
 }
 jobject NativeInterface::PopLocalFrame(JNIEnv *env, jobject result) {
-	throw std::runtime_error("PopLocalFrame not implemented");
+	throw VmException("PopLocalFrame not implemented");
 }
 jobject NativeInterface::NewGlobalRef(JNIEnv *env, jobject lobj) {
-	throw std::runtime_error("NewGlobalRef not implemented");
+	throw VmException("NewGlobalRef not implemented");
 }
 void NativeInterface::DeleteGlobalRef(JNIEnv *env, jobject gref) {
-	throw std::runtime_error("DeleteGlobalRef not implemented");
+	throw VmException("DeleteGlobalRef not implemented");
 }
 void NativeInterface::DeleteLocalRef(JNIEnv *env, jobject obj) {
-	throw std::runtime_error("DeleteLocalRef not implemented");
+	throw VmException("DeleteLocalRef not implemented");
 }
 jboolean NativeInterface::IsSameObject(JNIEnv *env, jobject obj1, jobject obj2) {
-	throw std::runtime_error("IsSameObject not implemented");
+	throw VmException("IsSameObject not implemented");
 }
 jobject NativeInterface::NewLocalRef(JNIEnv *env, jobject ref) {
-	throw std::runtime_error("NewLocalRef not implemented");
+	throw VmException("NewLocalRef not implemented");
 }
 jint NativeInterface::EnsureLocalCapacity(JNIEnv *env, jint capacity) {
-	throw std::runtime_error("EnsureLocalCapacity not implemented");
+	throw VmException("EnsureLocalCapacity not implemented");
 }
 jobject NativeInterface::AllocObject(JNIEnv *env, jclass clazz) {
-	throw std::runtime_error("AllocObject not implemented");
+	throw VmException("AllocObject not implemented");
 }
 
 jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("NewObject not implemented");
+	throw VmException("NewObject not implemented");
 }
 jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("NewObjectV not implemented");
+	throw VmException("NewObjectV not implemented");
 }
 jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("NewObjectA not implemented");
+	throw VmException("NewObjectA not implemented");
 }
 
 jclass NativeInterface::GetObjectClass(JNIEnv *env, jobject obj) {
-	throw std::runtime_error("GetObjectClass not implemented");
+	throw VmException("GetObjectClass not implemented");
 }
 jboolean NativeInterface::IsInstanceOf(JNIEnv *env, jobject obj, jclass clazz) {
-	throw std::runtime_error("IsInstanceOf not implemented");
+	throw VmException("IsInstanceOf not implemented");
 }
 jmethodID NativeInterface::GetMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw std::runtime_error("GetMethodID not implemented");
+	throw VmException("GetMethodID not implemented");
 }
 
 jobject NativeInterface::CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallObjectMethod not implemented");
+	throw VmException("CallObjectMethod not implemented");
 }
 jobject NativeInterface::CallObjectMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallObjectMethodV not implemented");
+	throw VmException("CallObjectMethodV not implemented");
 }
 jobject NativeInterface::CallObjectMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallObjectMethodA not implemented");
+	throw VmException("CallObjectMethodA not implemented");
 }
 jboolean NativeInterface::CallBooleanMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallBooleanMethod not implemented");
+	throw VmException("CallBooleanMethod not implemented");
 }
 jboolean NativeInterface::CallBooleanMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallBooleanMethodV not implemented");
+	throw VmException("CallBooleanMethodV not implemented");
 }
 jboolean NativeInterface::CallBooleanMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallBooleanMethodA not implemented");
+	throw VmException("CallBooleanMethodA not implemented");
 }
 jbyte NativeInterface::CallByteMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallByteMethod not implemented");
+	throw VmException("CallByteMethod not implemented");
 }
 jbyte NativeInterface::CallByteMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallByteMethodV not implemented");
+	throw VmException("CallByteMethodV not implemented");
 }
 jbyte NativeInterface::CallByteMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallByteMethodA not implemented");
+	throw VmException("CallByteMethodA not implemented");
 }
 jchar NativeInterface::CallCharMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallCharMethod not implemented");
+	throw VmException("CallCharMethod not implemented");
 }
 jchar NativeInterface::CallCharMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallCharMethodV not implemented");
+	throw VmException("CallCharMethodV not implemented");
 }
 jchar NativeInterface::CallCharMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallCharMethodA not implemented");
+	throw VmException("CallCharMethodA not implemented");
 }
 jshort NativeInterface::CallShortMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallShortMethod not implemented");
+	throw VmException("CallShortMethod not implemented");
 }
 jshort NativeInterface::CallShortMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallShortMethodV not implemented");
+	throw VmException("CallShortMethodV not implemented");
 }
 jshort NativeInterface::CallShortMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallShortMethodA not implemented");
+	throw VmException("CallShortMethodA not implemented");
 }
 jint NativeInterface::CallIntMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallIntMethod not implemented");
+	throw VmException("CallIntMethod not implemented");
 }
 jint NativeInterface::CallIntMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallIntMethodV not implemented");
+	throw VmException("CallIntMethodV not implemented");
 }
 jint NativeInterface::CallIntMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallIntMethodA not implemented");
+	throw VmException("CallIntMethodA not implemented");
 }
 jlong NativeInterface::CallLongMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallLongMethod not implemented");
+	throw VmException("CallLongMethod not implemented");
 }
 jlong NativeInterface::CallLongMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallLongMethodV not implemented");
+	throw VmException("CallLongMethodV not implemented");
 }
 jlong NativeInterface::CallLongMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallLongMethodA not implemented");
+	throw VmException("CallLongMethodA not implemented");
 }
 jfloat NativeInterface::CallFloatMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallFloatMethod not implemented");
+	throw VmException("CallFloatMethod not implemented");
 }
 jfloat NativeInterface::CallFloatMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallFloatMethodV not implemented");
+	throw VmException("CallFloatMethodV not implemented");
 }
 jfloat NativeInterface::CallFloatMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallFloatMethodA not implemented");
+	throw VmException("CallFloatMethodA not implemented");
 }
 jdouble NativeInterface::CallDoubleMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallDoubleMethod not implemented");
+	throw VmException("CallDoubleMethod not implemented");
 }
 jdouble NativeInterface::CallDoubleMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallDoubleMethodV not implemented");
+	throw VmException("CallDoubleMethodV not implemented");
 }
 jdouble NativeInterface::CallDoubleMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallDoubleMethodA not implemented");
+	throw VmException("CallDoubleMethodA not implemented");
 }
 void NativeInterface::CallVoidMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw std::runtime_error("CallVoidMethod not implemented");
+	throw VmException("CallVoidMethod not implemented");
 }
 void NativeInterface::CallVoidMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallVoidMethodV not implemented");
+	throw VmException("CallVoidMethodV not implemented");
 }
 void NativeInterface::CallVoidMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallVoidMethodA not implemented");
+	throw VmException("CallVoidMethodA not implemented");
 }
 
 jobject NativeInterface::CallNonvirtualObjectMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualObjectMethod not implemented");
+	throw VmException("CallNonvirtualObjectMethod not implemented");
 }
 jobject NativeInterface::CallNonvirtualObjectMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualObjectMethodV not implemented");
+	throw VmException("CallNonvirtualObjectMethodV not implemented");
 }
 jobject NativeInterface::CallNonvirtualObjectMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualObjectMethodA not implemented");
+	throw VmException("CallNonvirtualObjectMethodA not implemented");
 }
 
 jboolean NativeInterface::CallNonvirtualBooleanMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualBooleanMethod not implemented");
+	throw VmException("CallNonvirtualBooleanMethod not implemented");
 }
 jboolean NativeInterface::CallNonvirtualBooleanMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualBooleanMethodV not implemented");
+	throw VmException("CallNonvirtualBooleanMethodV not implemented");
 }
 jboolean NativeInterface::CallNonvirtualBooleanMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualBooleanMethodA not implemented");
+	throw VmException("CallNonvirtualBooleanMethodA not implemented");
 }
 
 jbyte NativeInterface::CallNonvirtualByteMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualByteMethod not implemented");
+	throw VmException("CallNonvirtualByteMethod not implemented");
 }
 jbyte NativeInterface::CallNonvirtualByteMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualByteMethodV not implemented");
+	throw VmException("CallNonvirtualByteMethodV not implemented");
 }
 jbyte NativeInterface::CallNonvirtualByteMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualByteMethodA not implemented");
+	throw VmException("CallNonvirtualByteMethodA not implemented");
 }
 
 jchar NativeInterface::CallNonvirtualCharMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualCharMethod not implemented");
+	throw VmException("CallNonvirtualCharMethod not implemented");
 }
 jchar NativeInterface::CallNonvirtualCharMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualCharMethodV not implemented");
+	throw VmException("CallNonvirtualCharMethodV not implemented");
 }
 jchar NativeInterface::CallNonvirtualCharMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualCharMethodA not implemented");
+	throw VmException("CallNonvirtualCharMethodA not implemented");
 }
 
 jshort NativeInterface::CallNonvirtualShortMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualShortMethod not implemented");
+	throw VmException("CallNonvirtualShortMethod not implemented");
 }
 jshort NativeInterface::CallNonvirtualShortMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualShortMethodV not implemented");
+	throw VmException("CallNonvirtualShortMethodV not implemented");
 }
 jshort NativeInterface::CallNonvirtualShortMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualShortMethodA not implemented");
+	throw VmException("CallNonvirtualShortMethodA not implemented");
 }
 
 jint NativeInterface::CallNonvirtualIntMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualIntMethod not implemented");
+	throw VmException("CallNonvirtualIntMethod not implemented");
 }
 jint NativeInterface::CallNonvirtualIntMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualIntMethodV not implemented");
+	throw VmException("CallNonvirtualIntMethodV not implemented");
 }
 jint NativeInterface::CallNonvirtualIntMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualIntMethodA not implemented");
+	throw VmException("CallNonvirtualIntMethodA not implemented");
 }
 
 jlong NativeInterface::CallNonvirtualLongMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualLongMethod not implemented");
+	throw VmException("CallNonvirtualLongMethod not implemented");
 }
 jlong NativeInterface::CallNonvirtualLongMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualLongMethodV not implemented");
+	throw VmException("CallNonvirtualLongMethodV not implemented");
 }
 jlong NativeInterface::CallNonvirtualLongMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualLongMethodA not implemented");
+	throw VmException("CallNonvirtualLongMethodA not implemented");
 }
 
 jfloat NativeInterface::CallNonvirtualFloatMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualFloatMethod not implemented");
+	throw VmException("CallNonvirtualFloatMethod not implemented");
 }
 jfloat NativeInterface::CallNonvirtualFloatMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualFloatMethodV not implemented");
+	throw VmException("CallNonvirtualFloatMethodV not implemented");
 }
 jfloat NativeInterface::CallNonvirtualFloatMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualFloatMethodA not implemented");
+	throw VmException("CallNonvirtualFloatMethodA not implemented");
 }
 
 jdouble NativeInterface::CallNonvirtualDoubleMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualDoubleMethod not implemented");
+	throw VmException("CallNonvirtualDoubleMethod not implemented");
 }
 jdouble NativeInterface::CallNonvirtualDoubleMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualDoubleMethodV not implemented");
+	throw VmException("CallNonvirtualDoubleMethodV not implemented");
 }
 jdouble NativeInterface::CallNonvirtualDoubleMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualDoubleMethodA not implemented");
+	throw VmException("CallNonvirtualDoubleMethodA not implemented");
 }
 
 void NativeInterface::CallNonvirtualVoidMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallNonvirtualVoidMethod not implemented");
+	throw VmException("CallNonvirtualVoidMethod not implemented");
 }
 void NativeInterface::CallNonvirtualVoidMethodV(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallNonvirtualVoidMethodV not implemented");
+	throw VmException("CallNonvirtualVoidMethodV not implemented");
 }
 void NativeInterface::CallNonvirtualVoidMethodA(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallNonvirtualVoidMethodA not implemented");
+	throw VmException("CallNonvirtualVoidMethodA not implemented");
 }
 jfieldID NativeInterface::GetFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw std::runtime_error("GetFieldID not implemented");
+	throw VmException("GetFieldID not implemented");
 }
 
 jobject NativeInterface::GetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetObjectField not implemented");
+	throw VmException("GetObjectField not implemented");
 }
 jboolean NativeInterface::GetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetBooleanField not implemented");
+	throw VmException("GetBooleanField not implemented");
 }
 jbyte NativeInterface::GetByteField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetByteField not implemented");
+	throw VmException("GetByteField not implemented");
 }
 jchar NativeInterface::GetCharField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetCharField not implemented");
+	throw VmException("GetCharField not implemented");
 }
 jshort NativeInterface::GetShortField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetShortField not implemented");
+	throw VmException("GetShortField not implemented");
 }
 jint NativeInterface::GetIntField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetIntField not implemented");
+	throw VmException("GetIntField not implemented");
 }
 jlong NativeInterface::GetLongField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetLongField not implemented");
+	throw VmException("GetLongField not implemented");
 }
 jfloat NativeInterface::GetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetFloatField not implemented");
+	throw VmException("GetFloatField not implemented");
 }
 jdouble NativeInterface::GetDoubleField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw std::runtime_error("GetDoubleField not implemented");
+	throw VmException("GetDoubleField not implemented");
 }
 
 void NativeInterface::SetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID, jobject val) {
-	throw std::runtime_error("SetObjectField not implemented");
+	throw VmException("SetObjectField not implemented");
 }
 void NativeInterface::SetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID, jboolean val) {
-	throw std::runtime_error("SetBooleanField not implemented");
+	throw VmException("SetBooleanField not implemented");
 }
 void NativeInterface::SetByteField(JNIEnv *env, jobject obj, jfieldID fieldID, jbyte val) {
-	throw std::runtime_error("SetByteField not implemented");
+	throw VmException("SetByteField not implemented");
 }
 void NativeInterface::SetCharField(JNIEnv *env, jobject obj, jfieldID fieldID, jchar val) {
-	throw std::runtime_error("SetCharField not implemented");
+	throw VmException("SetCharField not implemented");
 }
 void NativeInterface::SetShortField(JNIEnv *env, jobject obj, jfieldID fieldID, jshort val) {
-	throw std::runtime_error("SetShortField not implemented");
+	throw VmException("SetShortField not implemented");
 }
 void NativeInterface::SetIntField(JNIEnv *env, jobject obj, jfieldID fieldID, jint val) {
-	throw std::runtime_error("SetIntField not implemented");
+	throw VmException("SetIntField not implemented");
 }
 void NativeInterface::SetLongField(JNIEnv *env, jobject obj, jfieldID fieldID, jlong val) {
-	throw std::runtime_error("SetLongField not implemented");
+	throw VmException("SetLongField not implemented");
 }
 void NativeInterface::SetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID, jfloat val) {
-	throw std::runtime_error("SetFloatField not implemented");
+	throw VmException("SetFloatField not implemented");
 }
 void NativeInterface::SetDoubleField(JNIEnv *env, jobject obj, jfieldID fieldID, jdouble val) {
-	throw std::runtime_error("SetDoubleField not implemented");
+	throw VmException("SetDoubleField not implemented");
 }
 jmethodID NativeInterface::GetStaticMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw std::runtime_error("GetStaticMethodID not implemented");
+	throw VmException("GetStaticMethodID not implemented");
 }
 
 jobject NativeInterface::CallStaticObjectMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticObjectMethod not implemented");
+	throw VmException("CallStaticObjectMethod not implemented");
 }
 jobject NativeInterface::CallStaticObjectMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticObjectMethodV not implemented");
+	throw VmException("CallStaticObjectMethodV not implemented");
 }
 jobject NativeInterface::CallStaticObjectMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticObjectMethodA not implemented");
+	throw VmException("CallStaticObjectMethodA not implemented");
 }
 
 jboolean NativeInterface::CallStaticBooleanMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticBooleanMethod not implemented");
+	throw VmException("CallStaticBooleanMethod not implemented");
 }
 jboolean NativeInterface::CallStaticBooleanMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticBooleanMethodV not implemented");
+	throw VmException("CallStaticBooleanMethodV not implemented");
 }
 jboolean NativeInterface::CallStaticBooleanMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticBooleanMethodA not implemented");
+	throw VmException("CallStaticBooleanMethodA not implemented");
 }
 
 jbyte NativeInterface::CallStaticByteMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticByteMethod not implemented");
+	throw VmException("CallStaticByteMethod not implemented");
 }
 jbyte NativeInterface::CallStaticByteMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticByteMethodV not implemented");
+	throw VmException("CallStaticByteMethodV not implemented");
 }
 jbyte NativeInterface::CallStaticByteMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticByteMethodA not implemented");
+	throw VmException("CallStaticByteMethodA not implemented");
 }
 
 jchar NativeInterface::CallStaticCharMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticCharMethod not implemented");
+	throw VmException("CallStaticCharMethod not implemented");
 }
 jchar NativeInterface::CallStaticCharMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticCharMethodV not implemented");
+	throw VmException("CallStaticCharMethodV not implemented");
 }
 jchar NativeInterface::CallStaticCharMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticCharMethodA not implemented");
+	throw VmException("CallStaticCharMethodA not implemented");
 }
 
 jshort NativeInterface::CallStaticShortMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticShortMethod not implemented");
+	throw VmException("CallStaticShortMethod not implemented");
 }
 jshort NativeInterface::CallStaticShortMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticShortMethodV not implemented");
+	throw VmException("CallStaticShortMethodV not implemented");
 }
 jshort NativeInterface::CallStaticShortMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticShortMethodA not implemented");
+	throw VmException("CallStaticShortMethodA not implemented");
 }
 
 jint NativeInterface::CallStaticIntMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticIntMethod not implemented");
+	throw VmException("CallStaticIntMethod not implemented");
 }
 jint NativeInterface::CallStaticIntMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticIntMethodV not implemented");
+	throw VmException("CallStaticIntMethodV not implemented");
 }
 jint NativeInterface::CallStaticIntMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticIntMethodA not implemented");
+	throw VmException("CallStaticIntMethodA not implemented");
 }
 
 jlong NativeInterface::CallStaticLongMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticLongMethod not implemented");
+	throw VmException("CallStaticLongMethod not implemented");
 }
 jlong NativeInterface::CallStaticLongMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticLongMethodV not implemented");
+	throw VmException("CallStaticLongMethodV not implemented");
 }
 jlong NativeInterface::CallStaticLongMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticLongMethodA not implemented");
+	throw VmException("CallStaticLongMethodA not implemented");
 }
 
 jfloat NativeInterface::CallStaticFloatMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticFloatMethod not implemented");
+	throw VmException("CallStaticFloatMethod not implemented");
 }
 jfloat NativeInterface::CallStaticFloatMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticFloatMethodV not implemented");
+	throw VmException("CallStaticFloatMethodV not implemented");
 }
 jfloat NativeInterface::CallStaticFloatMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticFloatMethodA not implemented");
+	throw VmException("CallStaticFloatMethodA not implemented");
 }
 
 jdouble NativeInterface::CallStaticDoubleMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticDoubleMethod not implemented");
+	throw VmException("CallStaticDoubleMethod not implemented");
 }
 jdouble NativeInterface::CallStaticDoubleMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticDoubleMethodV not implemented");
+	throw VmException("CallStaticDoubleMethodV not implemented");
 }
 jdouble NativeInterface::CallStaticDoubleMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticDoubleMethodA not implemented");
+	throw VmException("CallStaticDoubleMethodA not implemented");
 }
 
 void NativeInterface::CallStaticVoidMethod(JNIEnv *env, jclass cls, jmethodID methodID, ...) {
-	throw std::runtime_error("CallStaticVoidMethod not implemented");
+	throw VmException("CallStaticVoidMethod not implemented");
 }
 void NativeInterface::CallStaticVoidMethodV(JNIEnv *env, jclass cls, jmethodID methodID, va_list args) {
-	throw std::runtime_error("CallStaticVoidMethodV not implemented");
+	throw VmException("CallStaticVoidMethodV not implemented");
 }
 void NativeInterface::CallStaticVoidMethodA(JNIEnv *env, jclass cls, jmethodID methodID, const jvalue *args) {
-	throw std::runtime_error("CallStaticVoidMethodA not implemented");
+	throw VmException("CallStaticVoidMethodA not implemented");
 }
 
 jfieldID NativeInterface::GetStaticFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw std::runtime_error("GetStaticFieldID not implemented");
+	throw VmException("GetStaticFieldID not implemented");
 }
 jobject NativeInterface::GetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticObjectField not implemented");
+	throw VmException("GetStaticObjectField not implemented");
 }
 jboolean NativeInterface::GetStaticBooleanField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticBooleanField not implemented");
+	throw VmException("GetStaticBooleanField not implemented");
 }
 jbyte NativeInterface::GetStaticByteField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticByteField not implemented");
+	throw VmException("GetStaticByteField not implemented");
 }
 jchar NativeInterface::GetStaticCharField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticCharField not implemented");
+	throw VmException("GetStaticCharField not implemented");
 }
 jshort NativeInterface::GetStaticShortField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticShortField not implemented");
+	throw VmException("GetStaticShortField not implemented");
 }
 jint NativeInterface::GetStaticIntField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticIntField not implemented");
+	throw VmException("GetStaticIntField not implemented");
 }
 jlong NativeInterface::GetStaticLongField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticLongField not implemented");
+	throw VmException("GetStaticLongField not implemented");
 }
 jfloat NativeInterface::GetStaticFloatField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticFloatField not implemented");
+	throw VmException("GetStaticFloatField not implemented");
 }
 jdouble NativeInterface::GetStaticDoubleField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw std::runtime_error("GetStaticDoubleField not implemented");
+	throw VmException("GetStaticDoubleField not implemented");
 }
 
 void NativeInterface::SetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID, jobject value) {
-	throw std::runtime_error("SetStaticObjectField not implemented");
+	throw VmException("SetStaticObjectField not implemented");
 }
 void NativeInterface::SetStaticBooleanField(JNIEnv *env, jclass clazz, jfieldID fieldID, jboolean value) {
-	throw std::runtime_error("SetStaticBooleanField not implemented");
+	throw VmException("SetStaticBooleanField not implemented");
 }
 void NativeInterface::SetStaticByteField(JNIEnv *env, jclass clazz, jfieldID fieldID, jbyte value) {
-	throw std::runtime_error("SetStaticByteField not implemented");
+	throw VmException("SetStaticByteField not implemented");
 }
 void NativeInterface::SetStaticCharField(JNIEnv *env, jclass clazz, jfieldID fieldID, jchar value) {
-	throw std::runtime_error("SetStaticCharField not implemented");
+	throw VmException("SetStaticCharField not implemented");
 }
 void NativeInterface::SetStaticShortField(JNIEnv *env, jclass clazz, jfieldID fieldID, jshort value) {
-	throw std::runtime_error("SetStaticShortField not implemented");
+	throw VmException("SetStaticShortField not implemented");
 }
 void NativeInterface::SetStaticIntField(JNIEnv *env, jclass clazz, jfieldID fieldID, jint value) {
-	throw std::runtime_error("SetStaticIntField not implemented");
+	throw VmException("SetStaticIntField not implemented");
 }
 void NativeInterface::SetStaticLongField(JNIEnv *env, jclass clazz, jfieldID fieldID, jlong value) {
-	throw std::runtime_error("SetStaticLongField not implemented");
+	throw VmException("SetStaticLongField not implemented");
 }
 void NativeInterface::SetStaticFloatField(JNIEnv *env, jclass clazz, jfieldID fieldID, jfloat value) {
-	throw std::runtime_error("SetStaticFloatField not implemented");
+	throw VmException("SetStaticFloatField not implemented");
 }
 void NativeInterface::SetStaticDoubleField(JNIEnv *env, jclass clazz, jfieldID fieldID, jdouble value) {
-	throw std::runtime_error("SetStaticDoubleField not implemented");
+	throw VmException("SetStaticDoubleField not implemented");
 }
 
 jstring NativeInterface::NewString(JNIEnv *env, const jchar *unicode, jsize len) {
-	throw std::runtime_error("NewString not implemented");
+	throw VmException("NewString not implemented");
 }
 jsize NativeInterface::GetStringLength(JNIEnv *env, jstring str) {
-	throw std::runtime_error("GetStringLength not implemented");
+	throw VmException("GetStringLength not implemented");
 }
 const jchar *NativeInterface::GetStringChars(JNIEnv *env, jstring str, jboolean *isCopy) {
-	throw std::runtime_error("GetStringChars not implemented");
+	throw VmException("GetStringChars not implemented");
 }
 void NativeInterface::ReleaseStringChars(JNIEnv *env, jstring str, const jchar *chars) {
-	throw std::runtime_error("ReleaseStringChars not implemented");
+	throw VmException("ReleaseStringChars not implemented");
 }
 
 jstring NativeInterface::NewStringUTF(JNIEnv *env, const char *utf) {
-	throw std::runtime_error("NewStringUTF not implemented");
+	throw VmException("NewStringUTF not implemented");
 }
 jsize NativeInterface::GetStringUTFLength(JNIEnv *env, jstring str) {
-	throw std::runtime_error("GetStringUTFLength not implemented");
+	throw VmException("GetStringUTFLength not implemented");
 }
 
 const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolean *isCopy) {
@@ -854,140 +854,140 @@ void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char
 }
 
 jsize NativeInterface::GetArrayLength(JNIEnv *env, jarray array) {
-	throw std::runtime_error("GetArrayLength not implemented");
+	throw VmException("GetArrayLength not implemented");
 }
 
 jobjectArray NativeInterface::NewObjectArray(JNIEnv *env, jsize len, jclass clazz, jobject init) {
-	throw std::runtime_error("NewObjectArray not implemented");
+	throw VmException("NewObjectArray not implemented");
 }
 jobject NativeInterface::GetObjectArrayElement(JNIEnv *env, jobjectArray array, jsize index) {
-	throw std::runtime_error("GetObjectArrayElement not implemented");
+	throw VmException("GetObjectArrayElement not implemented");
 }
 void NativeInterface::SetObjectArrayElement(JNIEnv *env, jobjectArray array, jsize index, jobject val) {
-	throw std::runtime_error("SetObjectArrayElement not implemented");
+	throw VmException("SetObjectArrayElement not implemented");
 }
 jbooleanArray NativeInterface::NewBooleanArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewBooleanArray not implemented");
+	throw VmException("NewBooleanArray not implemented");
 }
 jbyteArray NativeInterface::NewByteArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewByteArray not implemented");
+	throw VmException("NewByteArray not implemented");
 }
 jcharArray NativeInterface::NewCharArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewCharArray not implemented");
+	throw VmException("NewCharArray not implemented");
 }
 jshortArray NativeInterface::NewShortArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewShortArray not implemented");
+	throw VmException("NewShortArray not implemented");
 }
 jintArray NativeInterface::NewIntArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewIntArray not implemented");
+	throw VmException("NewIntArray not implemented");
 }
 jlongArray NativeInterface::NewLongArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewLongArray not implemented");
+	throw VmException("NewLongArray not implemented");
 }
 jfloatArray NativeInterface::NewFloatArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewFloatArray not implemented");
+	throw VmException("NewFloatArray not implemented");
 }
 jdoubleArray NativeInterface::NewDoubleArray(JNIEnv *env, jsize len) {
-	throw std::runtime_error("NewDoubleArray not implemented");
+	throw VmException("NewDoubleArray not implemented");
 }
 
 jboolean *NativeInterface::GetBooleanArrayElements(JNIEnv *env, jbooleanArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetBooleanArrayElements not implemented");
+	throw VmException("GetBooleanArrayElements not implemented");
 }
 jbyte *NativeInterface::GetByteArrayElements(JNIEnv *env, jbyteArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetByteArrayElements not implemented");
+	throw VmException("GetByteArrayElements not implemented");
 }
 jchar *NativeInterface::GetCharArrayElements(JNIEnv *env, jcharArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetCharArrayElements not implemented");
+	throw VmException("GetCharArrayElements not implemented");
 }
 jshort *NativeInterface::GetShortArrayElements(JNIEnv *env, jshortArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetShortArrayElements not implemented");
+	throw VmException("GetShortArrayElements not implemented");
 }
 jint *NativeInterface::GetIntArrayElements(JNIEnv *env, jintArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetIntArrayElements not implemented");
+	throw VmException("GetIntArrayElements not implemented");
 }
 jlong *NativeInterface::GetLongArrayElements(JNIEnv *env, jlongArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetLongArrayElements not implemented");
+	throw VmException("GetLongArrayElements not implemented");
 }
 jfloat *NativeInterface::GetFloatArrayElements(JNIEnv *env, jfloatArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetFloatArrayElements not implemented");
+	throw VmException("GetFloatArrayElements not implemented");
 }
 jdouble *NativeInterface::GetDoubleArrayElements(JNIEnv *env, jdoubleArray array, jboolean *isCopy) {
-	throw std::runtime_error("GetDoubleArrayElements not implemented");
+	throw VmException("GetDoubleArrayElements not implemented");
 }
 
 void NativeInterface::ReleaseBooleanArrayElements(JNIEnv *env, jbooleanArray array, jboolean *elems, jint mode) {
-	throw std::runtime_error("ReleaseBooleanArrayElements not implemented");
+	throw VmException("ReleaseBooleanArrayElements not implemented");
 }
 void NativeInterface::ReleaseByteArrayElements(JNIEnv *env, jbyteArray array, jbyte *elems, jint mode) {
-	throw std::runtime_error("ReleaseByteArrayElements not implemented");
+	throw VmException("ReleaseByteArrayElements not implemented");
 }
 void NativeInterface::ReleaseCharArrayElements(JNIEnv *env, jcharArray array, jchar *elems, jint mode) {
-	throw std::runtime_error("ReleaseCharArrayElements not implemented");
+	throw VmException("ReleaseCharArrayElements not implemented");
 }
 void NativeInterface::ReleaseShortArrayElements(JNIEnv *env, jshortArray array, jshort *elems, jint mode) {
-	throw std::runtime_error("ReleaseShortArrayElements not implemented");
+	throw VmException("ReleaseShortArrayElements not implemented");
 }
 void NativeInterface::ReleaseIntArrayElements(JNIEnv *env, jintArray array, jint *elems, jint mode) {
-	throw std::runtime_error("ReleaseIntArrayElements not implemented");
+	throw VmException("ReleaseIntArrayElements not implemented");
 }
 void NativeInterface::ReleaseLongArrayElements(JNIEnv *env, jlongArray array, jlong *elems, jint mode) {
-	throw std::runtime_error("ReleaseLongArrayElements not implemented");
+	throw VmException("ReleaseLongArrayElements not implemented");
 }
 void NativeInterface::ReleaseFloatArrayElements(JNIEnv *env, jfloatArray array, jfloat *elems, jint mode) {
-	throw std::runtime_error("ReleaseFloatArrayElements not implemented");
+	throw VmException("ReleaseFloatArrayElements not implemented");
 }
 void NativeInterface::ReleaseDoubleArrayElements(JNIEnv *env, jdoubleArray array, jdouble *elems, jint mode) {
-	throw std::runtime_error("ReleaseDoubleArrayElements not implemented");
+	throw VmException("ReleaseDoubleArrayElements not implemented");
 }
 void NativeInterface::GetBooleanArrayRegion(JNIEnv *env, jbooleanArray array, jsize start, jsize l, jboolean *buf) {
-	throw std::runtime_error("GetBooleanArrayRegion not implemented");
+	throw VmException("GetBooleanArrayRegion not implemented");
 }
 void NativeInterface::GetByteArrayRegion(JNIEnv *env, jbyteArray array, jsize start, jsize len, jbyte *buf) {
-	throw std::runtime_error("GetByteArrayRegion not implemented");
+	throw VmException("GetByteArrayRegion not implemented");
 }
 void NativeInterface::GetCharArrayRegion(JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) {
-	throw std::runtime_error("GetCharArrayRegion not implemented");
+	throw VmException("GetCharArrayRegion not implemented");
 }
 void NativeInterface::GetShortArrayRegion(JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) {
-	throw std::runtime_error("GetShortArrayRegion not implemented");
+	throw VmException("GetShortArrayRegion not implemented");
 }
 void NativeInterface::GetIntArrayRegion(JNIEnv *env, jintArray array, jsize start, jsize len, jint *buf) {
-	throw std::runtime_error("GetIntArrayRegion not implemented");
+	throw VmException("GetIntArrayRegion not implemented");
 }
 void NativeInterface::GetLongArrayRegion(JNIEnv *env, jlongArray array, jsize start, jsize len, jlong *buf) {
-	throw std::runtime_error("GetLongArrayRegion not implemented");
+	throw VmException("GetLongArrayRegion not implemented");
 }
 void NativeInterface::GetFloatArrayRegion(JNIEnv *env, jfloatArray array, jsize start, jsize len, jfloat *buf) {
-	throw std::runtime_error("GetFloatArrayRegion not implemented");
+	throw VmException("GetFloatArrayRegion not implemented");
 }
 void NativeInterface::GetDoubleArrayRegion(JNIEnv *env, jdoubleArray array, jsize start, jsize len, jdouble *buf) {
-	throw std::runtime_error("GetDoubleArrayRegion not implemented");
+	throw VmException("GetDoubleArrayRegion not implemented");
 }
 
 void NativeInterface::SetBooleanArrayRegion(JNIEnv *env, jbooleanArray array, jsize start, jsize l, const jboolean *buf) {
-	throw std::runtime_error("SetBooleanArrayRegion not implemented");
+	throw VmException("SetBooleanArrayRegion not implemented");
 }
 void NativeInterface::SetByteArrayRegion(JNIEnv *env, jbyteArray array, jsize start, jsize len, const jbyte *buf) {
-	throw std::runtime_error("SetByteArrayRegion not implemented");
+	throw VmException("SetByteArrayRegion not implemented");
 }
 void NativeInterface::SetCharArrayRegion(JNIEnv *env, jcharArray array, jsize start, jsize len, const jchar *buf) {
-	throw std::runtime_error("SetCharArrayRegion not implemented");
+	throw VmException("SetCharArrayRegion not implemented");
 }
 void NativeInterface::SetShortArrayRegion(JNIEnv *env, jshortArray array, jsize start, jsize len, const jshort *buf) {
-	throw std::runtime_error("SetShortArrayRegion not implemented");
+	throw VmException("SetShortArrayRegion not implemented");
 }
 void NativeInterface::SetIntArrayRegion(JNIEnv *env, jintArray array, jsize start, jsize len, const jint *buf) {
-	throw std::runtime_error("SetIntArrayRegion not implemented");
+	throw VmException("SetIntArrayRegion not implemented");
 }
 void NativeInterface::SetLongArrayRegion(JNIEnv *env, jlongArray array, jsize start, jsize len, const jlong *buf) {
-	throw std::runtime_error("SetLongArrayRegion not implemented");
+	throw VmException("SetLongArrayRegion not implemented");
 }
 void NativeInterface::SetFloatArrayRegion(JNIEnv *env, jfloatArray array, jsize start, jsize len, const jfloat *buf) {
-	throw std::runtime_error("SetFloatArrayRegion not implemented");
+	throw VmException("SetFloatArrayRegion not implemented");
 }
 void NativeInterface::SetDoubleArrayRegion(JNIEnv *env, jdoubleArray array, jsize start, jsize len, const jdouble *buf) {
-	throw std::runtime_error("SetDoubleArrayRegion not implemented");
+	throw VmException("SetDoubleArrayRegion not implemented");
 }
 jint NativeInterface::RegisterNatives(JNIEnv *env, jclass clazz, const JNINativeMethod *methods, jint nMethods) {
 	if (env == nullptr) {
@@ -1003,62 +1003,62 @@ jint NativeInterface::RegisterNatives(JNIEnv *env, jclass clazz, const JNINative
 	return JNI_OK;
 }
 jint NativeInterface::UnregisterNatives(JNIEnv *env, jclass clazz) {
-	throw std::runtime_error("UnregisterNatives not implemented");
+	throw VmException("UnregisterNatives not implemented");
 }
 
 jint NativeInterface::MonitorEnter(JNIEnv *env, jobject obj) {
-	throw std::runtime_error("MonitorEnter not implemented");
+	throw VmException("MonitorEnter not implemented");
 }
 jint NativeInterface::MonitorExit(JNIEnv *env, jobject obj) {
-	throw std::runtime_error("MonitorExit not implemented");
+	throw VmException("MonitorExit not implemented");
 }
 
 jint NativeInterface::GetJavaVM(JNIEnv *env, JavaVM **vm) {
-	throw std::runtime_error("GetJavaVM not implemented");
+	throw VmException("GetJavaVM not implemented");
 }
 
 void NativeInterface::GetStringRegion(JNIEnv *env, jstring str, jsize start, jsize len, jchar *buf) {
-	throw std::runtime_error("GetStringRegion not implemented");
+	throw VmException("GetStringRegion not implemented");
 }
 void NativeInterface::GetStringUTFRegion(JNIEnv *env, jstring str, jsize start, jsize len, char *buf) {
-	throw std::runtime_error("GetStringUTFRegion not implemented");
+	throw VmException("GetStringUTFRegion not implemented");
 }
 
 void *NativeInterface::GetPrimitiveArrayCritical(JNIEnv *env, jarray array, jboolean *isCopy) {
-	throw std::runtime_error("GetPrimitiveArrayCritical not implemented");
+	throw VmException("GetPrimitiveArrayCritical not implemented");
 }
 void NativeInterface::ReleasePrimitiveArrayCritical(JNIEnv *env, jarray array, void *carray, jint mode) {
-	throw std::runtime_error("ReleasePrimitiveArrayCritical not implemented");
+	throw VmException("ReleasePrimitiveArrayCritical not implemented");
 }
 
 const jchar *NativeInterface::GetStringCritical(JNIEnv *env, jstring string, jboolean *isCopy) {
-	throw std::runtime_error("GetStringCritical not implemented");
+	throw VmException("GetStringCritical not implemented");
 }
 void NativeInterface::ReleaseStringCritical(JNIEnv *env, jstring string, const jchar *cstring) {
-	throw std::runtime_error("ReleaseStringCritical not implemented");
+	throw VmException("ReleaseStringCritical not implemented");
 }
 
 jweak NativeInterface::NewWeakGlobalRef(JNIEnv *env, jobject obj) {
-	throw std::runtime_error("NewWeakGlobalRef not implemented");
+	throw VmException("NewWeakGlobalRef not implemented");
 }
 void NativeInterface::DeleteWeakGlobalRef(JNIEnv *env, jweak ref) {
-	throw std::runtime_error("DeleteWeakGlobalRef not implemented");
+	throw VmException("DeleteWeakGlobalRef not implemented");
 }
 
 jboolean NativeInterface::ExceptionCheck(JNIEnv *env) {
-	throw std::runtime_error("ExceptionCheck not implemented");
+	throw VmException("ExceptionCheck not implemented");
 }
 
 jobject NativeInterface::NewDirectByteBuffer(JNIEnv *env, void *address, jlong capacity) {
-	throw std::runtime_error("NewDirectByteBuffer not implemented");
+	throw VmException("NewDirectByteBuffer not implemented");
 }
 void *NativeInterface::GetDirectBufferAddress(JNIEnv *env, jobject buf) {
-	throw std::runtime_error("GetDirectBufferAddress not implemented");
+	throw VmException("GetDirectBufferAddress not implemented");
 }
 jlong NativeInterface::GetDirectBufferCapacity(JNIEnv *env, jobject buf) {
-	throw std::runtime_error("GetDirectBufferCapacity not implemented");
+	throw VmException("GetDirectBufferCapacity not implemented");
 }
 
 jobjectRefType NativeInterface::GetObjectRefType(JNIEnv *env, jobject obj) {
-	throw std::runtime_error("GetObjectRefType not implemented");
+	throw VmException("GetObjectRefType not implemented");
 }

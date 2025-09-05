@@ -22,6 +22,13 @@
 
 using namespace sandvik;
 
+VmException::VmException(const std::string& message_) : _message(message_) {
+}
+
+const char* VmException::what() const noexcept {
+	return _message.c_str();
+}
+
 JavaException::JavaException(const std::string& type_, const std::string& message_) : _type(type_), _message(message_) {
 }
 

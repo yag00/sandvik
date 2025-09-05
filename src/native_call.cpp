@@ -18,11 +18,10 @@
 
 #include "native_call.hpp"
 
-#include <fmt/format.h>
-
 #include <cstring>
 #include <variant>
 
+#include "exceptions.hpp"
 #include "jni.hpp"
 #include "jnihandlemap.hpp"
 #include "object.hpp"
@@ -54,7 +53,7 @@ ffi_type* NativeCallHelper::getFFITypeForJNIType(char jniType) const {
 		case '[':  // Objects and arrays
 			return &ffi_type_pointer;
 		default:
-			throw std::runtime_error(fmt::format("Unsupported JNI type character: {}", jniType));
+			throw VmException("Unsupported JNI type character: {}", jniType);
 	}
 }
 
@@ -111,7 +110,7 @@ void NativeCallHelper::prepareCallContext(CallContext& context, const std::strin
 
 	// Prepare the call interface
 	if (ffi_prep_cif(&context.cif, FFI_DEFAULT_ABI, context.arg_types.size(), getFFITypeForReturn(returnType), context.arg_types.data()) != FFI_OK) {
-		throw std::runtime_error("Failed to prepare FFI call interface");
+		throw VmException("Failed to prepare FFI call interface");
 	}
 	context.prepared = true;
 }
@@ -127,7 +126,7 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 			auto obj = *it;
 			++it;
 			if (!obj->isNumberObject()) {
-				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
+				throw VmException("Invalid argument type for JNI type: {}", jniType);
 			}
 			return static_cast<uintptr_t>(obj->getValue());
 		}
@@ -138,7 +137,7 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 			auto msb = *it;
 			++it;
 			if (!lsb->isNumberObject() || !msb->isNumberObject()) {
-				throw std::runtime_error(fmt::format("Invalid argument type for JNI type: {}", jniType));
+				throw VmException("Invalid argument type for JNI type: {}", jniType);
 			}
 			uint32_t lsb_value = lsb->getValue();
 			uint32_t msb_value = msb->getValue();
@@ -155,7 +154,7 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 			return (uintptr_t)o;
 		}
 		default:
-			throw std::runtime_error(fmt::format("Unsupported JNI type character: {}", jniType));
+			throw VmException("Unsupported JNI type character: {}", jniType);
 	}
 }
 
@@ -182,7 +181,7 @@ std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, cons
 			return ret;
 		}
 		default:
-			throw std::runtime_error(fmt::format("Unsupported JNI type character: {}", jniType));
+			throw VmException("Unsupported JNI type character: {}", jniType);
 	}
 }
 

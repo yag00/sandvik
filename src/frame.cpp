@@ -18,13 +18,12 @@
 
 #include "frame.hpp"
 
-#include <fmt/format.h>
-
 #include <algorithm>
 #include <bit>
 #include <stdexcept>
 
 #include "class.hpp"
+#include "exceptions.hpp"
 #include "method.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -70,14 +69,14 @@ void Frame::setPc(uint16_t pc_) {
 void Frame::setIntRegister(uint32_t reg, int32_t value) {
 	logger.fdebug("setIntRegister: reg={}, value={:x}", reg, value);
 	if (reg >= _registers.size()) {
-		throw std::runtime_error(fmt::format("setIntRegister: reg={} out of bounds", reg));
+		throw VmException("setIntRegister: reg={} out of bounds", reg);
 	}
 	_registers[reg] = Object::make(value);
 }
 
 int32_t Frame::getIntRegister(uint32_t reg) const {
 	if (reg >= _registers.size()) {
-		throw std::runtime_error(fmt::format("getIntRegister: reg={} out of bounds", reg));
+		throw VmException("getIntRegister: reg={} out of bounds", reg);
 	}
 	auto obj = _registers[reg];
 	if (obj->isNull()) {
@@ -85,7 +84,7 @@ int32_t Frame::getIntRegister(uint32_t reg) const {
 		return 0;
 	}
 	if (!obj->isNumberObject()) {
-		throw std::runtime_error(fmt::format("Register does not contain an NumberObject {}", obj->debug()));
+		throw VmException("Register does not contain an NumberObject {}", obj->debug());
 	}
 	auto number = obj->getValue();
 	logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
@@ -96,7 +95,7 @@ void Frame::setLongRegister(uint32_t reg, int64_t value) {
 	logger.fdebug("setLongRegister: reg={}, value={:x}, {:x}", reg, static_cast<uint32_t>(value & 0xFFFFFFFF),
 	              static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
 	if (reg + 1 >= _registers.size()) {
-		throw std::runtime_error(fmt::format("setLongRegister: reg={} out of bounds", reg));
+		throw VmException("setLongRegister: reg={} out of bounds", reg);
 	}
 	_registers[reg] = Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF));
 	_registers[reg + 1] = Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
@@ -105,12 +104,12 @@ void Frame::setLongRegister(uint32_t reg, int64_t value) {
 int64_t Frame::getLongRegister(uint32_t reg) const {
 	logger.fdebug("getLongRegister: reg={}", reg);
 	if (reg + 1 >= _registers.size()) {
-		throw std::runtime_error(fmt::format("setLongRegister: reg={} out of bounds", reg));
+		throw VmException("setLongRegister: reg={} out of bounds", reg);
 	}
 	Object& lsb = *_registers[reg];
 	Object& msb = *_registers[reg + 1];
 	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
-		throw std::runtime_error("Register does not contain valid NumberObjects");
+		throw VmException("Register does not contain valid NumberObjects");
 	}
 	uint64_t value = static_cast<uint32_t>(msb.getValue());
 	value <<= 32;
@@ -122,7 +121,7 @@ int64_t Frame::getLongRegister(uint32_t reg) const {
 void Frame::setFloatRegister(uint32_t reg, float value) {
 	logger.fdebug("setFloatRegister: reg={}, value={}", reg, value);
 	if (reg >= _registers.size()) {
-		throw std::runtime_error(fmt::format("setFloatRegister: reg={} out of bounds", reg));
+		throw VmException("setFloatRegister: reg={} out of bounds", reg);
 	}
 	uint32_t intValue;
 	intValue = std::bit_cast<uint32_t>(value);
@@ -132,11 +131,11 @@ void Frame::setFloatRegister(uint32_t reg, float value) {
 float Frame::getFloatRegister(uint32_t reg) const {
 	logger.fdebug("getFloatRegister: reg={}", reg);
 	if (reg >= _registers.size()) {
-		throw std::runtime_error(fmt::format("getFloatRegister: reg={} out of bounds", reg));
+		throw VmException("getFloatRegister: reg={} out of bounds", reg);
 	}
 	Object& obj = *_registers[reg];
 	if (!obj.isNumberObject()) {
-		throw std::runtime_error(fmt::format("Register does not contain an NumberObject {}", obj.debug()));
+		throw VmException("Register does not contain an NumberObject {}", obj.debug());
 	}
 	uint32_t intValue = static_cast<uint32_t>(obj.getValue());
 	float floatValue = std::bit_cast<float>(intValue);
@@ -146,7 +145,7 @@ float Frame::getFloatRegister(uint32_t reg) const {
 void Frame::setDoubleRegister(uint32_t reg, double value) {
 	logger.fdebug("setDoubleRegister: reg={}, value={}", reg, value);
 	if (reg + 1 >= _registers.size()) {
-		throw std::runtime_error(fmt::format("setDoubleRegister: reg={} out of bounds", reg));
+		throw VmException("setDoubleRegister: reg={} out of bounds", reg);
 	}
 	uint64_t temp = std::bit_cast<uint64_t>(value);
 	_registers[reg] = Object::make(static_cast<uint32_t>(temp & 0xFFFFFFFF));
@@ -158,12 +157,12 @@ void Frame::setDoubleRegister(uint32_t reg, double value) {
 double Frame::getDoubleRegister(uint32_t reg) const {
 	logger.fdebug("getDoubleRegister: reg={}", reg);
 	if (reg + 1 >= _registers.size()) {
-		throw std::runtime_error(fmt::format("getDoubleRegister: reg={} out of bounds", reg));
+		throw VmException("getDoubleRegister: reg={} out of bounds", reg);
 	}
 	Object& lsb = *_registers[reg];
 	Object& msb = *_registers[reg + 1];
 	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
-		throw std::runtime_error("Register does not contain valid NumberObjects");
+		throw VmException("Register does not contain valid NumberObjects");
 	}
 	uint64_t value = static_cast<uint32_t>(msb.getValue());
 	value <<= 32;
@@ -175,14 +174,14 @@ double Frame::getDoubleRegister(uint32_t reg) const {
 void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
 	logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->debug());
 	if (reg >= _registers.size()) {
-		throw std::runtime_error(fmt::format("setObjRegister: reg={} out of bounds", reg));
+		throw VmException("setObjRegister: reg={} out of bounds", reg);
 	}
 	_registers[reg] = value;
 }
 
 std::shared_ptr<Object> Frame::getObjRegister(uint32_t reg) {
 	if (reg >= _registers.size()) {
-		throw std::runtime_error(fmt::format("getObjRegister: reg={} out of bounds", reg));
+		throw VmException("getObjRegister: reg={} out of bounds", reg);
 	}
 	logger.fdebug("getObjRegister: reg={} => obj=<{}>", reg, _registers[reg]->debug());
 	return _registers[reg];
@@ -198,14 +197,14 @@ std::shared_ptr<Object> Frame::getReturnObject() const {
 
 int32_t Frame::getReturnValue() const {
 	if (!_objectReturn->isNumberObject()) {
-		throw std::runtime_error("Return object is not an NumberObject");
+		throw VmException("Return object is not an NumberObject");
 	}
 	return _objectReturn->getValue();
 }
 
 int64_t Frame::getReturnDoubleValue() const {
 	if (!_objectReturn->isNumberObject()) {
-		throw std::runtime_error("Return object is not a isNumberObject");
+		throw VmException("Return object is not a isNumberObject");
 	}
 	return _objectReturn->getLongValue();
 }

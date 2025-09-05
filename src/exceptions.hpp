@@ -19,10 +19,34 @@
 #ifndef __EXCEPTIONS_HPP__
 #define __EXCEPTIONS_HPP__
 
+#include <fmt/format.h>
+
 #include <exception>
 #include <string>
 
 namespace sandvik {
+	/**
+	 * @class VmException
+	 * @brief Exception class representing a VM exception.
+	 */
+	class VmException : public std::exception {
+		public:
+			/** constructor */
+			explicit VmException(const std::string& message_ = "");
+			template <typename... Args>
+			explicit VmException(fmt::format_string<Args...> fmt_str, Args&&... args) {
+				_message = fmt::format(fmt_str, std::forward<Args>(args)...);
+			}
+			/** destructor */
+			~VmException() noexcept override = default;
+			/** get exception message
+			 * @return exception message
+			 */
+			const char* what() const noexcept override;
+
+		private:
+			std::string _message;
+	};
 	/**
 	 * @class JavaException
 	 * @brief Exception class representing a Java exception.

@@ -31,7 +31,7 @@
 #include "system/logger.hpp"
 
 namespace {
-	void __PrintStream__write(int fd, const std::string& s, size_t len) {
+	void __PrintStream__write(int fd, const std::string& s) {
 		switch (fd) {
 			case 1:
 				std::cout << s;
@@ -58,7 +58,7 @@ extern "C" {
 		int fd = fileObj->getValue();
 		auto strobj = sandvik::native::getString(str);
 		const auto s = strobj->str();
-		__PrintStream__write(fd, s, s.size());
+		__PrintStream__write(fd, s);
 	}
 	JNIEXPORT void JNICALL Java_java_io_PrintStream_println__Ljava_lang_String_2(JNIEnv* env, jobject obj, jstring str) {
 		auto this_ptr = sandvik::native::getObject(obj);
@@ -66,12 +66,12 @@ extern "C" {
 		int fd = fileObj->getValue();
 		auto strobj = sandvik::native::getString(str);
 		auto s = strobj->str() + "\n";
-		__PrintStream__write(fd, s, s.size());
+		__PrintStream__write(fd, s);
 	}
 	JNIEXPORT void JNICALL Java_java_io_PrintStream_println__(JNIEnv* env, jobject obj) {
 		auto this_ptr = sandvik::native::getObject(obj);
 		auto fileObj = this_ptr->getField("file");
 		int fd = fileObj->getValue();
-		__PrintStream__write(fd, "\n", 1);
+		__PrintStream__write(fd, "\n");
 	}
 }

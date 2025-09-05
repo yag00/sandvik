@@ -21,10 +21,9 @@
 #include <string>
 #include <vector>
 
-#include "fmt/format.h"
-
 #include "class.hpp"
 #include "dex.hpp"
+#include "exceptions.hpp"
 #include "system/logger.hpp"
 #include "system/zip.hpp"
 
@@ -44,12 +43,12 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 		// paranoia check
 		size_t size2 = (uintptr_t)_binary_sanddirt_dex_jar_end - (uintptr_t)_binary_sanddirt_dex_jar_start;
 		if (size != size2) {
-			throw std::runtime_error(fmt::format("Internal error: embedded RT size mismatch {} != {}", size, size2));
+			throw VmException("Internal error: embedded RT size mismatch {} != {}", size, size2);
 		}
 		zip->open((uint8_t*)_binary_sanddirt_dex_jar_start, size);
 	} else {
 		if (!ZipReader::isValidArchive(path_)) {
-			throw std::runtime_error(fmt::format("Invalid RT file: {}", path_));
+			throw VmException("Invalid RT file: {}", path_);
 		}
 		zip->open(path_);
 	}
@@ -60,7 +59,7 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 			uint64_t size = 0;
 			char* buffer = zip->extractToMemory(file, size);
 			if (buffer == nullptr) {
-				throw std::runtime_error(fmt::format("Failed to extract {}", file));
+				throw VmException("Failed to extract {}", file);
 			}
 			std::vector<uint8_t> dexBuffer(buffer, buffer + size);
 			free(buffer);

@@ -28,6 +28,7 @@
 #include <sstream>
 
 #include "classloader.hpp"
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "method.hpp"
 #include "object.hpp"
@@ -184,7 +185,7 @@ Method& Class::getMethod(const std::string& name_, const std::string& descriptor
 	if (it != _methods.end()) {
 		return *(it->second);
 	}
-	throw std::runtime_error("Method not found: " + name_ + " " + descriptor_);
+	throw VmException("Method not found: {} {}", name_, descriptor_);
 }
 
 Method& Class::getMethod(uint32_t idx_) {
@@ -207,7 +208,7 @@ Field& Class::getField(const std::string& name_) {
 	if (it != _fields.end()) {
 		return *(it->second);
 	}
-	throw std::runtime_error("Field not found: " + name_);
+	throw VmException("Field not found: {}", name_);
 }
 
 Field& Class::getField(uint32_t idx_) {
@@ -231,7 +232,7 @@ Class& Class::getSuperClass() const {
 	if (hasSuperClass()) {
 		return _classloader.getOrLoad(_superClassname);
 	}
-	throw std::runtime_error(fmt::format("Class {} has no super class", getFullname()));
+	throw VmException("Class {} has no super class", getFullname());
 }
 
 std::string Class::getSuperClassname() const {

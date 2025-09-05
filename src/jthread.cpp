@@ -22,6 +22,7 @@
 #include <fmt/format.h>
 
 #include "class.hpp"
+#include "exceptions.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
 #include "method.hpp"
@@ -70,7 +71,7 @@ void JThread::popFrame() {
 
 Frame& JThread::currentFrame() const {
 	if (_stack.empty()) {
-		throw std::runtime_error("No current frame");
+		throw VmException("No current frame");
 	}
 	return *(_stack.back().get());
 }

@@ -27,7 +27,7 @@
 using namespace sandvik;
 
 Object* native::getObject(jobject jobj) {
-	Object* ptr = (Object*)jobj;
+	auto ptr = (Object*)jobj;
 	if (ptr == nullptr) {
 		throw NullPointerException("null object");
 	}
@@ -39,7 +39,7 @@ Object* native::getString(jobject jstr) {
 }
 
 Object* native::getString(jstring jstr) {
-	Object* ptr = (Object*)jstr;
+	auto ptr = (Object*)jstr;
 	if (ptr == nullptr) {
 		throw NullPointerException("null object");
 	}
@@ -50,9 +50,9 @@ Object* native::getString(jstring jstr) {
 }
 
 NativeInterface* native::getNativeInterface(JNIEnv* env) {
-	NativeInterface* jenv = static_cast<NativeInterface*>(env);
+	auto jenv = static_cast<NativeInterface*>(env);
 	if (jenv == nullptr) {
-		throw std::runtime_error("Internal error: JNIEnv is not a NativeInterface");
+		throw VmException("Internal error: JNIEnv is not a NativeInterface");
 	}
 	return jenv;
 }

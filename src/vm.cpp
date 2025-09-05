@@ -18,16 +18,13 @@
 
 #include "vm.hpp"
 
-#include <fmt/format.h>
-
-#include <iostream>
-
 #include "jni/jni.h"
 
 #include "array.hpp"
 #include "class.hpp"
 #include "classbuilder.hpp"
 #include "classloader.hpp"
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
@@ -132,7 +129,7 @@ void Vm::loadLibrary(const std::string& libName_) {
 		}
 		_sharedlibs.push_back(std::move(lib));
 	} else {
-		throw std::runtime_error(fmt::format("Failed to load shared library {}", libName_));
+		throw VmException("Failed to load shared library {}", libName_);
 	}
 }
 
@@ -176,7 +173,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 			mainThread.newFrame(method);
 			nbRegisters = method.getNbRegisters() - 1;
 		} else {
-			throw std::runtime_error(fmt::format("onCreate or main method not found in class {}", clazz_.getFullname()));
+			throw VmException("onCreate or main method not found in class {}", clazz_.getFullname());
 		}
 	}
 

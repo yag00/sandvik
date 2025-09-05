@@ -18,14 +18,14 @@
 
 #include "utils.hpp"
 
-#include <fmt/format.h>
-
 #include <LIEF/DEX/Class.hpp>
 #include <LIEF/DEX/Method.hpp>
 #include <LIEF/DEX/Prototype.hpp>
 #include <LIEF/DEX/Type.hpp>
 #include <map>
 #include <sstream>
+
+#include "exceptions.hpp"
 
 using namespace LIEF::DEX;
 
@@ -52,7 +52,7 @@ std::string sandvik::get_type_descriptor(const Type& type) {
 				case Type::PRIMITIVES::DOUBLE:
 					return "D";
 				default:
-					throw std::runtime_error("Unknown primitive type");
+					throw VmException("Unknown primitive type");
 			}
 
 		case Type::TYPES::CLASS: {
@@ -69,7 +69,7 @@ std::string sandvik::get_type_descriptor(const Type& type) {
 		}
 
 		default:
-			throw std::runtime_error(fmt::format("Unknown or unsupported type {}", (int)type.type()));
+			throw VmException("Unknown or unsupported type {}", (int)type.type());
 	}
 }
 std::string sandvik::get_method_descriptor(const Method& method) {

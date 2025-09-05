@@ -27,10 +27,9 @@
 #include <string>
 #include <vector>
 
-#include "fmt/format.h"
-
 #include "class.hpp"
 #include "dex.hpp"
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "method.hpp"
 #include "system/logger.hpp"
@@ -41,7 +40,7 @@ using namespace sandvik;
 /** Constructor: Loads the JAR file */
 Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_dex(classes_dex_) {
 	if (!ZipReader::isValidArchive(_path)) {
-		throw std::runtime_error(fmt::format("Invalid APK file: {}", _path));
+		throw VmException("Invalid APK file: {}", _path);
 	}
 
 	_zipReader = std::make_unique<ZipReader>();
@@ -52,7 +51,7 @@ Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_d
 	uint64_t size = 0;
 	char* buffer = _zipReader->extractToMemory(file, size);
 	if (buffer == nullptr) {
-		throw std::runtime_error(fmt::format("Failed to extract {}", file));
+		throw VmException("Failed to extract {}", file);
 	}
 	std::vector<uint8_t> dexBuffer(buffer, buffer + size);
 	free(buffer);
@@ -63,7 +62,7 @@ Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_d
 	size = 0;
 	buffer = _zipReader->extractToMemory(file, size);
 	if (buffer == nullptr) {
-		throw std::runtime_error(fmt::format("Failed to extract {}", file));
+		throw VmException("Failed to extract {}", file);
 	}
 	// Convert to string and search for launcher activity
 	_manifest = std::string(buffer, size);

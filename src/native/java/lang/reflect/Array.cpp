@@ -45,7 +45,7 @@ extern "C" {
 		for (size_t i = 0; i < dimArray->getArrayLength(); ++i) {
 			auto element = dimArray->getElement(i);
 			if (!element->isNumberObject()) {
-				throw std::runtime_error(fmt::format("Dimension at index {} is not a NumberObject", i));
+				throw sandvik::VmException("Dimension at index {} is not a NumberObject", i);
 			}
 			logger.fdebug(" - dim[{}] = {}", i, element->getValue());
 			dimensions.push_back(element->getValue());

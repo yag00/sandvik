@@ -18,14 +18,13 @@
 
 #include "method.hpp"
 
-#include <fmt/format.h>
-
 #include <LIEF/DEX/CodeInfo.hpp>
 #include <LIEF/DEX/Method.hpp>
 #include <LIEF/DEX/enums.hpp>
 #include <sstream>
 
 #include "class.hpp"
+#include "exceptions.hpp"
 #include "frame.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
@@ -86,7 +85,7 @@ std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t 
 			return exc.handlers;
 		}
 	}
-	throw std::runtime_error(fmt::format("No exception handler found for pc: {}", pc_));
+	throw VmException("No exception handler found for pc: {}", pc_);
 }
 
 bool Method::hasBytecode() const {
@@ -143,7 +142,7 @@ bool Method::isOverload() const {
 
 void Method::execute(Frame& frame_, std::vector<std::shared_ptr<Object>>& registers_) {
 	if (!_function) {
-		throw std::runtime_error(fmt::format("Method {}.{} has no implementation", _class.getFullname(), getName()));
+		throw VmException("Method {}.{} has no implementation", _class.getFullname(), getName());
 	}
 	_function(frame_, registers_);
 }
