@@ -42,11 +42,12 @@ def configure(conf):
 	conf.load('doxygen')
 
 	# set clang/clang++ as default compiler
-	#c_compiler['linux'] = ['clang'] + c_compiler['linux']
-	#cxx_compiler['linux'] = ['clang++'] + cxx_compiler['linux']
-
+	c_compiler['linux'] = ['clang'] + c_compiler['linux']
+	cxx_compiler['linux'] = ['clang++'] + cxx_compiler['linux']
 	conf.load('compiler_c compiler_cxx')
 	conf.msg('Checking for c/c++ compiler version', '.'.join(conf.env['CC_VERSION']))
+	if conf.env.CC_NAME == 'clang':
+		conf.load('clang_compilation_database')
 
 	# c/cxx flags
 	cflags = ['-fPIC', '-Wall', '-Werror', '-O3', '-Wno-unused-parameter', '-fno-strict-aliasing', '-fomit-frame-pointer', '-march=native']
