@@ -44,7 +44,7 @@ namespace sandvik {
 			};
 
 			explicit Dex(const std::string& path_);
-			Dex(std::vector<uint8_t>& buffer, const std::string& name = "");
+			explicit Dex(std::vector<uint8_t>& buffer, const std::string& name = "");
 			Dex();
 			~Dex();
 

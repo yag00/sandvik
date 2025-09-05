@@ -220,7 +220,7 @@ Field& Class::getField(uint32_t idx_) {
 	return *(it->second);
 }
 
-std::vector<std::string> Class::getFieldList() {
+std::vector<std::string> Class::getFieldList() const {
 	std::vector<std::string> fieldList;
 	for (const auto& [name, field] : _fields) {
 		fieldList.push_back(name);
@@ -255,6 +255,7 @@ bool Class::isExternal() const {
 }
 
 void Class::debug() const {
+	logger.fdebug("Class: {}", getFullname());
 	/*for (auto& method : _class.methods()) {
 	    logger.debug("Bytecode for method " + method.name() + get_method_descriptor(method) + ":");
 	    std::ostringstream oss;

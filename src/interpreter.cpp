@@ -2433,7 +2433,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 					try {
 						vmethod = &instance->getMethod(interface.getName(), interface.getSignature());
 						break;  // Method found, exit loop
-					} catch (std::exception& e) {
+					} catch (std::exception&) {
 						// Continue searching in the next superclass
 					}
 				}

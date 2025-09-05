@@ -34,6 +34,10 @@ namespace sandvik {
 			Stream();
 			/** Destructor */
 			virtual ~Stream();
+			/** Prevent copying */
+			Stream(Stream& that) = delete;
+			/** Prevent assignment */
+			void operator=(Stream& that) = delete;
 
 			/** read method
 			 * @return number of bytes read (should be equal to count)
@@ -62,10 +66,6 @@ namespace sandvik {
 			/** iostream */
 			std::unique_ptr<std::iostream> _ios;
 			bool _readStream;
-
-		private:
-			Stream(Stream& that);
-			void operator=(Stream& that);
 	};
 };  // namespace sandvik
 

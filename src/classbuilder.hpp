@@ -35,10 +35,10 @@ namespace sandvik {
 
 			void addVirtualMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
 			                      std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_);
-			void addMethod(const std::string& name_, const std::string& signature_, uint64_t flags,
+			void addMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
 			               std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_);
 
-			void addField(const std::string& name_, const std::string& type_, bool isStatic_, std::shared_ptr<Object> value = nullptr);
+			void addField(const std::string& name_, const std::string& type_, bool isStatic_, std::shared_ptr<Object> value_ = nullptr);
 
 			void setSuperClass(const std::string& superClassName_);
 			void setInterface();

@@ -25,7 +25,6 @@ std::string JNIHelper::mangleMethodSignature(const std::string& sig) {
 	std::string result;
 
 	bool inParams = false;
-	bool doneParams = false;
 
 	for (char c : sig) {
 		if (c == '(') {
@@ -33,11 +32,10 @@ std::string JNIHelper::mangleMethodSignature(const std::string& sig) {
 			continue;  // skip '('
 		}
 		if (c == ')') {
-			doneParams = true;
 			break;  // stop after params
 		}
 
-		if (inParams && !doneParams) {
+		if (inParams) {
 			switch (c) {
 				case '_':
 					result += "_1";

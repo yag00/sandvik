@@ -31,7 +31,7 @@
 namespace sandvik {
 	class NumberObject : public Object {
 		public:
-			NumberObject(uint64_t value_);
+			explicit NumberObject(uint64_t value_);
 			~NumberObject() override = default;
 
 			bool isNumberObject() const override;
@@ -46,7 +46,7 @@ namespace sandvik {
 	};
 	class ObjectClass : public Object {
 		public:
-			ObjectClass(Class& class_);
+			explicit ObjectClass(Class& class_);
 			~ObjectClass() override = default;
 
 			bool isInstanceOf(const std::string& instance_) const override;
@@ -60,7 +60,7 @@ namespace sandvik {
 	};
 	class ConstClassObject : public ObjectClass {
 		public:
-			ConstClassObject(Class& class_, Class& type_);
+			ConstClassObject(Class& class_, Class& classtype_);
 			~ConstClassObject() override = default;
 
 			const Class& getClassType() const override;

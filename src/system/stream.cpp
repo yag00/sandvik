@@ -28,7 +28,9 @@ Stream::Stream() : _ios(nullptr), _readStream(false) {
 }
 
 Stream::~Stream() {
-	close();
+	if (_ios) {
+		_ios->flush();
+	}
 }
 
 long Stream::read(char* buf_, long count_) {
@@ -72,14 +74,6 @@ long Stream::tell() {
 
 void Stream::close() {
 	flush();
-}
-
-Stream::Stream(Stream& that) {
-	// Copy constructor is private and not implemented
-}
-
-void Stream::operator=(Stream& that) {
-	// Assignment operator is private and not implemented
 }
 
 uint8_t Stream::readU1() {

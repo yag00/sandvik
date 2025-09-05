@@ -74,7 +74,7 @@ void Frame::setIntRegister(uint32_t reg, int32_t value) {
 	_registers[reg] = Object::make(value);
 }
 
-int32_t Frame::getIntRegister(uint32_t reg) {
+int32_t Frame::getIntRegister(uint32_t reg) const {
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getIntRegister: reg={} out of bounds", reg));
 	}
@@ -101,7 +101,7 @@ void Frame::setLongRegister(uint32_t reg, int64_t value) {
 	_registers[reg + 1] = Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
 }
 
-int64_t Frame::getLongRegister(uint32_t reg) {
+int64_t Frame::getLongRegister(uint32_t reg) const {
 	logger.fdebug("getLongRegister: reg={}", reg);
 	if (reg + 1 >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setLongRegister: reg={} out of bounds", reg));
@@ -126,7 +126,7 @@ void Frame::setFloatRegister(uint32_t reg, float value) {
 	_registers[reg] = Object::make(*reinterpret_cast<uint32_t*>(&value));
 }
 
-float Frame::getFloatRegister(uint32_t reg) {
+float Frame::getFloatRegister(uint32_t reg) const {
 	logger.fdebug("getFloatRegister: reg={}", reg);
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getFloatRegister: reg={} out of bounds", reg));
@@ -151,7 +151,7 @@ void Frame::setDoubleRegister(uint32_t reg, double value) {
 	logger.fdebug("setDoubleRegister: reg={} value={} {}", reg, _registers[reg]->debug(), _registers[reg + 1]->debug());
 }
 
-double Frame::getDoubleRegister(uint32_t reg) {
+double Frame::getDoubleRegister(uint32_t reg) const {
 	logger.fdebug("getDoubleRegister: reg={}", reg);
 	if (reg + 1 >= _registers.size()) {
 		throw std::runtime_error(fmt::format("getDoubleRegister: reg={} out of bounds", reg));

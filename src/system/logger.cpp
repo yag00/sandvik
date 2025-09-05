@@ -142,7 +142,7 @@ void Logger::color(uint32_t color_, char marker_, const char *msg_, ...) {
 	color(color_, marker_, std::string(msg));
 }
 
-void Logger::color(uint32_t color_, char marker_, const std::string &msg) {
+void Logger::color(uint32_t color_, char marker_, const std::string &msg_) {
 	if (LogLevel::INFO > _level) {
 		return;
 	}
@@ -152,7 +152,7 @@ void Logger::color(uint32_t color_, char marker_, const std::string &msg) {
 		if (_time) {
 			rawlog += fmt::format("[{}] ", getTime());
 		}
-		rawlog += fmt::format("[{}] {}", marker_, msg);
+		rawlog += fmt::format("[{}] {}", marker_, msg_);
 		_file << rawlog << std::endl;
 	}
 
@@ -160,7 +160,7 @@ void Logger::color(uint32_t color_, char marker_, const std::string &msg) {
 		if (_time) {
 			fmt::print(fmt::fg(fmt::color::white), "[{}] ", getTime());
 		}
-		fmt::print(fmt::fg(fmt::rgb(color_)), "[{}] {}", marker_, msg);
+		fmt::print(fmt::fg(fmt::rgb(color_)), "[{}] {}", marker_, msg_);
 		fmt::print(fmt::fg(fmt::color::white), "\n");
 	}
 }

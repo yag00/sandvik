@@ -42,7 +42,7 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 	if (path_.empty()) {
 		size_t size = (size_t)&_binary_sanddirt_dex_jar_size;
 		// paranoia check
-		size_t size2 = _binary_sanddirt_dex_jar_end - _binary_sanddirt_dex_jar_start;
+		size_t size2 = (uintptr_t)_binary_sanddirt_dex_jar_end - (uintptr_t)_binary_sanddirt_dex_jar_start;
 		if (size != size2) {
 			throw std::runtime_error(fmt::format("Internal error: embedded RT size mismatch {} != {}", size, size2));
 		}

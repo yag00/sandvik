@@ -57,7 +57,7 @@ namespace sandvik {
 
 			Field& getField(const std::string& name_);
 			Field& getField(uint32_t idx_);
-			std::vector<std::string> getFieldList();
+			std::vector<std::string> getFieldList() const;
 
 			bool isInstanceOf(const std::string& classname_) const;
 			bool isInstanceOf(const Class& class_) const;

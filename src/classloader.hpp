@@ -49,12 +49,12 @@ namespace sandvik {
 			Class& getOrLoad(const std::string& classname_);
 
 			Method& resolveMethod(uint32_t dex_, uint16_t idx_);
-			Method& resolveMethod(uint32_t dex_, uint16_t idx_, std::string& class_, std::string& method_, std::string& sig_);
-			void findMethod(uint32_t dex_, uint16_t idx_, std::string& class_, std::string& method_, std::string& sig_);
+			Method& resolveMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& method_, std::string& sig_);
+			void findMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& method_, std::string& sig_);
 			Class& resolveClass(uint32_t dex_, uint16_t idx_);
 			Class& resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_);
 			Field& resolveField(uint32_t dex_, uint16_t idx_);
-			Field& resolveField(uint32_t dex_, uint16_t idx_, std::string& classname, std::string& field);
+			Field& resolveField(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& field_);
 			std::string resolveType(uint32_t dex_, uint16_t idx_, TYPES& type_);
 			std::string resolveString(uint32_t dex_, uint16_t idx_);
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint32_t dex_, uint16_t idx_);

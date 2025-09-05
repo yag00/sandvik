@@ -29,9 +29,6 @@ extern "C" {
 		// Get dimensions from dimsArr (assume it's a Java int array)
 		std::vector<uint32_t> dimensions;
 		sandvik::Array* dimArray = (sandvik::Array*)dimsArr;
-		if (!dimArray) {
-			throw sandvik::ClassCastException("Array.multiNewArray() called with non-array dimensions argument");
-		}
 		logger.fdebug("Array dimensions: {}", dimArray->getArrayLength());
 		for (size_t i = 0; i < dimArray->getArrayLength(); ++i) {
 			auto element = dimArray->getElement(i);

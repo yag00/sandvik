@@ -30,7 +30,7 @@ namespace sandvik {
 	class JavaException : public std::exception {
 		public:
 			/** constructor */
-			JavaException(const std::string& type_, const std::string& message = "");
+			explicit JavaException(const std::string& type_, const std::string& message_ = "");
 			/** destructor */
 			~JavaException() noexcept = default;
 			/** get exception message

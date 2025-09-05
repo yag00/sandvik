@@ -167,16 +167,16 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	throw std::runtime_error(fmt::format("ClassNotFoundError: {}", classname_));
 }
 
-Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& methodname_, std::string& sig_) {
+Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& method_, std::string& sig_) {
 	if (dex_ >= _dexs.size()) {
 		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
 	}
 	try {
-		_dexs[dex_]->resolveMethod(idx_, classname_, methodname_, sig_);
+		_dexs[dex_]->resolveMethod(idx_, classname_, method_, sig_);
 		auto& cls = getOrLoad(classname_);
-		return cls.getMethod(methodname_, sig_);
+		return cls.getMethod(method_, sig_);
 	} catch (std::exception& e) {
-		throw std::runtime_error(fmt::format("Method {}.{}{} not found: {} ({})", classname_, methodname_, sig_, idx_, e.what()));
+		throw std::runtime_error(fmt::format("Method {}.{}{} not found: {} ({})", classname_, method_, sig_, idx_, e.what()));
 	}
 }
 Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_) {
@@ -215,14 +215,14 @@ Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_) {
 	return resolveField(dex_, idx_, classname, field);
 }
 
-Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_, std::string& classname, std::string& field) {
+Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& field_) {
 	if (dex_ >= _dexs.size()) {
 		throw std::out_of_range(fmt::format("Invalid DEX index: {} (size: {})", dex_, _dexs.size()));
 	}
 	try {
-		_dexs[dex_]->resolveField(idx_, classname, field);
-		auto& cls = getOrLoad(classname);
-		return cls.getField(field);
+		_dexs[dex_]->resolveField(idx_, classname_, field_);
+		auto& cls = getOrLoad(classname_);
+		return cls.getField(field_);
 	} catch (std::exception& e) {
 		throw std::runtime_error(fmt::format("Field not found: {} ({})", idx_, e.what()));
 	}

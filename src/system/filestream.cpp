@@ -34,7 +34,7 @@ IFileStream::IFileStream(const std::string& filename) {
 }
 
 IFileStream::~IFileStream() {
-	close();
+	__close();
 }
 
 long IFileStream::write(const char* buf_, long count_) {
@@ -42,6 +42,10 @@ long IFileStream::write(const char* buf_, long count_) {
 }
 
 void IFileStream::close() {
+	__close();
+}
+
+void IFileStream::__close() {
 	std::fstream* ifs = dynamic_cast<std::fstream*>(_ios.get());
 	if (ifs && ifs->is_open()) {
 		ifs->close();
@@ -60,7 +64,7 @@ OFileStream::OFileStream(const std::string& filename) {
 }
 
 OFileStream::~OFileStream() {
-	close();
+	__close();
 }
 
 long OFileStream::read(char* buf_, long count_) {
@@ -68,6 +72,10 @@ long OFileStream::read(char* buf_, long count_) {
 }
 
 void OFileStream::close() {
+	__close();
+}
+
+void OFileStream::__close() {
 	std::fstream* ofs = dynamic_cast<std::fstream*>(_ios.get());
 	if (ofs && ofs->is_open()) {
 		ofs->flush();

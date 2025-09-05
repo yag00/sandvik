@@ -265,12 +265,12 @@ std::vector<std::pair<std::string, uint32_t>> Dex::resolveArray(uint16_t idx) {
 						if (descriptor.front() == 'L') {
 							descriptor = descriptor.substr(1);  // remove 'L'
 						} else {
-							logger.error("Expected class descriptor to start with 'L', got '{}'", descriptor);
+							logger.ferror("Expected class descriptor to start with 'L', got '{}'", descriptor);
 						}
 						if (descriptor.back() == ';') {
 							descriptor.pop_back();
 						} else {
-							logger.error("Expected class descriptor to end with ';', got '{}'", descriptor);
+							logger.ferror("Expected class descriptor to end with ';', got '{}'", descriptor);
 						}
 						std::replace(descriptor.begin(), descriptor.end(), '/', '.');
 						_array.push_back({descriptor, item.dim()});

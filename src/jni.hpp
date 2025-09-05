@@ -29,7 +29,7 @@ namespace sandvik {
 	class JNIHandleMap;
 	class NativeInterface : public JNIEnv {
 		public:
-			NativeInterface(Vm &vm_);
+			explicit NativeInterface(Vm &vm_);
 			virtual ~NativeInterface();
 
 			Vm &getVm() const;

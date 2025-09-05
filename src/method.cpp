@@ -32,21 +32,14 @@
 
 using namespace sandvik;
 
-Method::Method(Class& class_, const std::string& name_, const std::string& signature_) : _class(class_) {
-	_name = name_;
-	_signature = signature_;
-
+Method::Method(Class& class_, const std::string& name_, const std::string& signature_) : _class(class_), _name(name_), _signature(signature_) {
 	_nbRegisters = 0;
 	_index = 0;
-	_bytecode = std::vector<uint8_t>();
 	_accessFlags = 0;
 	_isVirtual = false;
 }
 
-Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_) {
-	_name = method_.name();
-	_signature = get_method_descriptor(method_);
-
+Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_), _name(method_.name()), _signature(get_method_descriptor(method_)) {
 	_nbRegisters = method_.code_info().nb_registers();
 	_index = method_.index();
 	_bytecode = method_.bytecode();

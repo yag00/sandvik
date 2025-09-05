@@ -27,8 +27,8 @@
 
 using namespace sandvik;
 
-ClassBuilder::ClassBuilder(ClassLoader& classLoader, const std::string& packageName, const std::string& className) : _classLoader(classLoader) {
-	_class = std::make_unique<Class>(classLoader, packageName, className);
+ClassBuilder::ClassBuilder(ClassLoader& classLoader, const std::string& packageName, const std::string& className)
+    : _classLoader(classLoader), _class(std::make_unique<Class>(classLoader, packageName, className)) {
 }
 
 void ClassBuilder::setSuperClass(const std::string& superClassName_) {

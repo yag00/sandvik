@@ -27,8 +27,8 @@
 namespace sandvik {
 	class IStringStream : public Stream {
 		public:
-			IStringStream(const std::string& data);
-			IStringStream(const std::vector<uint8_t>& data);
+			explicit IStringStream(const std::string& data);
+			explicit IStringStream(const std::vector<uint8_t>& data);
 
 			virtual ~IStringStream();
 
@@ -38,7 +38,7 @@ namespace sandvik {
 
 	class OStringStream : public Stream {
 		public:
-			OStringStream();
+			explicit OStringStream();
 			virtual ~OStringStream();
 
 			virtual long read(char* buf_, long count_) override;

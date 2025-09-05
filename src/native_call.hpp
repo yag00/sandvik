@@ -36,7 +36,7 @@ namespace sandvik {
 	class NativeCallHelper {
 		public:
 			// Constructor/Destructor
-			NativeCallHelper(NativeInterface& nif);
+			explicit NativeCallHelper(NativeInterface& nif);
 			~NativeCallHelper();
 
 			// Main method to invoke native functions

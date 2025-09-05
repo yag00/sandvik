@@ -32,19 +32,19 @@ namespace sandvik {
 	class Object;
 	class Frame {
 		public:
-			Frame(Method& method_);
+			explicit Frame(Method& method_);
 			~Frame() = default;
 
 			uint32_t getDexIdx() const;
 
 			void setIntRegister(uint32_t reg, int32_t value);
-			int32_t getIntRegister(uint32_t reg);
+			int32_t getIntRegister(uint32_t reg) const;
 			void setLongRegister(uint32_t reg, int64_t value);
-			int64_t getLongRegister(uint32_t reg);
+			int64_t getLongRegister(uint32_t reg) const;
 			void setFloatRegister(uint32_t reg, float value);
-			float getFloatRegister(uint32_t reg);
+			float getFloatRegister(uint32_t reg) const;
 			void setDoubleRegister(uint32_t reg, double value);
-			double getDoubleRegister(uint32_t reg);
+			double getDoubleRegister(uint32_t reg) const;
 
 			// void setObjRegister(uint32_t reg, std::shared_ptr<Object>&& value);
 			void setObjRegister(uint32_t reg, std::shared_ptr<Object> value);
@@ -57,7 +57,7 @@ namespace sandvik {
 			void setReturnObject(std::shared_ptr<Object> ret_);
 			void setReturnValue(int32_t ret_);
 			void setReturnDoubleValue(int64_t ret_);
-			void setException(std::shared_ptr<Object> ret_);
+			void setException(std::shared_ptr<Object> exception_);
 
 			uint16_t pc() const;
 			uint16_t& pc();

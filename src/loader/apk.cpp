@@ -46,7 +46,6 @@ Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_d
 
 	_zipReader = std::make_unique<ZipReader>();
 	_zipReader->open(_path);
-	std::list<std::string> files = _zipReader->getList();
 
 	// load classes.dex
 	std::string file = "classes.dex";

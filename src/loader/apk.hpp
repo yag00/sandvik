@@ -32,8 +32,7 @@ namespace sandvik {
 	class ZipReader;
 	class Apk {
 		public:
-			Apk() = default;
-			explicit Apk(const std::string& path, Dex& classes_dex_);
+			Apk(const std::string& path_, Dex& classes_dex_);
 			~Apk();
 
 			// Prevent copying

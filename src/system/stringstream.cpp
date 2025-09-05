@@ -48,7 +48,6 @@ IStringStream::IStringStream(const std::vector<uint8_t>& data) {
 }
 
 IStringStream::~IStringStream() {
-	close();
 }
 
 long IStringStream::write(const char* buf_, long count_) {
@@ -71,7 +70,6 @@ OStringStream::OStringStream() {
 }
 
 OStringStream::~OStringStream() {
-	close();
 }
 
 long OStringStream::read(char* buf_, long count_) {

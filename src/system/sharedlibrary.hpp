@@ -29,7 +29,7 @@ namespace sandvik {
 		public:
 			/** constructor
 			 * @param name_ name of the shared library */
-			SharedLibrary(const std::string& name_);
+			explicit SharedLibrary(const std::string& name_);
 			~SharedLibrary();
 
 			/** @return the full path of the shared library */
