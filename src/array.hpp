@@ -37,7 +37,7 @@ namespace sandvik {
 			Array(const Array& other);
 			// Constructor for subarray view
 			Array(std::shared_ptr<ObjectRefVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
-			~Array() = default;
+			~Array() override = default;
 
 			std::string debug() const override;
 
@@ -45,7 +45,7 @@ namespace sandvik {
 
 			ArrayRef getArray(uint32_t idx_) const;
 
-			uint32_t getDimensions() const;
+			size_t getDimensions() const;
 			uint32_t getDimension(uint32_t index_) const;
 			uint32_t getArrayLength() const override;
 

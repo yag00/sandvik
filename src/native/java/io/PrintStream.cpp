@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "exceptions.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
@@ -18,23 +19,27 @@ extern "C" {
 		}
 		auto fileObj = this_ptr->getField("file");
 		int fd = fileObj->getValue();
-		const char* nativeStr = env->GetStringUTFChars(str, nullptr);
-		if (nativeStr != nullptr) {
-			switch (fd) {
-				case 1:
-					std::cout << nativeStr;
-					break;
-				case 2:
-					std::cerr << nativeStr;
-					break;
-				default:
-					ssize_t written = write(fd, nativeStr, strlen(nativeStr));
-					if (written == -1) {
-						logger.fwarning("Failed to write {} to file descriptor {}", nativeStr, fd);
-					}
-					break;
-			}
-			env->ReleaseStringUTFChars(str, nativeStr);
+		sandvik::Object* strobj = (sandvik::Object*)str;
+		if (strobj == nullptr) {
+			throw sandvik::NullPointerException("Null String object");
+		}
+		if (!strobj->isString()) {
+			throw sandvik::ClassCastException("Not a string");
+		}
+		const auto s = strobj->str();
+		switch (fd) {
+			case 1:
+				std::cout << s;
+				break;
+			case 2:
+				std::cerr << s;
+				break;
+			default:
+				ssize_t written = write(fd, s.c_str(), s.size());
+				if (written == -1) {
+					logger.fwarning("Failed to write {} to file descriptor {}", s, fd);
+				}
+				break;
 		}
 	}
 	JNIEXPORT void JNICALL Java_java_io_PrintStream_println__Ljava_lang_String_2(JNIEnv* env, jobject obj, jstring str) {
@@ -44,23 +49,27 @@ extern "C" {
 		}
 		auto fileObj = this_ptr->getField("file");
 		int fd = fileObj->getValue();
-		const char* nativeStr = env->GetStringUTFChars(str, nullptr);
-		if (nativeStr != nullptr) {
-			switch (fd) {
-				case 1:
-					std::cout << nativeStr << std::endl;
-					break;
-				case 2:
-					std::cerr << nativeStr << std::endl;
-					break;
-				default:
-					ssize_t written = write(fd, nativeStr, strlen(nativeStr));
-					if (written == -1) {
-						logger.fwarning("Failed to write {} to file descriptor {}", nativeStr, fd);
-					}
-					break;
-			}
-			env->ReleaseStringUTFChars(str, nativeStr);
+		sandvik::Object* strobj = (sandvik::Object*)str;
+		if (strobj == nullptr) {
+			throw sandvik::NullPointerException("Null String object");
+		}
+		if (!strobj->isString()) {
+			throw sandvik::ClassCastException("Not a string");
+		}
+		const auto s = strobj->str();
+		switch (fd) {
+			case 1:
+				std::cout << s << std::endl;
+				break;
+			case 2:
+				std::cerr << s << std::endl;
+				break;
+			default:
+				ssize_t written = write(fd, s.c_str(), s.size());
+				if (written == -1) {
+					logger.fwarning("Failed to write {} to file descriptor {}", s, fd);
+				}
+				break;
 		}
 	}
 	JNIEXPORT void JNICALL Java_java_io_PrintStream_println__(JNIEnv* env, jobject obj) {
@@ -78,8 +87,7 @@ extern "C" {
 				std::cerr << std::endl;
 				break;
 			default:
-				const char* newline = "\n";
-				ssize_t written = write(fd, newline, strlen(newline));
+				ssize_t written = write(fd, "\n", 1);
 				if (written == -1) {
 					logger.fwarning("Failed to write newline to file descriptor {}", fd);
 				}

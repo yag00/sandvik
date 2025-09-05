@@ -67,7 +67,7 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
       _hasSuperClass(class_.has_parent()) {
 	// Initialize methods
 	for (const auto& method : class_.methods()) {
-		auto name = method.name();
+		const auto& name = method.name();
 		auto signature = get_method_descriptor(method);
 		_methods[name + signature] = std::make_unique<Method>(*this, method);
 	}
@@ -122,14 +122,13 @@ bool Class::isInstanceOf(const Class& class_) const {
 	}
 	return false;
 }
-bool Class::isInstanceOf(std::shared_ptr<Object>& class_) const {
+bool Class::isInstanceOf(const std::shared_ptr<Object>& class_) const {
 	if (class_->isNull()) {
 		return false;
 	}
-	auto clazz = class_;
-	if (clazz->isClass()) {
+	if (auto clazz = class_; clazz->isClass()) {
 		// check class and super classes
-		while (1) {
+		while (true) {
 			logger.fdebug("{} is instance of {}", clazz->getClass().getFullname(), getFullname());
 			if (clazz->getClass().getFullname() == getFullname()) {
 				return true;
@@ -246,8 +245,8 @@ bool Class::isExternal() const {
 	if (isInterface()) {
 		return false;
 	}
-	for (const auto& method : _methods) {
-		if (method.second->hasBytecode()) {
+	for (const auto& [key, method] : _methods) {
+		if (method->hasBytecode()) {
 			return false;
 		}
 	}

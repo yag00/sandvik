@@ -61,7 +61,7 @@ namespace sandvik {
 
 			bool isInstanceOf(const std::string& classname_) const;
 			bool isInstanceOf(const Class& class_) const;
-			bool isInstanceOf(std::shared_ptr<Object>& class_) const;
+			bool isInstanceOf(const std::shared_ptr<Object>& class_) const;
 			bool isExternal() const;
 			bool isAbstract() const;
 			bool isInterface() const;

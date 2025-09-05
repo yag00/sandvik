@@ -160,7 +160,6 @@ void Dex::resolveClass(uint16_t idx, std::string& class_) {
 			case LIEF::DEX::Type::TYPES::UNKNOWN:
 			default:
 				throw DexLoaderException(fmt::format("Unknown type at index {}", idx));
-				break;
 		}
 	} catch (const std::exception& e) {
 		throw DexLoaderException(fmt::format("Failed to resolve class at index {}: {}", idx, e.what()));
@@ -281,11 +280,9 @@ std::vector<std::pair<std::string, uint32_t>> Dex::resolveArray(uint16_t idx) {
 				}
 				case LIEF::DEX::Type::TYPES::ARRAY:
 					throw DexLoaderException(fmt::format("Nested array type: {} [{}] not supported", get_type_descriptor(item), item.dim()));
-					break;
 				case LIEF::DEX::Type::TYPES::UNKNOWN:
 				default:
 					throw DexLoaderException(fmt::format("Unknown type: {} [{}] not supported", get_type_descriptor(item), item.dim()));
-					break;
 			}
 		}
 	} catch (const std::exception& e) {

@@ -168,7 +168,9 @@ void Logger::color(uint32_t color_, char marker_, const std::string &msg_) {
 std::string Logger::getTime() const {
 	auto now = std::chrono::system_clock::now();
 	std::time_t timestamp = std::chrono::system_clock::to_time_t(now);
-	std::string timeStr = std::ctime(&timestamp);
+	char buf[128];
+	ctime_r(&timestamp, buf);
+	std::string timeStr(buf);
 	timeStr.pop_back();  // Remove newline character from the time string
 	return timeStr;
 }

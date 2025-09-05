@@ -21,6 +21,7 @@
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <bit>
 #include <stdexcept>
 
 #include "class.hpp"
@@ -123,7 +124,9 @@ void Frame::setFloatRegister(uint32_t reg, float value) {
 	if (reg >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setFloatRegister: reg={} out of bounds", reg));
 	}
-	_registers[reg] = Object::make(*reinterpret_cast<uint32_t*>(&value));
+	uint32_t intValue;
+	intValue = std::bit_cast<uint32_t>(value);
+	_registers[reg] = Object::make(intValue);
 }
 
 float Frame::getFloatRegister(uint32_t reg) const {
@@ -136,7 +139,8 @@ float Frame::getFloatRegister(uint32_t reg) const {
 		throw std::runtime_error(fmt::format("Register does not contain an NumberObject {}", obj.debug()));
 	}
 	uint32_t intValue = static_cast<uint32_t>(obj.getValue());
-	return *reinterpret_cast<float*>(&intValue);
+	float floatValue = std::bit_cast<float>(intValue);
+	return floatValue;
 }
 
 void Frame::setDoubleRegister(uint32_t reg, double value) {
@@ -144,7 +148,7 @@ void Frame::setDoubleRegister(uint32_t reg, double value) {
 	if (reg + 1 >= _registers.size()) {
 		throw std::runtime_error(fmt::format("setDoubleRegister: reg={} out of bounds", reg));
 	}
-	uint64_t temp = *reinterpret_cast<uint64_t*>(&value);
+	uint64_t temp = std::bit_cast<uint64_t>(value);
 	_registers[reg] = Object::make(static_cast<uint32_t>(temp & 0xFFFFFFFF));
 	_registers[reg + 1] = Object::make(static_cast<uint32_t>((temp >> 32) & 0xFFFFFFFF));
 
@@ -164,7 +168,8 @@ double Frame::getDoubleRegister(uint32_t reg) const {
 	uint64_t value = static_cast<uint32_t>(msb.getValue());
 	value <<= 32;
 	value |= static_cast<uint32_t>(lsb.getValue());
-	return *reinterpret_cast<double*>(&value);
+	double result = std::bit_cast<double>(value);
+	return result;
 }
 
 void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
@@ -174,15 +179,6 @@ void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
 	}
 	_registers[reg] = value;
 }
-/*
-void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object>&& value) {
-    logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->debug());
-    if (reg >= _registers.size()) {
-        increaseRegSize(reg + 1);
-    }
-    _registers[reg] = std::move(value);
-}
-*/
 
 std::shared_ptr<Object> Frame::getObjRegister(uint32_t reg) {
 	if (reg >= _registers.size()) {

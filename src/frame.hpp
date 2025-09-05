@@ -46,7 +46,6 @@ namespace sandvik {
 			void setDoubleRegister(uint32_t reg, double value);
 			double getDoubleRegister(uint32_t reg) const;
 
-			// void setObjRegister(uint32_t reg, std::shared_ptr<Object>&& value);
 			void setObjRegister(uint32_t reg, std::shared_ptr<Object> value);
 			std::shared_ptr<Object> getObjRegister(uint32_t reg);
 

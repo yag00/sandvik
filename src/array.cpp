@@ -71,7 +71,7 @@ std::string Array::debug() const {
 	return fmt::format("Array type={}, dimensions={}", _classtype.getFullname(), dims);
 }
 
-uint32_t Array::getDimensions() const {
+size_t Array::getDimensions() const {
 	return _dimensions.size();
 }
 
@@ -127,13 +127,11 @@ uint32_t Array::flattenIndex(const std::vector<uint32_t>& indices_) const {
 		throw std::invalid_argument("Incorrect number of indices for Array");
 	}
 	uint32_t idx = 0;
-	uint32_t stride = 1;
-	for (int i = _dimensions.size() - 1; i >= 0; --i) {
+	for (size_t i = 0; i < _dimensions.size(); ++i) {
 		if (indices_[i] >= _dimensions[i]) {
 			throw std::out_of_range("Array index out of bounds");
 		}
-		idx += indices_[i] * stride;
-		stride *= _dimensions[i];
+		idx = idx * _dimensions[i] + indices_[i];
 	}
 	return idx;
 }

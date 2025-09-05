@@ -4,6 +4,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![pipeline](https://gitlab.com/christophe.duvernois/sandvik/badges/main/pipeline.svg)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=christophe.duvernois_sandvik&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=christophe.duvernois_sandvik)
 
 ## Overview
 
