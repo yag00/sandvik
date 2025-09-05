@@ -1,3 +1,21 @@
+/*
+ * This file is part of Sandvik project.
+ * Copyright (C) 2025 Christophe Duvernois
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "array.hpp"
 
 #include <fmt/format.h>
@@ -8,27 +26,21 @@
 #include "field.hpp"
 #include "jni.hpp"
 #include "jnihandlemap.hpp"
+#include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
 extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Array_multiNewArray(JNIEnv* env, jclass, jobject classObj, jobject dimsArr) {
-		sandvik::NativeInterface* jenv = static_cast<sandvik::NativeInterface*>(env);
-		if (jenv == nullptr) {
-			throw std::runtime_error("Internal error: JNIEnv is not a NativeInterface");
-		}
-		if (classObj == nullptr || dimsArr == nullptr) {
-			throw sandvik::NullPointerException("Array.multiNewArray() called with null argument");
-		}
+		auto jenv = sandvik::native::getNativeInterface(env);
 
-		// Get the class type
-		sandvik::Object* obj = (sandvik::Object*)classObj;
+		auto obj = sandvik::native::getObject(classObj);
+		auto dimArray = (sandvik::Array*)sandvik::native::getObject(dimsArr);
 
 		logger.fdebug("Creating multi-dimensional array of type: {}", obj->getClassType().getFullname());
 
 		// Get dimensions from dimsArr (assume it's a Java int array)
 		std::vector<uint32_t> dimensions;
-		sandvik::Array* dimArray = (sandvik::Array*)dimsArr;
 		logger.fdebug("Array dimensions: {}", dimArray->getArrayLength());
 		for (size_t i = 0; i < dimArray->getArrayLength(); ++i) {
 			auto element = dimArray->getElement(i);

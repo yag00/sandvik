@@ -1,3 +1,21 @@
+/*
+ * This file is part of Sandvik project.
+ * Copyright (C) 2025 Christophe Duvernois
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <fmt/format.h>
 #include <jni/jni.h>
 
@@ -6,45 +24,20 @@
 #include "field.hpp"
 #include "jni.hpp"
 #include "jnihandlemap.hpp"
+#include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
 extern "C" {
 	JNIEXPORT void JNICALL Java_java_lang_String_initialize__Ljava_lang_String_2(JNIEnv* env, jobject obj, jobject other) {
-		// Check if obj or other is null
-		sandvik::Object* this_ptr = (sandvik::Object*)obj;
-		sandvik::Object* other_ptr = (sandvik::Object*)other;
-		if (this_ptr == nullptr || other_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
-		}
-		if (!this_ptr->isString()) {
-			throw std::runtime_error("Object is not a java.lang.String");
-		}
-		if (!other_ptr->isString()) {
-			throw std::runtime_error("Object is not a java.lang.String");
-		}
+		auto this_ptr = sandvik::native::getString(obj);
+		auto other_ptr = sandvik::native::getString(other);
 		this_ptr->setString(this_ptr->str() + other_ptr->str());
 	}
 
 	JNIEXPORT jboolean JNICALL Java_java_lang_String_equals(JNIEnv* env, jobject obj, jobject other) {
-		// Check if the current object (this) is null
-		sandvik::Object* this_ptr = (sandvik::Object*)obj;
-		if (this_ptr == nullptr) {
-			throw std::runtime_error("NullPointerException");
-		}
-		// If the other object is null, return false
-		if (other == nullptr) {
-			return JNI_FALSE;
-		}
-		// Cast the other object to sandvik::Object
-		sandvik::Object* other_ptr = (sandvik::Object*)other;
-		// If either string field is null, return false
-		if (this_ptr->isNull() || other_ptr->isNull()) {
-			return JNI_FALSE;
-		}
-		if (!this_ptr->isString() || !other_ptr->isString()) {
-			return JNI_FALSE;
-		}
+		auto this_ptr = sandvik::native::getString(obj);
+		auto other_ptr = sandvik::native::getString(other);
 		// Get the actual string values
 		auto this_str = this_ptr->str();
 		auto other_str = other_ptr->str();

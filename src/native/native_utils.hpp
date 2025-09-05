@@ -16,27 +16,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "class.hpp"
+#ifndef __NATIVE_UTILS_HPP__
+#define __NATIVE_UTILS_HPP__
 
-#include <fmt/format.h>
-#include <jni/jni.h>
+#include <string>
 
-#include "exceptions.hpp"
-#include "field.hpp"
-#include "jni.hpp"
-#include "jnihandlemap.hpp"
-#include "native/native_utils.hpp"
-#include "object.hpp"
-#include "system/logger.hpp"
+#include "jni/jni.h"
 
-extern "C" {
-	JNIEXPORT jstring JNICALL Java_java_lang_Class_getName(JNIEnv* env, jobject obj) {
-		auto jenv = sandvik::native::getNativeInterface(env);
-		auto ptr = sandvik::native::getObject(obj);
-		std::string name = ptr->getClassType().getFullname();
-		sandvik::ClassLoader& classloader = jenv->getClassLoader();
-		auto strObj = sandvik::Object::make(classloader, name);
-		jobject jstr = jenv->getHandles().toJObject(strObj);
-		return (jstring)jstr;
-	}
-}
+namespace sandvik {
+	class Object;
+	class NativeInterface;
+	namespace native {
+		Object* getObject(jobject jobj);
+		Object* getString(jobject jstr);
+		Object* getString(jstring jstr);
+		NativeInterface* getNativeInterface(JNIEnv* env);
+	};  // namespace native
+};  // namespace sandvik
+
+#endif /* __NATIVE_UTILS_HPP__ */

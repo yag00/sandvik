@@ -16,27 +16,43 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "class.hpp"
+#include "native_utils.hpp"
 
 #include <fmt/format.h>
-#include <jni/jni.h>
 
 #include "exceptions.hpp"
-#include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
-#include "native/native_utils.hpp"
 #include "object.hpp"
-#include "system/logger.hpp"
 
-extern "C" {
-	JNIEXPORT jstring JNICALL Java_java_lang_Class_getName(JNIEnv* env, jobject obj) {
-		auto jenv = sandvik::native::getNativeInterface(env);
-		auto ptr = sandvik::native::getObject(obj);
-		std::string name = ptr->getClassType().getFullname();
-		sandvik::ClassLoader& classloader = jenv->getClassLoader();
-		auto strObj = sandvik::Object::make(classloader, name);
-		jobject jstr = jenv->getHandles().toJObject(strObj);
-		return (jstring)jstr;
+using namespace sandvik;
+
+Object* native::getObject(jobject jobj) {
+	Object* ptr = (Object*)jobj;
+	if (ptr == nullptr) {
+		throw NullPointerException("null object");
 	}
+	return ptr;
+}
+
+Object* native::getString(jobject jstr) {
+	return native::getString((jstring)jstr);
+}
+
+Object* native::getString(jstring jstr) {
+	Object* ptr = (Object*)jstr;
+	if (ptr == nullptr) {
+		throw NullPointerException("null object");
+	}
+	if (!ptr->isString()) {
+		throw ClassCastException("Object is not a java.lang.String");
+	}
+	return ptr;
+}
+
+NativeInterface* native::getNativeInterface(JNIEnv* env) {
+	NativeInterface* jenv = static_cast<NativeInterface*>(env);
+	if (jenv == nullptr) {
+		throw std::runtime_error("Internal error: JNIEnv is not a NativeInterface");
+	}
+	return jenv;
 }

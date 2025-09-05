@@ -144,6 +144,13 @@ namespace sandvik {
 			}
 			~VerifyError() noexcept override = default;
 	};
+	/** @brief NumberFormatException exception class */
+	class NumberFormatException : public JavaException {
+		public:
+			explicit NumberFormatException(const std::string& message = "") : JavaException("java.lang.NumberFormatException", message) {
+			}
+			~NumberFormatException() noexcept override = default;
+	};
 }  // namespace sandvik
 
 #endif
