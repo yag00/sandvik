@@ -75,7 +75,7 @@ namespace sandvik {
 
 			std::vector<std::shared_ptr<Object>> _registers;
 
-			uint16_t _pc;
+			uint16_t _pc = 0;
 
 			std::shared_ptr<Object> _null;
 			std::shared_ptr<Object> _objectReturn;

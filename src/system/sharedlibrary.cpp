@@ -29,7 +29,7 @@
 
 using namespace sandvik;
 
-SharedLibrary::SharedLibrary(const std::string& name_) : _path(name_), _handle(0) {
+SharedLibrary::SharedLibrary(const std::string& name_) : _path(name_), _handle(nullptr) {
 }
 
 SharedLibrary::~SharedLibrary() {
@@ -86,7 +86,7 @@ void SharedLibrary::unload() {
 }
 
 bool SharedLibrary::isLoaded() const {
-	return (_handle != 0);
+	return (_handle != nullptr);
 }
 
 void* SharedLibrary::getAddressOfSymbol(const std::string& name_) {

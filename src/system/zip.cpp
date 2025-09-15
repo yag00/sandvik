@@ -38,7 +38,7 @@ ZipReader::ZipReader() {
 ZipReader::~ZipReader() {
 	delete static_cast<mz_zip_archive*>(_zip);
 }
-void ZipReader::open(uint8_t* data_, size_t size_) {
+void ZipReader::open(const uint8_t* data_, size_t size_) {
 	if (!mz_zip_reader_init_mem(static_cast<mz_zip_archive*>(_zip), data_, size_, 0)) {
 		throw std::runtime_error("zip initialization from memory failed!");
 	}

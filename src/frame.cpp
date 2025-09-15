@@ -30,7 +30,7 @@
 
 using namespace sandvik;
 
-Frame::Frame(Method& method_) : _method(method_), _pc(0) {
+Frame::Frame(Method& method_) : _method(method_) {
 	logger.fdebug("new Frame for method = {}.{} registers ={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
 	_null = Object::makeNull();
 	_exception = Object::makeNull();
@@ -106,8 +106,8 @@ int64_t Frame::getLongRegister(uint32_t reg) const {
 	if (reg + 1 >= _registers.size()) {
 		throw VmException("setLongRegister: reg={} out of bounds", reg);
 	}
-	Object& lsb = *_registers[reg];
-	Object& msb = *_registers[reg + 1];
+	const Object& lsb = *_registers[reg];
+	const Object& msb = *_registers[reg + 1];
 	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
 		throw VmException("Register does not contain valid NumberObjects");
 	}
@@ -133,13 +133,12 @@ float Frame::getFloatRegister(uint32_t reg) const {
 	if (reg >= _registers.size()) {
 		throw VmException("getFloatRegister: reg={} out of bounds", reg);
 	}
-	Object& obj = *_registers[reg];
+	const Object& obj = *_registers[reg];
 	if (!obj.isNumberObject()) {
 		throw VmException("Register does not contain an NumberObject {}", obj.debug());
 	}
-	uint32_t intValue = static_cast<uint32_t>(obj.getValue());
-	float floatValue = std::bit_cast<float>(intValue);
-	return floatValue;
+	auto intValue = static_cast<uint32_t>(obj.getValue());
+	return std::bit_cast<float>(intValue);
 }
 
 void Frame::setDoubleRegister(uint32_t reg, double value) {
@@ -159,8 +158,8 @@ double Frame::getDoubleRegister(uint32_t reg) const {
 	if (reg + 1 >= _registers.size()) {
 		throw VmException("getDoubleRegister: reg={} out of bounds", reg);
 	}
-	Object& lsb = *_registers[reg];
-	Object& msb = *_registers[reg + 1];
+	const Object& lsb = *_registers[reg];
+	const Object& msb = *_registers[reg + 1];
 	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
 		throw VmException("Register does not contain valid NumberObjects");
 	}

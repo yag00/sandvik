@@ -437,15 +437,15 @@ void Interpreter::move(const uint8_t* operand_) {
 // move/from16 vAA, vBBBB
 void Interpreter::move_from16(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t src = *(uint16_t*)&operand_[1];
+	uint16_t src = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setIntRegister(dest, frame.getIntRegister(src));
 	frame.pc() += 3;
 }
 // move/16 vAAAA, vBBBB
 void Interpreter::move_16(const uint8_t* operand_) {
-	uint16_t dest = *(uint16_t*)&operand_[0];
-	uint16_t src = *(uint16_t*)&operand_[1];
+	uint16_t dest = *(const uint16_t*)&operand_[0];
+	uint16_t src = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setIntRegister(dest, frame.getIntRegister(src));
 	frame.pc() += 4;
@@ -462,7 +462,7 @@ void Interpreter::move_wide(const uint8_t* operand_) {
 // move-wide/from16 vAA, vBBBB
 void Interpreter::move_wide_from16(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t src = *(uint16_t*)&operand_[1];
+	uint16_t src = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setIntRegister(dest, frame.getIntRegister(src));
 	frame.setIntRegister(dest + 1, frame.getIntRegister(src + 1));
@@ -470,8 +470,8 @@ void Interpreter::move_wide_from16(const uint8_t* operand_) {
 }
 // move-wide/16 vAAAA, vBBBB
 void Interpreter::move_wide16(const uint8_t* operand_) {
-	uint16_t dest = *(uint16_t*)&operand_[0];
-	uint16_t src = *(uint16_t*)&operand_[1];
+	uint16_t dest = *(const uint16_t*)&operand_[0];
+	uint16_t src = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setIntRegister(dest, frame.getIntRegister(src));
 	frame.setIntRegister(dest + 1, frame.getIntRegister(src + 1));
@@ -488,15 +488,15 @@ void Interpreter::move_object(const uint8_t* operand_) {
 // move-object/from16 vAA, vBBBB
 void Interpreter::move_object_from16(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t src = *(uint16_t*)&operand_[1];
+	uint16_t src = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setObjRegister(dest, frame.getObjRegister(src));
 	frame.pc() += 3;
 }
 // move-object/16 vAAAA, vBBBB
 void Interpreter::move_object16(const uint8_t* operand_) {
-	uint16_t dest = *(uint16_t*)&operand_[0];
-	uint16_t src = *(uint16_t*)&operand_[1];
+	uint16_t dest = *(const uint16_t*)&operand_[0];
+	uint16_t src = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setObjRegister(dest, frame.getObjRegister(src));
 	frame.pc() += 4;
@@ -569,7 +569,7 @@ void Interpreter::const_4(const uint8_t* operand_) {
 // const/16 vAA, #+BBBB
 void Interpreter::const_16(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	int16_t value = static_cast<int16_t>(*(uint16_t*)&operand_[1]);
+	int16_t value = static_cast<int16_t>(*(const uint16_t*)&operand_[1]);
 	auto& frame = _rt.currentFrame();
 	frame.setIntRegister(dest, (int32_t)value);
 	frame.pc() += 3;
@@ -577,7 +577,7 @@ void Interpreter::const_16(const uint8_t* operand_) {
 // const vAA, #+BBBBBBBB
 void Interpreter::const_(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	int32_t value = *(int32_t*)&operand_[1];
+	int32_t value = *(const int32_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setIntRegister(dest, value);
 	frame.pc() += 5;
@@ -585,7 +585,7 @@ void Interpreter::const_(const uint8_t* operand_) {
 // const/high16 vAA, #+BBBB0000
 void Interpreter::const_high16(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint32_t value = *(uint16_t*)&operand_[1];
+	uint32_t value = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setIntRegister(dest, value << 16);
 	frame.pc() += 3;
@@ -593,7 +593,7 @@ void Interpreter::const_high16(const uint8_t* operand_) {
 // const-wide/16 vAA, #+BBBB
 void Interpreter::const_wide_16(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	int16_t value = static_cast<int16_t>(*(uint16_t*)&operand_[1]);
+	int16_t value = static_cast<int16_t>(*(const uint16_t*)&operand_[1]);
 	auto& frame = _rt.currentFrame();
 	frame.setLongRegister(dest, (int64_t)value);
 	frame.pc() += 3;
@@ -601,7 +601,7 @@ void Interpreter::const_wide_16(const uint8_t* operand_) {
 // const-wide/32 vAA, #+BBBBBBBB
 void Interpreter::const_wide_32(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	int32_t value = *(int32_t*)&operand_[1];
+	int32_t value = *(const int32_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setLongRegister(dest, value);
 	frame.pc() += 5;
@@ -609,7 +609,7 @@ void Interpreter::const_wide_32(const uint8_t* operand_) {
 // const-wide vAA, #+BBBBBBBBBBBBBBBB
 void Interpreter::const_wide(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	int64_t value = *(int64_t*)&operand_[1];
+	int64_t value = *(const int64_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	frame.setLongRegister(dest, value);
 	frame.pc() += 9;
@@ -617,7 +617,7 @@ void Interpreter::const_wide(const uint8_t* operand_) {
 // const-wide/high16 vAA, #+BBBB000000000000
 void Interpreter::const_wide_high16(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint64_t value = static_cast<uint64_t>(*(uint16_t*)&operand_[1]) << 48;
+	uint64_t value = static_cast<uint64_t>(*(const uint16_t*)&operand_[1]) << 48;
 	auto& frame = _rt.currentFrame();
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
@@ -625,7 +625,7 @@ void Interpreter::const_wide_high16(const uint8_t* operand_) {
 // const-string vAA, string@BBBB
 void Interpreter::const_string(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t stringIndex = *(uint16_t*)&operand_[1];
+	uint16_t stringIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 	auto str = classloader.resolveString(frame.getDexIdx(), stringIndex);
@@ -635,7 +635,7 @@ void Interpreter::const_string(const uint8_t* operand_) {
 // const-string/jumbo vAA, string@BBBBBBBB
 void Interpreter::const_string_jumbo(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint32_t stringIndex = *(uint32_t*)&operand_[1];
+	uint32_t stringIndex = *(const uint32_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 	auto str = classloader.resolveString(frame.getDexIdx(), stringIndex);
@@ -645,7 +645,7 @@ void Interpreter::const_string_jumbo(const uint8_t* operand_) {
 // const-class vAA, type@BBBB
 void Interpreter::const_class(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t typeIndex = *(uint16_t*)&operand_[1];
+	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 	auto& cls = classloader.resolveClass(frame.getDexIdx(), typeIndex);
@@ -679,7 +679,7 @@ void Interpreter::monitor_exit(const uint8_t* operand_) {
 // check-cast vAA, type@BBBB
 void Interpreter::check_cast(const uint8_t* operand_) {
 	uint8_t reg = operand_[0];
-	uint16_t typeIndex = *(uint16_t*)&operand_[1];
+	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(reg);
 	if (obj->isNull()) {
@@ -742,7 +742,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 void Interpreter::instance_of(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t src = (operand_[0] >> 4) & 0x0F;
-	uint16_t typeIndex = *(uint16_t*)&operand_[1];
+	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(src);
 	auto& classloader = _rt.getClassLoader();
@@ -766,7 +766,7 @@ void Interpreter::array_length(const uint8_t* operand_) {
 // new-instance vAA, type@BBBB
 void Interpreter::new_instance(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t typeIndex = *(uint16_t*)&operand_[1];
+	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 	auto& cls = classloader.resolveClass(frame.getDexIdx(), typeIndex);
@@ -789,7 +789,7 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 void Interpreter::new_array(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t src = (operand_[0] >> 4) & 0x0F;
-	uint16_t typeIndex = *(uint16_t*)&operand_[1];
+	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 
 	auto& classloader = _rt.getClassLoader();
@@ -827,7 +827,7 @@ void Interpreter::fill_array_data(const uint8_t* operand_) {
 	}
 
 	uint32_t elementSize = data[1];
-	uint32_t elementCount = *reinterpret_cast<const uint32_t*>(&data[2]);
+	uint32_t elementCount = *(const uint32_t*)&data[2];
 	auto arrayData = reinterpret_cast<const uint8_t*>(&data[4]);
 
 	auto arrayObj = frame.getObjRegister(reg);
@@ -920,7 +920,7 @@ void Interpreter::packed_switch(const uint8_t* operand_) {
 		throw ArrayIndexOutOfBoundsException("packed-switch: Invalid size in switch data");
 	}
 
-	auto base = *reinterpret_cast<const int32_t*>(&switchData[2]);
+	auto base = *(const int32_t*)&switchData[2];
 	auto targets = reinterpret_cast<const int32_t*>(&switchData[4]);
 	if (!targets) {
 		throw VmException("packed-switch: Invalid targets pointer");
@@ -1564,7 +1564,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 void Interpreter::iget(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1591,7 +1591,7 @@ void Interpreter::iget(const uint8_t* operand_) {
 void Interpreter::iget_wide(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1618,7 +1618,7 @@ void Interpreter::iget_wide(const uint8_t* operand_) {
 void Interpreter::iget_object(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1642,7 +1642,7 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 void Interpreter::iget_boolean(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1669,7 +1669,7 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 void Interpreter::iget_byte(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1696,7 +1696,7 @@ void Interpreter::iget_byte(const uint8_t* operand_) {
 void Interpreter::iget_char(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1723,7 +1723,7 @@ void Interpreter::iget_char(const uint8_t* operand_) {
 void Interpreter::iget_short(const uint8_t* operand_) {
 	uint8_t dest = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1750,7 +1750,7 @@ void Interpreter::iget_short(const uint8_t* operand_) {
 void Interpreter::iput(const uint8_t* operand_) {
 	uint8_t src = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1772,7 +1772,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 void Interpreter::iput_wide(const uint8_t* operand_) {
 	uint8_t src = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1799,7 +1799,7 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 void Interpreter::iput_object(const uint8_t* operand_) {
 	uint8_t src = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1827,7 +1827,7 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 void Interpreter::iput_boolean(const uint8_t* operand_) {
 	uint8_t src = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1850,7 +1850,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 void Interpreter::iput_byte(const uint8_t* operand_) {
 	uint8_t src = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1873,7 +1873,7 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 void Interpreter::iput_char(const uint8_t* operand_) {
 	uint8_t src = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1896,7 +1896,7 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 void Interpreter::iput_short(const uint8_t* operand_) {
 	uint8_t src = operand_[0] & 0x0F;
 	uint8_t objReg = (operand_[0] >> 4) & 0x0F;
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1918,7 +1918,7 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 // sget vA, field@BBBB
 void Interpreter::sget(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1934,7 +1934,7 @@ void Interpreter::sget(const uint8_t* operand_) {
 // sget-wide vA, field@BBBB
 void Interpreter::sget_wide(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1950,7 +1950,7 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 // sget-object vA, field@BBBB
 void Interpreter::sget_object(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1982,7 +1982,7 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 // sget-boolean vA, field@BBBB
 void Interpreter::sget_boolean(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -1998,7 +1998,7 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 // sget-byte vA, field@BBBB
 void Interpreter::sget_byte(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2014,7 +2014,7 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 // sget-char vA, field@BBBB
 void Interpreter::sget_char(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2030,7 +2030,7 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 // sget-short vA, field@BBBB
 void Interpreter::sget_short(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2046,7 +2046,7 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 // sput vA, field@BBBB
 void Interpreter::sput(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2067,7 +2067,7 @@ void Interpreter::sput(const uint8_t* operand_) {
 // sput-wide vA, field@BBBB
 void Interpreter::sput_wide(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2088,7 +2088,7 @@ void Interpreter::sput_wide(const uint8_t* operand_) {
 // sput-object vA, field@BBBB
 void Interpreter::sput_object(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2128,7 +2128,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 // sput-boolean vA, field@BBBB
 void Interpreter::sput_boolean(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2149,7 +2149,7 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 // sput-byte vA, field@BBBB
 void Interpreter::sput_byte(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2170,7 +2170,7 @@ void Interpreter::sput_byte(const uint8_t* operand_) {
 // sput-char vA, field@BBBB
 void Interpreter::sput_char(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2191,7 +2191,7 @@ void Interpreter::sput_char(const uint8_t* operand_) {
 // sput-short vA, field@BBBB
 void Interpreter::sput_short(const uint8_t* operand_) {
 	uint8_t src = operand_[0];
-	uint16_t fieldIndex = *(uint16_t*)&operand_[1];
+	uint16_t fieldIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
@@ -2215,7 +2215,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 	auto& frame = _rt.currentFrame();
 
-	uint16_t methodRef = *(uint16_t*)&operand_[1];
+	uint16_t methodRef = *(const uint16_t*)&operand_[1];
 	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
 	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
 	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;
@@ -2311,7 +2311,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 	auto& frame = _rt.currentFrame();
 
-	uint16_t methodRef = *(uint16_t*)&operand_[1];
+	uint16_t methodRef = *(const uint16_t*)&operand_[1];
 	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
 	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
 	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;

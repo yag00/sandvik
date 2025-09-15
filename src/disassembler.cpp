@@ -24,7 +24,7 @@
 
 namespace {
 	// Byte code value to identifier mapping
-	const char* opcode_name[256] = {
+	constexpr const char* opcode_name[256] = {
 	    "nop",                    /* 0x00 */
 	    "move",                   /* 0x01 */
 	    "move/from16",            /* 0x02 */
@@ -571,42 +571,42 @@ std::string Disassembler::format_i10t(const std::string& name_, const uint8_t* o
 std::string Disassembler::format_i20t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	// skip the first operand byte
 	size_ += 3;
-	int16_t AAAA = *(int16_t*)&operand_[1];
+	int16_t AAAA = *(const int16_t*)&operand_[1];
 	return fmt::format("{} {}", name_, AAAA);
 }
 
 std::string Disassembler::format_i22x(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 3;
 	uint8_t vAA = operand_[0];
-	uint16_t vBBBB = *(uint16_t*)&operand_[1];
+	uint16_t vBBBB = *(const uint16_t*)&operand_[1];
 	return fmt::format("{} v{}, v{}", name_, vAA, vBBBB);
 }
 
 std::string Disassembler::format_i21t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 2;
 	uint8_t vAA = operand_[0];
-	uint16_t vBBBB = *(uint16_t*)&operand_[1];
+	uint16_t vBBBB = *(const uint16_t*)&operand_[1];
 	return fmt::format("{} v{}, {:04x} // +{:04x}", name_, vAA, vBBBB + 2, vBBBB);
 }
 
 std::string Disassembler::format_i21s(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 3;
 	uint8_t vAA = operand_[0];
-	int16_t offset = *(int16_t*)&operand_[1];
+	int16_t offset = *(const int16_t*)&operand_[1];
 	return fmt::format("{} v{}, #{}", name_, vAA, offset);
 }
 
 std::string Disassembler::format_i21h(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 3;
 	uint8_t vAA = operand_[0];
-	int32_t imm = *(int16_t*)&operand_[1] << 16;
+	int32_t imm = *(const int16_t*)&operand_[1] << 16;
 	return fmt::format("{} v{}, #{}", name_, vAA, imm);
 }
 
 std::string Disassembler::format_i21c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 3;
 	uint8_t vAA = operand_[0];
-	uint16_t string_idx = *(uint16_t*)&operand_[1];
+	uint16_t string_idx = *(const uint16_t*)&operand_[1];
 	return fmt::format("{} v{}, string@{}", name_, vAA, string_idx);
 }
 
@@ -630,7 +630,7 @@ std::string Disassembler::format_i22t(const std::string& name_, const uint8_t* o
 	size_ += 3;
 	uint8_t vA = operand_[0] & 0x0F;
 	uint8_t vB = (operand_[0] >> 4) & 0x0F;
-	int16_t offset = *(int16_t*)&operand_[1];
+	int16_t offset = *(const int16_t*)&operand_[1];
 	return fmt::format("{} v{}, v{}, {:04x}", name_, vA, vB, offset);
 }
 
@@ -638,7 +638,7 @@ std::string Disassembler::format_i22s(const std::string& name_, const uint8_t* o
 	size_ += 3;
 	uint8_t vA = operand_[0] & 0x0F;
 	uint8_t vB = (operand_[0] >> 4) & 0x0F;
-	int16_t imm = *(int16_t*)&operand_[1];
+	int16_t imm = *(const int16_t*)&operand_[1];
 	return fmt::format("{} v{}, v{}, #{}", name_, vA, vB, imm);
 }
 
@@ -646,7 +646,7 @@ std::string Disassembler::format_i22c(const std::string& name_, const uint8_t* o
 	size_ += 3;
 	uint8_t vA = operand_[0] & 0x0F;
 	uint8_t vB = (operand_[0] >> 4) & 0x0F;
-	uint16_t type_idx = *(uint16_t*)&operand_[1];
+	uint16_t type_idx = *(const uint16_t*)&operand_[1];
 	return fmt::format("{} v{}, v{}, type@{}", name_, vA, vB, type_idx);
 }
 
@@ -658,36 +658,36 @@ std::string Disassembler::format_i30t(const std::string& name_, const uint8_t* o
 
 std::string Disassembler::format_i32x(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 4;
-	uint16_t vAAAA = *(uint16_t*)&operand_[0];
-	uint16_t vBBBB = *(uint16_t*)&operand_[2];
+	uint16_t vAAAA = *(const uint16_t*)&operand_[0];
+	uint16_t vBBBB = *(const uint16_t*)&operand_[2];
 	return fmt::format("{} v{}, v{}", name_, vAAAA, vBBBB);
 }
 
 std::string Disassembler::format_i31i(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 5;
 	uint8_t vAA = operand_[0];
-	int32_t imm = *(int32_t*)&operand_[1] & 0x00FFFFFF;
+	int32_t imm = *(const int32_t*)&operand_[1] & 0x00FFFFFF;
 	return fmt::format("{} v{}, {}", name_, vAA, imm);
 }
 
 std::string Disassembler::format_i31t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 5;
 	uint8_t vAA = operand_[0];
-	int32_t offset = *(int32_t*)&operand_[1] & 0x00FFFFFF;
+	int32_t offset = *(const int32_t*)&operand_[1] & 0x00FFFFFF;
 	return fmt::format("{} v{}, {}", name_, vAA, offset);
 }
 
 std::string Disassembler::format_i31c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 5;
 	uint8_t vAA = operand_[0];
-	uint32_t string_idx = *(uint32_t*)&operand_[1] & 0x00FFFFFF;
+	uint32_t string_idx = *(const uint32_t*)&operand_[1] & 0x00FFFFFF;
 	return fmt::format("{} v{}, string@{}", name_, vAA, string_idx);
 }
 
 std::string Disassembler::format_i35c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 5;
-	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;   // Number of registers used
-	uint16_t method_idx = *(uint16_t*)&operand_[1];  // Method index
+	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;         // Number of registers used
+	uint16_t method_idx = *(const uint16_t*)&operand_[1];  // Method index
 	uint8_t vC = operand_[3] & 0x0F;
 	uint8_t vD = (reg_count > 0) ? (operand_[3] >> 4) & 0x0F : 0;
 	uint8_t vE = (reg_count > 1) ? operand_[4] & 0x0F : 0;
@@ -714,9 +714,9 @@ std::string Disassembler::format_i35c(const std::string& name_, const uint8_t* o
 
 std::string Disassembler::format_i3rc(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 5;
-	uint16_t method_idx = *(uint16_t*)&operand_[1];  // Method index
-	uint16_t vCCCC = *(uint16_t*)&operand_[3];       // Starting register
-	uint8_t reg_count = operand_[0];                 // Number of registers
+	uint16_t method_idx = *(const uint16_t*)&operand_[1];  // Method index
+	uint16_t vCCCC = *(const uint16_t*)&operand_[3];       // Starting register
+	uint8_t reg_count = operand_[0];                       // Number of registers
 
 	uint16_t vNNNN = vCCCC + reg_count - 1;  // Ending register
 	return fmt::format("{} {{v{} .. v{}}}, meth@{}", name_, vCCCC, vNNNN, method_idx);
@@ -725,6 +725,6 @@ std::string Disassembler::format_i3rc(const std::string& name_, const uint8_t* o
 std::string Disassembler::format_i51l(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 9;
 	uint8_t vAA = operand_[0];
-	int64_t imm = *(int64_t*)&operand_[1] & 0x00FFFFFFFFFFFFFF;
+	int64_t imm = *(const int64_t*)&operand_[1] & 0x00FFFFFFFFFFFFFF;
 	return fmt::format("{} v{}, #{}", name_, vAA, imm);
 }

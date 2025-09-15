@@ -45,7 +45,7 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 		if (size != size2) {
 			throw VmException("Internal error: embedded RT size mismatch {} != {}", size, size2);
 		}
-		zip->open((uint8_t*)_binary_sanddirt_dex_jar_start, size);
+		zip->open((const uint8_t*)_binary_sanddirt_dex_jar_start, size);
 	} else {
 		if (!ZipReader::isValidArchive(path_)) {
 			throw VmException("Invalid RT file: {}", path_);
