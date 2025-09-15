@@ -195,7 +195,7 @@ std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env,
 
 	// Execute the call
 	uintptr_t result_storage = 0;
-	uintptr_t* param_storage = 0;
+	uintptr_t* param_storage = nullptr;
 	if (args.size() > 0) {
 		param_storage = new uintptr_t[args.size()];
 	}

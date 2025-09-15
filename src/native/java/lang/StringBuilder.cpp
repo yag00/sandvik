@@ -53,14 +53,15 @@ extern "C" {
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 
 		auto this_ptr = sandvik::native::getObject(obj);
+		std::string intStr = std::to_string(i);
 		if (this_ptr->getField("string")->isNull()) {
-			this_ptr->setField("string", sandvik::Object::make(classloader, std::to_string(i)));
+			this_ptr->setField("string", sandvik::Object::make(classloader, intStr));
 		} else {
 			auto current = this_ptr->getField("string");
 			if (!current->isString()) {
 				throw sandvik::ClassCastException("Field 'string' is not a StringObject");
 			}
-			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + std::to_string(i)));
+			this_ptr->setField("string", sandvik::Object::make(classloader, current->str() + intStr));
 		}
 		return obj;
 	}

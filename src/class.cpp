@@ -190,7 +190,7 @@ Method& Class::getMethod(const std::string& name_, const std::string& descriptor
 
 Method& Class::getMethod(uint32_t idx_) {
 	if (idx_ >= _methods.size()) {
-		throw std::out_of_range("Method index out of range: " + std::to_string(idx_));
+		throw std::out_of_range(fmt::format("Method index out of range: {}", idx_));
 	}
 	for (const auto& [name, method] : _methods) {
 		logger.fdebug("method {}{} index {}", method->getName(), method->getSignature(), method->getIndex());
@@ -213,7 +213,7 @@ Field& Class::getField(const std::string& name_) {
 
 Field& Class::getField(uint32_t idx_) {
 	if (idx_ >= _fields.size()) {
-		throw std::out_of_range("Field index out of range: " + std::to_string(idx_));
+		throw std::out_of_range(fmt::format("Field index out of range: {}", idx_));
 	}
 	auto it = _fields.begin();
 	std::advance(it, idx_);

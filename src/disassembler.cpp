@@ -652,7 +652,7 @@ std::string Disassembler::format_i22c(const std::string& name_, const uint8_t* o
 
 std::string Disassembler::format_i30t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) {
 	size_ += 5;
-	int32_t offset = *(int32_t*)&operand_[1];
+	int32_t offset = *(const int32_t*)&operand_[1];
 	return fmt::format("{} {}", name_, offset);
 }
 

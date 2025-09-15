@@ -2368,7 +2368,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 	auto& frame = _rt.currentFrame();
 
-	uint16_t methodRef = *(uint16_t*)&operand_[1];
+	uint16_t methodRef = *(const uint16_t*)&operand_[1];
 	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
 	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
 	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;

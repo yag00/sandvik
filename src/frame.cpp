@@ -104,7 +104,7 @@ void Frame::setLongRegister(uint32_t reg, int64_t value) {
 int64_t Frame::getLongRegister(uint32_t reg) const {
 	logger.fdebug("getLongRegister: reg={}", reg);
 	if (reg + 1 >= _registers.size()) {
-		throw VmException("setLongRegister: reg={} out of bounds", reg);
+		throw VmException("getLongRegister: reg={} out of bounds", reg);
 	}
 	const Object& lsb = *_registers[reg];
 	const Object& msb = *_registers[reg + 1];
