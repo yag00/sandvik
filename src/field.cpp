@@ -55,7 +55,6 @@ std::string Field::getFieldTypeClassname() const {
 	}
 	if (type.size() > 2 && type[0] == 'L' && type.back() == ';') {
 		std::string prettyType = type.substr(1, type.size() - 2);
-		std::replace(prettyType.begin(), prettyType.end(), '/', '.');
 		return prettyType;
 	}
 	return type;

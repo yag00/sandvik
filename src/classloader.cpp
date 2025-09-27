@@ -125,45 +125,47 @@ void ClassLoader::addClass(std::unique_ptr<Class> class_) {
 }
 
 Class& ClassLoader::getOrLoad(const std::string& classname_) {
+	auto dotclassname = classname_;
+	std::replace(dotclassname.begin(), dotclassname.end(), '/', '.');
 	// Check if the class is already loaded
-	auto it = _classes.find(classname_);
+	auto it = _classes.find(dotclassname);
 	if (it != _classes.end()) {
 		return *(it->second);
 	}
 	for (const auto& dex : _dexs) {
 		try {
-			auto classPtr = dex->findClass(*this, classname_);
+			auto classPtr = dex->findClass(*this, dotclassname);
 			if (classPtr->isExternal()) {
 				continue;
 			}
-			_classes[classname_] = std::move(classPtr);
-			return *(_classes[classname_]);
+			_classes[dotclassname] = std::move(classPtr);
+			return *(_classes[dotclassname]);
 		} catch (std::exception& e) {
 			// pass
 		}
 	}
 	for (auto& classpath : _classpath) {
 		try {
-			auto classname = classname_;
-			std::replace(classname.begin(), classname.end(), '.', '/');
+			auto slashclassname = classname_;
+			std::replace(slashclassname.begin(), slashclassname.end(), '.', '/');
 			std::string fullPath = classpath;
 			if (fullPath.back() != '/') {
 				fullPath += '/';
 			}
-			fullPath += classname + ".dex";
+			fullPath += slashclassname + ".dex";
 			if (std::filesystem::exists(fullPath)) {
 				auto dex = std::make_unique<Dex>(fullPath);
-				_classes[classname_] = dex->findClass(*this, classname_);
+				_classes[dotclassname] = dex->findClass(*this, dotclassname);
 				_dexs.push_back(std::move(dex));
-				logger.fok("class {} loaded", classname_);
-				return *(_classes[classname_]);
+				logger.fok("class {} loaded", dotclassname);
+				return *(_classes[dotclassname]);
 			}
 		} catch (std::exception& e) {
 			// pass
 		}
 	}
 	// If the class is not found, throw an exception
-	throw VmException("ClassNotFoundError: {}", classname_);
+	throw VmException("ClassNotFoundError: {}", dotclassname);
 }
 
 Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& method_, std::string& sig_) {

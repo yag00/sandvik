@@ -722,7 +722,6 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 			if (element_type_name[0] == 'L') {
 				auto classname = element_type_name.substr(1);  // remove 'L'
 				classname.pop_back();                          // remove ';'
-				std::replace(classname.begin(), classname.end(), '/', '.');
 				auto& targetClass = classloader.getOrLoad(classname);
 				if (!targetClass.isInstanceOf(array->getClassType())) {
 					throw ClassCastException(fmt::format("Cannot cast array to {}", targetClass.getName()));
