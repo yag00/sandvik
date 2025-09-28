@@ -7,6 +7,7 @@ import multiprocessing
 import subprocess
 from waflib import Logs
 from waflib.Configure import conf
+import re
 
 def execute(cmd, cwd, env_vars=None):
 	print(cmd)
@@ -228,4 +229,12 @@ def check_dependencies_tools(conf):
 	Logs.pprint('BLUE', 'Checking for system dependencies tools and libraries')
 	conf.find_program('pkg-config', mandatory=True)
 	conf.find_program('cmake', mandatory=True)
+	cmake_version = conf.cmd_and_log(['cmake', '--version']).splitlines()[0]
+	match = re.search(r'version\s+(\d+)\.(\d+)\.(\d+)', cmake_version)
+	if not match:
+		conf.fatal('Could not determine cmake version')
+	major, minor, patch = map(int, match.groups())
+	if (major, minor) < (3, 24):
+		conf.fatal('CMake >= 3.24 is required (found {}.{}.{})'.format(major, minor, patch))
+	conf.msg('Checking for cmake version >= 3.24', '{}.{}.{}'.format(major, minor, patch))
 	Logs.pprint('BLUE', 'Checking for local dependencies tools and libraries')
