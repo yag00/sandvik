@@ -214,7 +214,6 @@ TEST(VM, Polymorphism) {
 	run_common_test("TestPolymorphism");
 }
 
-/** @todo enable these test when interfaces are supported
 TEST(VM, Interfaces) {
 	run_common_test("TestInterfaces");
 }
@@ -227,4 +226,3 @@ TEST(VM, InterfaceArray) {
 TEST(VM, InstanceOf) {
 	run_common_test("TestInstanceOf");
 }
-*/

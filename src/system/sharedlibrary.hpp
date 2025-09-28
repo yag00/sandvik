@@ -31,6 +31,8 @@ namespace sandvik {
 			 * @param name_ name of the shared library */
 			explicit SharedLibrary(const std::string& name_);
 			~SharedLibrary();
+			SharedLibrary(const SharedLibrary&) = delete;
+			SharedLibrary& operator=(const SharedLibrary&) = delete;
 
 			/** @return the full path of the shared library */
 			std::string getFullPath() const;
