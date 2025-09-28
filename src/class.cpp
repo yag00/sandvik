@@ -78,6 +78,10 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 	}
 	// Initialize parent classname if it exists
 	_superClassname = class_.has_parent() ? class_.parent()->pretty_name() : "";
+	// Initialize interfaces
+	for (const auto& interface : class_.interfaces()) {
+		_interfaces.push_back(interface);
+	}
 }
 
 bool Class::isStaticInitialized() {
@@ -111,6 +115,24 @@ std::string Class::getFullname() const {
 	return _fullname;
 }
 
+bool Class::implements(const std::string& interface_) const {
+	for (const auto& interface : _interfaces) {
+		if (interface == interface_) {
+			return true;
+		}
+		// check parent interfaces
+		const Class& ifclass = _classloader.getOrLoad(interface);
+		if (ifclass.implements(interface_)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Class::implements(const Class& interface_) const {
+	return implements(interface_.getFullname());
+}
+
 bool Class::isInstanceOf(const std::string& classname_) const {
 	if (getFullname() == classname_) {
 		return true;
@@ -130,16 +152,15 @@ bool Class::isInstanceOf(const std::shared_ptr<Object>& class_) const {
 	if (auto clazz = class_; clazz->isClass()) {
 		// check class and super classes
 		while (true) {
-			logger.fdebug("{} is instance of {}", clazz->getClass().getFullname(), getFullname());
 			if (clazz->getClass().getFullname() == getFullname()) {
+				return true;
+			}
+			if (clazz->getClass().implements(*this)) {
 				return true;
 			}
 			if (!clazz->getClass().hasSuperClass()) break;
 			clazz = Object::make(clazz->getClass().getSuperClass());
 		}
-		// check if class implements interfaces
-		// @todo
-		logger.warning("isInstanceOf: does not check for interfaces yet : not implemented");
 	}
 	return false;
 }

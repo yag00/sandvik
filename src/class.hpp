@@ -59,6 +59,8 @@ namespace sandvik {
 			Field& getField(uint32_t idx_);
 			std::vector<std::string> getFieldList() const;
 
+			bool implements(const std::string& interface_) const;
+			bool implements(const Class& interface_) const;
 			bool isInstanceOf(const std::string& classname_) const;
 			bool isInstanceOf(const Class& class_) const;
 			bool isInstanceOf(const std::shared_ptr<Object>& class_) const;
@@ -86,6 +88,7 @@ namespace sandvik {
 
 			std::map<std::string, std::unique_ptr<Method>> _methods;
 			std::map<std::string, std::unique_ptr<Field>> _fields;
+			std::vector<std::string> _interfaces;
 			friend class ClassBuilder;
 	};
 }  // namespace sandvik
