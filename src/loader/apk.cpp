@@ -55,7 +55,7 @@ Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_d
 	}
 	std::vector<uint8_t> dexBuffer(buffer, buffer + size);
 	free(buffer);
-	_classes_dex.load(dexBuffer, file);
+	_classes_dex.load(dexBuffer);
 
 	// load AndroidManifest.xml
 	file = "AndroidManifest.xml";

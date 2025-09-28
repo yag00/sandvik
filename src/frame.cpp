@@ -66,6 +66,30 @@ void Frame::setPc(uint16_t pc_) {
 	_pc = pc_;
 }
 
+uint64_t Frame::getRawLongRegister(uint32_t reg) const {
+	if (reg + 1 >= _registers.size()) {
+		throw VmException("getRawLongRegister: reg={} out of bounds", reg);
+	}
+	const Object& lsb = *_registers[reg];
+	const Object& msb = *_registers[reg + 1];
+	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
+		throw VmException("Register does not contain valid NumberObjects");
+	}
+	uint64_t value = static_cast<uint32_t>(msb.getValue());
+	value <<= 32;
+	value |= static_cast<uint32_t>(lsb.getValue());
+	return value;
+}
+
+void Frame::setRawLongRegister(uint32_t reg, uint64_t value) {
+	logger.fdebug("setRawLongRegister: reg={}, value={:x}", reg, value);
+	if (reg + 1 >= _registers.size()) {
+		throw VmException("setRawLongRegister: reg={} out of bounds", reg);
+	}
+	_registers[reg] = Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF));
+	_registers[reg + 1] = Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
+}
+
 void Frame::setIntRegister(uint32_t reg, int32_t value) {
 	logger.fdebug("setIntRegister: reg={}, value={:x}", reg, value);
 	if (reg >= _registers.size()) {
@@ -92,28 +116,11 @@ int32_t Frame::getIntRegister(uint32_t reg) const {
 }
 
 void Frame::setLongRegister(uint32_t reg, int64_t value) {
-	logger.fdebug("setLongRegister: reg={}, value={:x}, {:x}", reg, static_cast<uint32_t>(value & 0xFFFFFFFF),
-	              static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
-	if (reg + 1 >= _registers.size()) {
-		throw VmException("setLongRegister: reg={} out of bounds", reg);
-	}
-	_registers[reg] = Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF));
-	_registers[reg + 1] = Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
+	setRawLongRegister(reg, (uint64_t)value);
 }
 
 int64_t Frame::getLongRegister(uint32_t reg) const {
-	logger.fdebug("getLongRegister: reg={}", reg);
-	if (reg + 1 >= _registers.size()) {
-		throw VmException("getLongRegister: reg={} out of bounds", reg);
-	}
-	const Object& lsb = *_registers[reg];
-	const Object& msb = *_registers[reg + 1];
-	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
-		throw VmException("Register does not contain valid NumberObjects");
-	}
-	uint64_t value = static_cast<uint32_t>(msb.getValue());
-	value <<= 32;
-	value |= static_cast<uint32_t>(lsb.getValue());
+	uint64_t value = getRawLongRegister(reg);
 	logger.fdebug("getLongRegister: reg={} --> {:x}", reg, value);
 	return (int64_t)value;
 }
@@ -143,31 +150,15 @@ float Frame::getFloatRegister(uint32_t reg) const {
 
 void Frame::setDoubleRegister(uint32_t reg, double value) {
 	logger.fdebug("setDoubleRegister: reg={}, value={}", reg, value);
-	if (reg + 1 >= _registers.size()) {
-		throw VmException("setDoubleRegister: reg={} out of bounds", reg);
-	}
 	uint64_t temp = std::bit_cast<uint64_t>(value);
-	_registers[reg] = Object::make(static_cast<uint32_t>(temp & 0xFFFFFFFF));
-	_registers[reg + 1] = Object::make(static_cast<uint32_t>((temp >> 32) & 0xFFFFFFFF));
-
+	setRawLongRegister(reg, temp);
 	logger.fdebug("setDoubleRegister: reg={} value={} {}", reg, _registers[reg]->debug(), _registers[reg + 1]->debug());
 }
 
 double Frame::getDoubleRegister(uint32_t reg) const {
 	logger.fdebug("getDoubleRegister: reg={}", reg);
-	if (reg + 1 >= _registers.size()) {
-		throw VmException("getDoubleRegister: reg={} out of bounds", reg);
-	}
-	const Object& lsb = *_registers[reg];
-	const Object& msb = *_registers[reg + 1];
-	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
-		throw VmException("Register does not contain valid NumberObjects");
-	}
-	uint64_t value = static_cast<uint32_t>(msb.getValue());
-	value <<= 32;
-	value |= static_cast<uint32_t>(lsb.getValue());
-	double result = std::bit_cast<double>(value);
-	return result;
+	uint64_t value = getRawLongRegister(reg);
+	return std::bit_cast<double>(value);
 }
 
 void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {

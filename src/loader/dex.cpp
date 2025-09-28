@@ -45,7 +45,7 @@ Dex::Dex(const std::string& path_) : _path(path_) {
 Dex::Dex() {
 }
 
-Dex::Dex(std::vector<uint8_t>& buffer, const std::string& name) {
+Dex::Dex(std::vector<uint8_t>& buffer) {
 	load(buffer);
 }
 
@@ -66,7 +66,7 @@ void Dex::load(const std::string& path) {
 	}
 }
 
-void Dex::load(std::vector<uint8_t>& buffer, const std::string& name) {
+void Dex::load(std::vector<uint8_t>& buffer) {
 	if (buffer.empty()) {
 		throw DexLoaderException("Empty buffer provided");
 	}
@@ -110,7 +110,7 @@ std::unique_ptr<::sandvik::Class> Dex::findClass(ClassLoader& classloader_, cons
 	throw DexLoaderException(fmt::format("Class '{}' not found in DEX file", name));
 }
 
-void Dex::resolveMethod(uint16_t idx, std::string& class_, std::string& method_, std::string& sig_) {
+void Dex::resolveMethod(uint16_t idx, std::string& class_, std::string& method_, std::string& sig_) const {
 	if (!_dex) {
 		throw DexLoaderException("No DEX file loaded");
 	}
@@ -132,7 +132,7 @@ void Dex::resolveMethod(uint16_t idx, std::string& class_, std::string& method_,
 	}
 }
 
-void Dex::resolveClass(uint16_t idx, std::string& class_) {
+void Dex::resolveClass(uint16_t idx, std::string& class_) const {
 	if (!_dex) {
 		throw DexLoaderException("No DEX file loaded");
 	}
@@ -165,7 +165,7 @@ void Dex::resolveClass(uint16_t idx, std::string& class_) {
 		throw DexLoaderException(fmt::format("Failed to resolve class at index {}: {}", idx, e.what()));
 	}
 }
-void Dex::resolveField(uint16_t idx, std::string& class_, std::string& field_) {
+void Dex::resolveField(uint16_t idx, std::string& class_, std::string& field_) const {
 	if (!_dex) {
 		throw DexLoaderException("No DEX file loaded");
 	}

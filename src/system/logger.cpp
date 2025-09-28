@@ -28,7 +28,7 @@
 
 using namespace sandvik;
 
-Logger::Logger() : _stdout(true), _time(false), _level(Logger::LogLevel::DEBUG) {
+Logger::Logger() {
 }
 
 Logger::~Logger() {

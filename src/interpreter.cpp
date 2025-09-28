@@ -44,7 +44,7 @@
 using namespace sandvik;
 
 Interpreter::Interpreter(JThread& rt_) : _rt(rt_), _disassembler(std::make_unique<Disassembler>()) {
-	_dispatch.resize(256, [](const uint8_t* operand_) { throw VmException("Invalid instruction!"); });
+	_dispatch.resize(256, [](const uint8_t*) { throw VmException("Invalid instruction!"); });
 
 	_dispatch[0x00] = std::bind_front(&Interpreter::nop, this);
 	_dispatch[0x01] = std::bind_front(&Interpreter::move, this);
