@@ -175,6 +175,13 @@ namespace sandvik {
 			}
 			~NumberFormatException() noexcept override = default;
 	};
+	/** @brief StringIndexOutOfBoundsException exception class */
+	class StringIndexOutOfBoundsException : public JavaException {
+		public:
+			explicit StringIndexOutOfBoundsException(const std::string& message = "") : JavaException("java.lang.StringIndexOutOfBoundsException", message) {
+			}
+			~StringIndexOutOfBoundsException() noexcept override = default;
+	};
 }  // namespace sandvik
 
 #endif
