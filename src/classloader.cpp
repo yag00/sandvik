@@ -187,11 +187,10 @@ Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_) {
 	return resolveMethod(dex_, idx_, classname, method, sig);
 }
 void ClassLoader::findMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& method_, std::string& sig_) {
-	try {
-		resolveMethod(dex_, idx_, classname_, method_, sig_);
-	} catch (std::exception& e) {
-		// pass
+	if (dex_ >= _dexs.size()) {
+		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	_dexs[dex_]->resolveMethod(idx_, classname_, method_, sig_);
 }
 
 Class& ClassLoader::resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_) {

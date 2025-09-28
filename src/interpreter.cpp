@@ -2402,55 +2402,40 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	if (!instance->isStaticInitialized()) {
 		throw VmException("invoke-interface: class {} is not static initialized", instance->getFullname());
 	}
-	auto& interface = classloader.resolveMethod(frame.getDexIdx(), methodRef);
-	if (!interface.getClass().isInterface()) {
-		throw VmException("invoke-interface: {}.{}{} is not an interface method", interface.getClass().getFullname(), interface.getName(),
-		                  interface.getSignature());
-	}
+
+	std::string ifclassname, methodname, signature;
+	classloader.findMethod(frame.getDexIdx(), methodRef, ifclassname, methodname, signature);
+
+	logger.fdebug("invoke-interface {}->{}{} for class {}", ifclassname, methodname, signature, instance->getFullname());
 
 	Method* vmethod = nullptr;
-	while (1) {
+	Class* current = instance;
+	while (current) {
 		try {
-			logger.fdebug("invoke-interface check class {} implements interface {}.{}{}", instance->getFullname(), interface.getName(),
-			              interface.getSignature(), interface_str);
-			vmethod = &instance->getMethod(interface.getName(), interface.getSignature());
+			vmethod = &current->getMethod(methodname, signature);
 			break;  // Method found, exit loop
-		} catch (std::exception& e) {
-			logger.fdebug("invoke-interface: class {} does not implement interface {}.{}{} not found, trying superclass", instance->getFullname(),
-			              interface.getName(), interface.getSignature(), interface_str);
-			if (instance->hasSuperClass()) {
-				// If the method is not found in the current class, try the superclass
-				instance = &classloader.getOrLoad(instance->getSuperClassname());
-				if (!instance->isStaticInitialized()) {
+		} catch (...) {
+			// not found in this class
+			if (current->hasSuperClass()) {
+				current = &classloader.getOrLoad(current->getSuperClassname());
+				if (!current->isStaticInitialized()) {
 					frame.pc()--;
-					executeClinit(*instance);
+					executeClinit(*current);
 					return;
 				}
-				if (instance->isInterface()) {
-					// If the superclass is an interface, we need to check its methods
-					try {
-						vmethod = &instance->getMethod(interface.getName(), interface.getSignature());
-						break;  // Method found, exit loop
-					} catch (std::exception&) {
-						// Continue searching in the next superclass
-					}
-				}
 			} else {
-				// If no superclass, break the loop
-				break;
+				current = nullptr;
 			}
 		}
 	}
 	if (vmethod) {
 		if (!vmethod->isVirtual()) {
-			logger.ferror("invoke-interface: method {}->{}{} is not virtual", this_ptr->getClass().getFullname(), interface.getName(),
-			              interface.getSignature());
+			logger.ferror("invoke-interface: {}->{}{} not virtual", ifclassname, methodname, signature);
 		}
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
 		} else {
-			logger.fok("invoke-interface call method {}->{}{}{} on instance {}", instance->getFullname(), interface.getName(), interface.getSignature(),
-			           interface_str, this_ptr->getClass().getFullname());
+			logger.fok("invoke-interface call method {}->{}{}{} on instance {}", ifclassname, methodname, signature, interface_str, instance->getFullname());
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
 			for (uint32_t i = 0; i < vA; i++) {
@@ -2459,8 +2444,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		}
 	} else {
 		// If no method found, throw an error
-		throw VmException("invoke-interface: call method {}->{}{}{} not found", this_ptr->getClass().getFullname(), interface.getName(),
-		                  interface.getSignature(), interface_str);
+		throw VmException("invoke-interface: call method {}->{}{} not found for instance {}", ifclassname, methodname, signature, instance->getFullname());
 	}
 	frame.pc() += 5;
 }
