@@ -2040,7 +2040,7 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
 		throw VmException("sget_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType());
 	}

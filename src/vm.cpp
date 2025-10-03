@@ -38,7 +38,7 @@
 
 using namespace sandvik;
 
-Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)), _isPrimitiveClassInitialized(false) {
+Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
 	logger.info("VM instance created.");
 
 	ClassBuilder(*_classloader, "", "boolean").finalize();

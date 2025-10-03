@@ -23,7 +23,7 @@
 
 using namespace sandvik;
 
-const std::string version::getBuildDate() {
+std::string version::getBuildDate() {
 #ifdef __TIMESTAMP__
 	return std::string(__TIMESTAMP__);
 #else
@@ -31,14 +31,14 @@ const std::string version::getBuildDate() {
 #endif
 }
 
-const std::string version::getVersion() {
+std::string version::getVersion() {
 	return std::string(__Version);
 }
 
-const std::string version::getCommit() {
+std::string version::getCommit() {
 	return std::string(__GitHash);
 }
 
-const std::string version::getShortCommit() {
+std::string version::getShortCommit() {
 	return getCommit().substr(0, 7);
 }

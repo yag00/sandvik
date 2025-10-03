@@ -26,13 +26,13 @@ namespace sandvik {
 	 * @brief sandvik build & version information */
 	namespace version {
 		/** @return sandvik version */
-		const std::string getVersion();
+		std::string getVersion();
 		/** @return the commit used to build sandvik */
-		const std::string getShortCommit();
+		std::string getShortCommit();
 		/** @return the revision/commit used to build sandvik */
-		const std::string getCommit();
+		std::string getCommit();
 		/** @return the build date of sandvik */
-		const std::string getBuildDate();
+		std::string getBuildDate();
 	};  // namespace version
 };  // namespace sandvik
 

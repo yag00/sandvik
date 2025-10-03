@@ -29,38 +29,41 @@
 
 using namespace LIEF::DEX;
 
+using enum Type::PRIMITIVES;
+using enum Type::TYPES;
+
 std::string sandvik::get_type_descriptor(const Type& type) {
 	switch (type.type()) {
-		case Type::TYPES::PRIMITIVE:
+		case PRIMITIVE:
 			switch (type.primitive()) {
-				case Type::PRIMITIVES::VOID_T:
+				case VOID_T:
 					return "V";
-				case Type::PRIMITIVES::BOOLEAN:
+				case BOOLEAN:
 					return "Z";
-				case Type::PRIMITIVES::BYTE:
+				case BYTE:
 					return "B";
-				case Type::PRIMITIVES::SHORT:
+				case SHORT:
 					return "S";
-				case Type::PRIMITIVES::CHAR:
+				case CHAR:
 					return "C";
-				case Type::PRIMITIVES::INT:
+				case INT:
 					return "I";
-				case Type::PRIMITIVES::LONG:
+				case LONG:
 					return "J";
-				case Type::PRIMITIVES::FLOAT:
+				case FLOAT:
 					return "F";
-				case Type::PRIMITIVES::DOUBLE:
+				case DOUBLE:
 					return "D";
 				default:
 					throw VmException("Unknown primitive type");
 			}
 
-		case Type::TYPES::CLASS: {
+		case CLASS: {
 			const auto& cls = type.cls();
 			return cls.fullname();  // e.g., Ljava/lang/String;
 		}
 
-		case Type::TYPES::ARRAY: {
+		case ARRAY: {
 			std::string t = "[";
 			for (const auto& elem : type.array()) {
 				t += get_type_descriptor(elem);
