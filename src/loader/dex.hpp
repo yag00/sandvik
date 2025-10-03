@@ -44,7 +44,7 @@ namespace sandvik {
 			};
 
 			explicit Dex(const std::string& path_);
-			explicit Dex(std::vector<uint8_t>& buffer, const std::string& name = "");
+			explicit Dex(std::vector<uint8_t>& buffer);
 			Dex();
 			~Dex();
 
@@ -55,15 +55,15 @@ namespace sandvik {
 			std::string getPath() const;
 
 			void load(const std::string& path);
-			void load(std::vector<uint8_t>& buffer, const std::string& name = "");
+			void load(std::vector<uint8_t>& buffer);
 
 			bool is_loaded() const noexcept;
 			std::vector<std::string> getClassNames() const;
 			std::unique_ptr<Class> findClass(ClassLoader& classloader_, const std::string& name) const;
 
-			void resolveMethod(uint16_t idx, std::string& class_, std::string& method_, std::string& sig_);
-			void resolveClass(uint16_t idx, std::string& class_);
-			void resolveField(uint16_t idx, std::string& class_, std::string& field_);
+			void resolveMethod(uint16_t idx, std::string& class_, std::string& method_, std::string& sig_) const;
+			void resolveClass(uint16_t idx, std::string& class_) const;
+			void resolveField(uint16_t idx, std::string& class_, std::string& field_) const;
 			std::string resolveType(uint16_t idx, TYPES& type_);
 			std::string resolveString(uint16_t idx);
 			std::vector<std::pair<std::string, uint32_t>> resolveArray(uint16_t idx);

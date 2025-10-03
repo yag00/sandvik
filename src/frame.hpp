@@ -68,6 +68,8 @@ namespace sandvik {
 
 		protected:
 			void increaseRegSize(uint32_t size_);
+			uint64_t getRawLongRegister(uint32_t reg) const;
+			void setRawLongRegister(uint32_t reg, uint64_t value);
 
 		private:
 			Method& _method;

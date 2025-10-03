@@ -71,5 +71,38 @@ public class RunAllTests {
 
         System.out.println("== Running TestDeepLoops==");
         TestDeepLoops.main(new String[]{});
+
+        System.out.println("== Running TestCollectionsLike==");
+        TestCollectionsLike.main(new String[]{});
+
+        System.out.println("== Running TestExceptionsFlow==");
+        TestExceptionsFlow.main(new String[]{});
+
+        System.out.println("== Running TestRecursion==");
+        TestRecursion.main(new String[]{});
+
+        System.out.println("== Running TestStringOps==");
+        TestStringOps.main(new String[]{});
+
+        System.out.println("== Running TestStaticInit==");
+        TestStaticInit.main(new String[]{});
+
+        System.out.println("== Running TestReflection ==");
+        TestReflection.main(new String[]{});
+
+        System.out.println("== Running TestInnerClasses ==");
+        TestInnerClasses.main(new String[]{});
+
+        System.out.println("== Running TestAutoboxing ==");
+        TestAutoboxing.main(new String[]{});
+
+        System.out.println("== Running TestVarargs ==");
+        TestVarargs.main(new String[]{});
+
+        System.out.println("== Running TestDeepStack ==");
+        TestDeepStack.main(new String[]{});
+
+        System.out.println("== Running TestSwitchOnString ==");
+        TestSwitchOnString.main(new String[]{});
     }
 }

@@ -39,9 +39,9 @@ using namespace sandvik;
 void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) {
 	auto zip = std::make_unique<ZipReader>();
 	if (path_.empty()) {
-		size_t size = (size_t)&_binary_sanddirt_dex_jar_size;
+		auto size = (size_t)&_binary_sanddirt_dex_jar_size;
 		// paranoia check
-		size_t size2 = (uintptr_t)_binary_sanddirt_dex_jar_end - (uintptr_t)_binary_sanddirt_dex_jar_start;
+		auto size2 = (uintptr_t)_binary_sanddirt_dex_jar_end - (uintptr_t)_binary_sanddirt_dex_jar_start;
 		if (size != size2) {
 			throw VmException("Internal error: embedded RT size mismatch {} != {}", size, size2);
 		}
@@ -55,7 +55,7 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 
 	// load all *.dex files
 	for (const auto& file : zip->getList()) {
-		if (file.size() >= 4 && file.substr(file.size() - 4) == ".dex") {
+		if (file.size() >= 4 && file.ends_with(".dex")) {
 			uint64_t size = 0;
 			char* buffer = zip->extractToMemory(file, size);
 			if (buffer == nullptr) {
@@ -63,8 +63,7 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 			}
 			std::vector<uint8_t> dexBuffer(buffer, buffer + size);
 			free(buffer);
-			// logger.fdebug("RT DEX loaded: {}", file));
-			dexs_.push_back(std::make_unique<Dex>(dexBuffer, file));
+			dexs_.push_back(std::make_unique<Dex>(dexBuffer));
 		}
 	}
 	zip->close();

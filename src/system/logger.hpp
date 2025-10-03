@@ -32,8 +32,6 @@
 
 namespace sandvik {
 	/** @brief Logger class
-	 * @todo : add fmt log method when std::format will be supported.
-	 * We do not want to directly expose fmt library to user.
 	 */
 	class Logger : public Singleton<Logger> {
 		public:
@@ -170,14 +168,14 @@ namespace sandvik {
 		private:
 			friend class Singleton<Logger>;
 			Logger();
-			~Logger();
+			~Logger() override;
 
 			std::string getTime() const;
 			void log(LogLevel level, const std::string &msg);
 
-			bool _stdout;
-			bool _time;
-			LogLevel _level;
+			bool _stdout = true;
+			bool _time = false;
+			LogLevel _level = LogLevel::INFO;
 			std::ofstream _file;
 	};
 	inline Logger &getLogger() {

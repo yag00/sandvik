@@ -226,3 +226,39 @@ TEST(VM, InterfaceArray) {
 TEST(VM, InstanceOf) {
 	run_common_test("TestInstanceOf");
 }
+TEST(VM, CollectionsLike) {
+	run_common_test("TestCollectionsLike");
+}
+TEST(VM, ExceptionsFlow) {
+	run_common_test("TestExceptionsFlow");
+}
+TEST(VM, Recursion) {
+	run_common_test("TestRecursion");
+}
+TEST(VM, StringOps) {
+	run_common_test("TestStringOps");
+}
+TEST(VM, StaticInit) {
+	run_common_test("TestStaticInit");
+}
+//TEST(VM, Enums) {
+//	run_common_test("TestEnums");
+//}
+//TEST(VM, Reflection) {
+//	run_common_test("TestReflection");
+//}
+TEST(VM, InnerClasses) {
+	run_common_test("TestInnerClasses");
+}
+//TEST(VM, Autoboxing) {
+//	run_common_test("TestAutoboxing");
+//}
+TEST(VM, Varargs) {
+	run_common_test("TestVarargs");
+}
+TEST(VM, DeepStack) {
+	run_common_test("TestDeepStack");
+}
+TEST(VM, SwitchOnString) {
+	run_common_test("TestSwitchOnString");
+}

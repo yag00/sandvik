@@ -21,6 +21,7 @@
 
 #include "class.hpp"
 #include "classloader.hpp"
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
 #include "jnihandlemap.hpp"
@@ -43,5 +44,41 @@ extern "C" {
 		auto other_str = other_ptr->str();
 		// Compare the strings for equality
 		return this_str == other_str ? JNI_TRUE : JNI_FALSE;
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_String_substring__I(JNIEnv* env, jobject obj, jint beginIndex) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		sandvik::ClassLoader& classloader = jenv->getClassLoader();
+		auto this_ptr = sandvik::native::getString(obj);
+		auto str = this_ptr->str();
+
+		if (beginIndex < 0 || static_cast<size_t>(beginIndex) > str.size()) {
+			throw sandvik::StringIndexOutOfBoundsException("beginIndex out of range");
+		}
+
+		auto substr = str.substr(beginIndex);
+		auto strObj = sandvik::Object::make(classloader, substr);
+		jobject jstr = jenv->getHandles().toJObject(strObj);
+		return jstr;
+	}
+
+	JNIEXPORT jint JNICALL Java_java_lang_String_hashCode(JNIEnv* env, jobject obj) {
+		auto this_ptr = sandvik::native::getString(obj);
+		const auto& str = this_ptr->str();
+		jint hash = 0;
+		for (char c : str) {
+			hash = 31 * hash + static_cast<unsigned char>(c);
+		}
+		return hash;
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_String_intern(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		sandvik::ClassLoader& classloader = jenv->getClassLoader();
+		auto this_ptr = sandvik::native::getString(obj);
+
+		auto strObj = sandvik::Object::make(classloader, this_ptr->str());
+		jobject jstr = jenv->getHandles().toJObject(strObj);
+		return jstr;
 	}
 }

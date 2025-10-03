@@ -20,6 +20,7 @@
 #include <jni/jni.h>
 
 #include "class.hpp"
+#include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"

@@ -175,6 +175,20 @@ namespace sandvik {
 			}
 			~NumberFormatException() noexcept override = default;
 	};
+	/** @brief StringIndexOutOfBoundsException exception class */
+	class StringIndexOutOfBoundsException : public JavaException {
+		public:
+			explicit StringIndexOutOfBoundsException(const std::string& message = "") : JavaException("java.lang.StringIndexOutOfBoundsException", message) {
+			}
+			~StringIndexOutOfBoundsException() noexcept override = default;
+	};
+	/** @brief NoSuchMethodError exception class */
+	class NoSuchMethodError : public JavaException {
+		public:
+			explicit NoSuchMethodError(const std::string& message = "") : JavaException("java.lang.NoSuchMethodError", message) {
+			}
+			~NoSuchMethodError() noexcept override = default;
+	};
 }  // namespace sandvik
 
 #endif
