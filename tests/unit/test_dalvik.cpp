@@ -250,9 +250,9 @@ TEST(VM, StaticInit) {
 TEST(VM, InnerClasses) {
 	run_common_test("TestInnerClasses");
 }
-//TEST(VM, Autoboxing) {
-//	run_common_test("TestAutoboxing");
-//}
+TEST(VM, Autoboxing) {
+	run_common_test("TestAutoboxing");
+}
 TEST(VM, Varargs) {
 	run_common_test("TestVarargs");
 }

@@ -126,24 +126,14 @@ ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, 
 
 ///////////////////////////////////////////////////////////////////////////////
 bool Object::operator==(const Object& other) const {
-	if (this == &other) {
-		return true;
+	// Same pointer -> equal
+	if (this == &other) return true;
+	// Both are numbers -> compare numeric values
+	if (this->isNumberObject() && other.isNumberObject()) {
+		return this->getValue() == other.getValue();
 	}
-	if (typeid(*this) != typeid(other)) {
-		return false;
-	}
-	for (const auto& field : _fields) {
-		auto it = other._fields.find(field.first);
-		if (it == other._fields.end() || *(field.second) != *(it->second)) {
-			return false;
-		}
-	}
-	for (const auto& field : other._fields) {
-		if (_fields.find(field.first) == _fields.end()) {
-			return false;
-		}
-	}
-	return true;
+	// Different types -> not equal
+	return false;
 }
 
 bool Object::operator==(std::nullptr_t) const {
