@@ -21,6 +21,7 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
@@ -38,5 +39,27 @@ extern "C" {
 		auto strObj = sandvik::Object::make(classloader, name);
 		jobject jstr = jenv->getHandles().toJObject(strObj);
 		return (jstring)jstr;
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_Object_getClass(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto ptr = sandvik::native::getObject(obj);
+		if (ptr->isClass()) {
+			auto clazz = sandvik::Object::make(ptr->getClass());
+			jobject jclassObj = jenv->getHandles().toJObject(clazz);
+			return jclassObj;
+		} else {
+			throw sandvik::ClassCastException("Object is not a java.lang.Class");
+		}
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_Class_forName(JNIEnv* env, jclass, jstring name) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto objstr = sandvik::native::getString(name);
+		auto& classloader = jenv->getClassLoader();
+		auto& clazz = classloader.getOrLoad(objstr->str());
+		auto classObj = sandvik::Object::make(clazz);
+		jobject jclassObj = jenv->getHandles().toJObject(classObj);
+		return jclassObj;
 	}
 }

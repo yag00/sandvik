@@ -152,8 +152,6 @@ void Dex::resolveClass(uint16_t idx, std::string& class_) const {
 				class_ = type.cls().pretty_name();
 				return;
 			case LIEF::DEX::Type::TYPES::PRIMITIVE:
-				class_ = get_type_descriptor(type);
-				return;
 			case LIEF::DEX::Type::TYPES::ARRAY:
 				class_ = get_type_descriptor(type);
 				return;

@@ -124,7 +124,7 @@ extern "C" {
 
 		auto this_ptr = sandvik::native::getObject(obj);
 		if (this_ptr->getField("string")->isNull()) {
-			throw sandvik::NullPointerException("Field 'string' is null");
+			this_ptr->setField("string", sandvik::Object::make(classloader, ""));
 		}
 		auto current = this_ptr->getField("string");
 		if (!current->isString()) {

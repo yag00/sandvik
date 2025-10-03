@@ -29,6 +29,32 @@ public class Integer
      * Class representing the primitive type
      */
     public static java.lang.Class TYPE;
+
+    // ---- IntegerCache ----
+    private static class IntegerCache {
+        static final int LOW = -128;
+        static final int HIGH = 127;
+        static final Integer[] cache;
+
+        static {
+            cache = new Integer[(HIGH - LOW) + 1];
+            for (int i = 0; i < cache.length; i++) {
+                cache[i] = new Integer(i + LOW);
+            }
+        }
+    }
+
+    /**
+     * Create a Integer from an integer value.
+     * @param val integer value
+     */
+    public Integer(int val) { this.val = val; }
+    /**
+     * Create a Integer from a string representation of a integer.
+     * @param str integer value
+     * @throws NumberFormatException if string does not represent an integer value
+     */
+    public Integer(java.lang.String str) throws NumberFormatException { this.val = parseInt(str); }
     /**
      * Return the number of bit at '1' in the integer.
      * @param val integer value
@@ -178,7 +204,12 @@ public class Integer
      * @param val integer value
      * @return the Integer
      */
-    public native final static java.lang.Integer valueOf(int val);
+    public final static java.lang.Integer valueOf(int val) {
+        if (val >= IntegerCache.LOW && val <= IntegerCache.HIGH) {
+            return IntegerCache.cache[val - IntegerCache.LOW];
+        }
+        return new Integer(val);
+    }
     /**
      * Return the Integer corresponding to the string.
      * @param str string value
@@ -196,17 +227,6 @@ public class Integer
      */
     public native final static java.lang.Integer valueOf(java.lang.String str, int radix)
         throws NumberFormatException;
-    /**
-     * Create a Integer from an integer value.
-     * @param val integer value
-     */
-    public Integer(int val) {}
-    /**
-     * Create a Integer from a string representation of a integer.
-     * @param str integer value
-     * @throws NumberFormatException if string does not represent an integer value
-     */
-    public Integer(java.lang.String str) throws NumberFormatException {}
     /**
      * Return the byte value of the Integer.
      * @return the value
@@ -244,7 +264,7 @@ public class Integer
      * Return the integer value of the Integer.
      * @return the value
      */
-    public native final int intValue();
+    public final int intValue() { return val; }
     /**
      * Return the long value of the Integer.
      * @return the value

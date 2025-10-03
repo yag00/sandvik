@@ -173,7 +173,7 @@ namespace sandvik {
 			std::string getTime() const;
 			void log(LogLevel level, const std::string &msg);
 
-			bool _stdout = false;
+			bool _stdout = true;
 			bool _time = false;
 			LogLevel _level = LogLevel::INFO;
 			std::ofstream _file;

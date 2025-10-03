@@ -1925,7 +1925,14 @@ void Interpreter::sget(const uint8_t* operand_) {
 	if (field.getType() != "I" && field.getType() != "F") {
 		throw VmException("sget: Field {} type mismatch, expected int but got {}", field.getName(), field.getType());
 	}
-
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
 	int32_t value = field.getIntValue();
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -1941,7 +1948,14 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 	if (field.getType() != "J" && field.getType() != "D") {
 		throw VmException("sget_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType());
 	}
-
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
 	int64_t value = field.getLongValue();
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
@@ -1953,29 +1967,24 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	std::string classname, fieldname;
-	try {
-		auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname);
-		logger.fdebug("sget_object: Resolving field {}", field.str());
-		if (!field.isStatic()) {
-			throw VmException("sget_object: Cannot use sget_object on a non-static field");
-		}
-		if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
-			throw VmException("sget_object: Field {} type mismatch, expected object but got {}", field.getName(), field.getType());
-		}
-		// static field access, class instance may not be instantiated yet
-		auto& clazz = field.getClass();
-		if (!clazz.isStaticInitialized()) {
-			// cancel the current instruction
-			frame.pc()--;
-			executeClinit(clazz);
-			return;
-		}
-		// set result of the sget-object to the destination register
-		frame.setObjRegister(dest, field.getObjectValue());
-	} catch (const std::exception& e) {
-		throw VmException("sget_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what());
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	logger.fdebug("sget_object: Resolving field {}", field.str());
+	if (!field.isStatic()) {
+		throw VmException("sget_object: Cannot use sget_object on a non-static field");
 	}
+	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
+		throw VmException("sget_object: Field {} type mismatch, expected object but got {}", field.getName(), field.getType());
+	}
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
+	// set result of the sget-object to the destination register
+	frame.setObjRegister(dest, field.getObjectValue());
 	frame.pc() += 3;
 }
 // sget-boolean vA, field@BBBB
@@ -1989,7 +1998,14 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 	if (field.getType() != "Z") {
 		throw VmException("sget_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType());
 	}
-
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
 	bool value = field.getIntValue() != 0;
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -2005,7 +2021,14 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 	if (field.getType() != "B") {
 		throw VmException("sget_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType());
 	}
-
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
 	int8_t value = static_cast<int8_t>(field.getIntValue());
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -2021,7 +2044,14 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 	if (field.getType() != "C") {
 		throw VmException("sget_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType());
 	}
-
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
 	uint16_t value = static_cast<uint16_t>(field.getIntValue());
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -2037,7 +2067,14 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 	if (field.getType() != "S") {
 		throw VmException("sget_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType());
 	}
-
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
 	int16_t value = static_cast<int16_t>(field.getIntValue());
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;

@@ -76,4 +76,17 @@ public class System {
      * Initialize the system class.  Called after thread initialization.
      */
     private static void initializeSystemClass() { initializeStream(); }
+
+    /**
+     * Returns the same hash code for the given object as
+     * would be returned by the default method hashCode(),
+     * whether or not the given object's class overrides
+     * hashCode().
+     * The hash code for the null reference is zero.
+     *
+     * @param x object for which the hashCode is to be calculated
+     * @return  the hashCode
+     * @since   JDK1.1
+     */
+    public static native int identityHashCode(Object x);
 }
