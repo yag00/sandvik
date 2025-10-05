@@ -223,6 +223,34 @@ def check_googletest(conf):
 
 		conf.check(stlib='gtest', stlibpath=[libs], includes=[includes], uselib_store='GOOGLETEST', define_ret=True)
 
+@conf
+def check_xxhash(conf):
+	includes = os.path.abspath('ext/xxHash-bin/include/')
+	libs = os.path.abspath('ext/xxHash-bin/lib/')
+
+	version_code = "\n".join([
+		'#include <stdio.h>',
+		'#include <xxhash.h>',
+		'int main() {',
+		'    printf("%u\\n", XXH_versionNumber());',
+		'    return 0;',
+		'}',
+	])
+	try:
+		v = conf.check(stlib='xxhash', stlibpath=[libs], includes=[includes], uselib_store='XXHASH', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library xxhash version', v.strip())
+	except Exception as e:
+		installdir = os.path.abspath('ext/xxHash-bin/')
+		conf.msg('Building local xxhash', installdir)
+		if not os.path.exists('ext/xxHash/build'):
+			os.mkdir('ext/xxHash/build')
+		cwd = os.path.abspath('ext/xxHash/build')
+		execute('cmake -DCMAKE_INSTALL_PREFIX={} -DBUILD_SHARED_LIBS=OFF -DXXHASH_BUILD_XXHSUM=OFF ../cmake_unofficial'.format(installdir), cwd)
+		execute('cmake --build .', cwd)
+		execute('cmake --build . --target install', cwd)
+
+		v = conf.check(stlib='xxhash', stlibpath=[libs], includes=[includes], uselib_store='XXHASH', fragment=version_code, execute=True, define_ret=True)
+		conf.msg('Checking for library xxhash version', v.strip())
 
 @conf
 def check_dependencies_tools(conf):
