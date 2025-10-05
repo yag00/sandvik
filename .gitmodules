@@ -16,3 +16,6 @@
 [submodule "axml-parser"]
 	path = ext/axml-parser
 	url = https://github.com/yag00/axml-parser.git
+[submodule "ext/xxHash"]
+	path = ext/xxHash
+	url = https://github.com/Cyan4973/xxHash.git
