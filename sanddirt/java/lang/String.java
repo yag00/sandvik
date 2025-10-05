@@ -1,4 +1,5 @@
 package java.lang;
+import java.util.Locale;
 /**
  * @@sandvik modified
  * The {@code String} class represents character strings. All
@@ -87,6 +88,13 @@ public class String
      * @param str the string to copy
      */
     public String(java.lang.StringBuilder str) { initialize(str); }
+    /*
+     * Package private constructor which shares value array for speed.
+     * this constructor is always expected to be called with share==true.
+     * a separate constructor is needed because we already have a public
+     * String(char[]) constructor that makes a copy of the given char[].
+     */
+    String(char[] value, boolean share) { initialize(value); }
     /**
      * Return the character at the specified index.
      * @param pos index in the String
@@ -322,7 +330,7 @@ public class String
      * Return a copy of string with upper case character.
      * @return a upper cased string
      */
-    public native final java.lang.String toUpperCase();
+    public native final java.lang.String toUpperCase(Locale locale);
     /**
      * Create a string from an array of char.
      * @param val array of char
