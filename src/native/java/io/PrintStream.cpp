@@ -74,4 +74,24 @@ extern "C" {
 		int fd = fileObj->getValue();
 		__PrintStream__write(fd, "\n");
 	}
+	JNIEXPORT void JNICALL Java_java_io_PrintStream_println__Ljava_lang_Object_2(JNIEnv* env, jobject obj, jobject value) {
+		auto this_ptr = sandvik::native::getObject(obj);
+		auto fileObj = this_ptr->getField("file");
+		int fd = fileObj->getValue();
+
+		std::string s;
+		if (value == nullptr) {
+			s = "null";
+		} else {
+			auto obj = sandvik::native::getObject(value);
+			// jclass objClass = env->GetObjectClass(value);
+			// jmethodID toStringMethod = env->GetMethodID(objClass, "toString", "()Ljava/lang/String;");
+			// jstring strObj = (jstring)env->CallObjectMethod(value, toStringMethod);
+			// auto strobj = sandvik::native::getString(strObj);
+			// s = strobj->str();
+			s = fmt::format("<{}>->toString() not implemented", obj->debug());
+			logger.fwarning("PrintStream.println(Object) toString() not implemented --> {}", obj->debug());
+		}
+		__PrintStream__write(fd, s + "\n");
+	}
 }

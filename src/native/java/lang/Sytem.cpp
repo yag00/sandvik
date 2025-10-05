@@ -21,6 +21,7 @@
 
 #include "class.hpp"
 #include "classloader.hpp"
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
 #include "native/native_utils.hpp"
@@ -48,5 +49,13 @@ extern "C" {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto name = sandvik::native::getString(libName);
 		jenv->getVm().loadLibrary(fmt::format("lib{}.so", name->str()));
+	}
+
+	JNIEXPORT jint JNICALL Java_java_lang_System_identityHashCode(JNIEnv* env, jobject, jobject obj) {
+		if (!obj) {
+			throw sandvik::NullPointerException("java.lang.System.identityHashCode: obj is null");
+		}
+		auto* object = sandvik::native::getObject(obj);
+		return static_cast<jint>(object->identityHashCode());
 	}
 }
