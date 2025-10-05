@@ -18,6 +18,8 @@
 
 #include "object.hpp"
 
+#include <xxhash.h>
+
 #include <fmt/format.h>
 
 #include <stdexcept>
@@ -190,6 +192,11 @@ std::string Object::debug() const {
 	std::string typeName = typeid(*this).name();
 	std::string className = typeid(Class).name();
 	return fmt::format("Object: {} Class: {}", typeName, className);
+}
+
+int32_t Object::identityHashCode() const {
+	uint64_t ptr = reinterpret_cast<uint64_t>(this);
+	return static_cast<int32_t>(XXH32(&ptr, sizeof(ptr), 0));
 }
 
 bool Object::isInstanceOf(const std::string& instance_) const {

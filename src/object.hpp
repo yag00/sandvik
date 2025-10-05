@@ -137,6 +137,16 @@ namespace sandvik {
 			virtual std::string debug() const;
 
 			/**
+			 * @brief Returns the identity hash code for this object.
+			 *
+			 * The identity hash code is intended to provide a unique identifier for the object instance,
+			 * similar to Java's System.identityHashCode.
+			 *
+			 * @return The identity hash code as a std::size_t value.
+			 */
+			virtual int32_t identityHashCode() const;
+
+			/**
 			 * @brief Checks if the object is an instance of the specified type.
 			 * @param instance_ Name of the type to check.
 			 * @return True if the object is an instance of the specified type, false otherwise.
