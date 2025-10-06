@@ -28,6 +28,7 @@ namespace sandvik {
 	class ClassLoader;
 	class SharedLibrary;
 	class NativeInterface;
+	class JThread;
 	class Vm {
 		public:
 			explicit Vm();
@@ -42,6 +43,7 @@ namespace sandvik {
 			void run();
 			void run(const std::string& mainClass_, const std::vector<std::string>& args_);
 			void stop();
+			std::unique_ptr<JThread> newThread(const std::string& name_);
 
 			void loadLibrary(const std::string& libName_);
 			void* findNativeSymbol(const std::string& symbolName_);

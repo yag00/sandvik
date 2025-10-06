@@ -48,6 +48,7 @@ namespace sandvik {
 		private:
 			ClassLoader& _classLoader;
 			std::unique_ptr<Class> _class;
+			uint32_t _methodIndex = 1;
 	};
 
 }  // namespace sandvik

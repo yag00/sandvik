@@ -199,3 +199,7 @@ void Vm::stop() {
 	logger.info("Stopping VM...");
 	// Add cleanup logic if necessary
 }
+
+std::unique_ptr<JThread> Vm::newThread(const std::string& name_) {
+	return std::make_unique<JThread>(*this, *_classloader, name_);
+}

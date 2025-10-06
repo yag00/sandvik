@@ -52,6 +52,7 @@ namespace sandvik {
 
 			bool isMethodOverloaded(const std::string& name_) const;
 			bool hasMethod(const std::string& name_, const std::string& descriptor_) const;
+			bool hasMethod(uint32_t idx_) const;
 			Method& getMethod(const std::string& name_, const std::string& descriptor_);
 			Method& getMethod(uint32_t idx_);
 

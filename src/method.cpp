@@ -31,11 +31,9 @@
 
 using namespace sandvik;
 
-Method::Method(Class& class_, const std::string& name_, const std::string& signature_) : _class(class_), _name(name_), _signature(signature_) {
-	_nbRegisters = 0;
-	_index = 0;
-	_accessFlags = 0;
-	_isVirtual = false;
+Method::Method(Class& class_, const std::string& name_, const std::string& signature_, uint32_t index_)
+    : _class(class_), _name(name_), _signature(signature_), _index(index_) {
+	parseArgumentTypes();
 }
 
 Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_), _name(method_.name()), _signature(get_method_descriptor(method_)) {
@@ -53,6 +51,41 @@ Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_)
 	for (const auto& exc : method_.code_info().exceptions()) {
 		_trycatch_items.push_back({exc.start_addr, exc.insn_count, exc.handlers, exc.catch_all_addr});
 	}
+	parseArgumentTypes();
+}
+
+void Method::parseArgumentTypes() {
+	_argsType.clear();
+	auto start = _signature.find('(');
+	auto end = _signature.find(')');
+	if (start == std::string::npos || end == std::string::npos || end <= start + 1) return;
+	for (size_t i = start + 1; i < end;) {
+		std::string type;
+		if (_signature[i] == '[') {
+			while (i < end && _signature[i] == '[') {
+				type += '[';
+				++i;
+			}
+		}
+		if (i < end && _signature[i] == 'L') {
+			type += 'L';
+			++i;
+			while (i < end && _signature[i] != ';') {
+				type += _signature[i];
+				++i;
+			}
+			if (i < end && _signature[i] == ';') {
+				type += ';';
+				++i;
+			}
+		} else if (i < end) {
+			type += _signature[i];
+			++i;
+		}
+		if (!type.empty()) {
+			_argsType.push_back(type);
+		}
+	}
 }
 
 Class& Method::getClass() const {
@@ -60,6 +93,10 @@ Class& Method::getClass() const {
 }
 std::string Method::getName() const {
 	return _name;
+}
+
+uint32_t Method::getNbArguments() const {
+	return _argsType.size();
 }
 
 std::string Method::getSignature() const {

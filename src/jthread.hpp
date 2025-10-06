@@ -46,6 +46,13 @@ namespace sandvik {
 
 			void execute();
 
+			std::shared_ptr<Object> getReturnObject() const;
+			int32_t getReturnValue() const;
+			int64_t getReturnDoubleValue() const;
+			void setReturnObject(std::shared_ptr<Object> ret_);
+			void setReturnValue(int32_t ret_);
+			void setReturnDoubleValue(int64_t ret_);
+
 		private:
 			Vm& _vm;
 			ClassLoader& _classloader;
@@ -53,6 +60,7 @@ namespace sandvik {
 			std::unique_ptr<Interpreter> _interpreter;
 
 			std::vector<std::unique_ptr<Frame>> _stack;
+			std::shared_ptr<Object> _objectReturn;
 	};
 }  // namespace sandvik
 

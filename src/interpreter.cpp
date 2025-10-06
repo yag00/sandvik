@@ -405,7 +405,7 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 				auto detailMessage = exception->getField("detailMessage");
 				std::string msg = detailMessage->isString() ? detailMessage->str() : "";
 				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
-				break;
+				throw JavaException(exception->getClass().getFullname(), msg);
 			}
 			_rt.currentFrame().setException(exception_);
 		} catch (const std::exception& e) {
@@ -415,7 +415,7 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 				auto detailMessage = exception->getField("detailMessage");
 				std::string msg = detailMessage->isString() ? detailMessage->str() : "";
 				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
-				break;
+				throw JavaException(exception->getClass().getFullname(), msg);
 			}
 			_rt.currentFrame().setException(exception_);
 		}
@@ -539,21 +539,39 @@ void Interpreter::return_(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	auto ret = _rt.currentFrame().getIntRegister(dest);
 	_rt.popFrame();
-	_rt.currentFrame().setReturnValue(ret);
+	if (_rt.end()) {
+		// main method return
+		_rt.setReturnValue(ret);
+		return;
+	} else {
+		_rt.currentFrame().setReturnValue(ret);
+	}
 }
 // return-wide vAA
 void Interpreter::return_wide(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	auto ret = _rt.currentFrame().getLongRegister(dest);
 	_rt.popFrame();
-	_rt.currentFrame().setReturnDoubleValue(ret);
+	if (_rt.end()) {
+		// main method return
+		_rt.setReturnDoubleValue(ret);
+		return;
+	} else {
+		_rt.currentFrame().setReturnDoubleValue(ret);
+	}
 }
 // return-object vAA
 void Interpreter::return_object(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	auto ret = _rt.currentFrame().getObjRegister(dest);
 	_rt.popFrame();
-	_rt.currentFrame().setReturnObject(ret);
+	if (_rt.end()) {
+		// main method return
+		_rt.setReturnObject(ret);
+		return;
+	} else {
+		_rt.currentFrame().setReturnObject(ret);
+	}
 }
 // const/4 vA, #+B
 void Interpreter::const_4(const uint8_t* operand_) {

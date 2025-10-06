@@ -186,6 +186,17 @@ bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) 
 	}
 	return false;
 }
+bool Class::hasMethod(uint32_t idx_) const {
+	if (idx_ >= _methods.size()) {
+		return false;
+	}
+	for (const auto& [key, method] : _methods) {
+		if (method->getIndex() == idx_) {
+			return true;
+		}
+	}
+	return false;
+}
 
 bool Class::isMethodOverloaded(const std::string& name_) const {
 	int count = 0;
@@ -214,14 +225,13 @@ Method& Class::getMethod(uint32_t idx_) {
 		throw std::out_of_range(fmt::format("Method index out of range: {}", idx_));
 	}
 	for (const auto& [name, method] : _methods) {
-		logger.fdebug("method {}{} index {}", method->getName(), method->getSignature(), method->getIndex());
 		if (method->getIndex() == idx_) {
-			logger.fok("Found method {}{} at index {}", method->getName(), method->getSignature(), idx_);
+			auto it = _methods.begin();
+			std::advance(it, idx_);
+			return *(it->second);
 		}
 	}
-	auto it = _methods.begin();
-	std::advance(it, idx_);
-	return *(it->second);
+	throw VmException(fmt::format("Method not found at index: {}", idx_));
 }
 
 Field& Class::getField(const std::string& name_) {
