@@ -71,3 +71,25 @@ JNIEXPORT jfloat JNICALL Java_Native_floatadd(
     printf("  Float r: 0x%x %f\n", *(uint32_t*)&result, result);
     return result;
 }
+JNIEXPORT jint JNICALL Java_Native_executeMethod(JNIEnv* env, jobject obj, jstring methodName, jint a, jint b) {
+    // 1. Convert jstring -> C string
+    const char* method_name = (*env)->GetStringUTFChars(env, methodName, NULL);
+    if (method_name == NULL) {
+        return 0; // Out of memory
+    }
+    // 2. Get the class of the current object
+    jclass cls = (*env)->GetObjectClass(env, obj);
+    // 3. Look up the Java method by name
+    jmethodID mid = (*env)->GetMethodID(env, cls, method_name, "(II)I");
+    if (mid == NULL) {
+        // Clean up and return if method not found
+        (*env)->ReleaseStringUTFChars(env, methodName, method_name);
+        return 0;
+    }
+    // 4. Call the method on 'obj' with arguments a and b
+    jint result = (*env)->CallIntMethod(env, obj, mid, a, b);
+    // 5. Release allocated resources
+    (*env)->ReleaseStringUTFChars(env, methodName, method_name);
+    // 6. Return the result to Java
+    return result;
+}
