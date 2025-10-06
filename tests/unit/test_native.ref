@@ -15,3 +15,7 @@ Native floatadd called with:
   Float r: 0x408ccccd 4.400000
 Native add function returned: 4.400000
 Native add function returned: 30000000000
+Native executeMethod add returned: 32
+Native executeMethod add returned: 90
+Native executeMethod add returned: 110
+Native executeMethod mul returned: 600

@@ -17,7 +17,7 @@
  */
 
 public class Native {
-
+    private int i;
     // Load the native library
     static {
         try {
@@ -34,6 +34,22 @@ public class Native {
     public native long longadd(long a, long b);
     public native float floatadd(float a, float b);
     public native double doubleadd(double a, double b);
+    public native int executeMethod(String methodName, int a, int b);
+
+
+    public int seti(int i) {
+        return this.i = i;
+    }
+
+    public int add(int x, int y) {
+        return i + x + y;
+    }
+    public int sub(int x, int y) {
+        return i + x - y;
+    }
+    public int mul(int x, int y) {
+        return i * x * y;
+    }
 
     public static void main(String[] args) {
         Native example = new Native();
@@ -51,5 +67,13 @@ public class Native {
         System.out.println("Native add function returned: " + example.doubleadd(5.1, 3.2));
         System.out.println("Native add function returned: " + example.floatadd(f, f2));
         System.out.println("Native add function returned: " + example.longadd(10000000000L, 20000000000L));
+
+        example.seti(2);
+        System.out.println("Native executeMethod add returned: " + example.executeMethod("add", x, y));
+        example.seti(100);
+        System.out.println("Native executeMethod add returned: " + example.executeMethod("sub", x, y));
+        System.out.println("Native executeMethod add returned: " + example.executeMethod("sub", y, x));
+        example.seti(3);
+        System.out.println("Native executeMethod mul returned: " + example.executeMethod("mul", x, y));
     }
 }

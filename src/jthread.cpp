@@ -44,7 +44,7 @@ ClassLoader& JThread::getClassLoader() const {
 }
 
 bool JThread::end() const {
-	return _stack.size() == 0;
+	return _stack.empty();
 }
 
 uint64_t JThread::stackDepth() const {
@@ -78,4 +78,34 @@ Frame& JThread::currentFrame() const {
 
 void JThread::execute() {
 	_interpreter->execute();
+}
+
+std::shared_ptr<Object> JThread::getReturnObject() const {
+	return _objectReturn;
+}
+
+int32_t JThread::getReturnValue() const {
+	if (!_objectReturn->isNumberObject()) {
+		throw VmException("Return object is not an NumberObject");
+	}
+	return _objectReturn->getValue();
+}
+
+int64_t JThread::getReturnDoubleValue() const {
+	if (!_objectReturn->isNumberObject()) {
+		throw VmException("Return object is not a isNumberObject");
+	}
+	return _objectReturn->getLongValue();
+}
+
+void JThread::setReturnObject(std::shared_ptr<Object> ret_) {
+	_objectReturn = ret_;
+}
+
+void JThread::setReturnValue(int32_t ret_) {
+	_objectReturn = Object::make(ret_);
+}
+
+void JThread::setReturnDoubleValue(int64_t ret_) {
+	_objectReturn = Object::make(ret_);
 }

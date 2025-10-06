@@ -29,7 +29,11 @@
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
+#include "frame.hpp"
+#include "interpreter.hpp"
 #include "jnihandlemap.hpp"
+#include "jthread.hpp"
+#include "method.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "vm.hpp"
@@ -383,13 +387,33 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 }
 
 jclass NativeInterface::GetObjectClass(JNIEnv *env, jobject obj) {
-	throw VmException("GetObjectClass not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetObjectClass on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	auto &clazz = jobj->getClass();
+	return (jclass)jenv->getHandles().toJObject(Object::make(clazz));
 }
 jboolean NativeInterface::IsInstanceOf(JNIEnv *env, jobject obj, jclass clazz) {
 	throw VmException("IsInstanceOf not implemented");
 }
 jmethodID NativeInterface::GetMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw VmException("GetMethodID not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	if (clazz == nullptr || name == nullptr || sig == nullptr) {
+		throw NullPointerException("GetMethodID: class, name, or sig is null");
+	}
+	auto clsObj = jenv->getHandles().fromJObject(clazz);
+	if (!clsObj || !clsObj->isClass()) {
+		throw ClassCastException("GetMethodID: class is not a class object");
+	}
+	try {
+		Class &cls = clsObj->getClass();
+		Method &method = cls.getMethod(name, sig);
+		return (jmethodID)(uintptr_t)method.getIndex();
+	} catch (const std::invalid_argument &e) {
+		return 0;
+	}
 }
 
 jobject NativeInterface::CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
@@ -438,7 +462,66 @@ jshort NativeInterface::CallShortMethodA(JNIEnv *env, jobject obj, jmethodID met
 	throw VmException("CallShortMethodA not implemented");
 }
 jint NativeInterface::CallIntMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallIntMethod not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("CallIntMethod on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto &vm = jenv->getVm();
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	va_list args;
+	va_start(args, methodID);
+	// Find the method in the object's class
+	Class &clazz = jobj->getClass();
+	if (!clazz.hasMethod((uint32_t)(uintptr_t)methodID)) {
+		throw NoSuchMethodException(fmt::format("CallIntMethod: methodID {} not found in class {}", (size_t)methodID, clazz.getName()));
+	}
+	Method &method = clazz.getMethod((uint32_t)(uintptr_t)methodID);
+	// Call the method
+	auto thread = vm.newThread(fmt::format("{}.{}", clazz.getFullname(), method.getName()));
+	auto &frame = thread->newFrame(method);
+	auto sig = method.getSignature();
+
+	// @todo: check that the return type is 'I' (int)
+	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
+	frame.setObjRegister(regidx++, jobj);  // this
+	// Set method arguments in the frame registers
+	for (auto arg : method.arguments()) {
+		switch (arg[0]) {
+			case 'Z':  // boolean
+			case 'B':  // byte
+			case 'C':  // char
+			case 'S':  // short
+			case 'I':  // int
+				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
+				break;
+			case 'J':  // long
+				// frame.setObjRegister(nbRegisters, (int64_t)va_arg(args, int64_t));
+				logger.fwarning("CallIntMethod: long arguments not yet supported");
+				break;
+			case 'F':  // float
+				// frame.setObjRegister(nbRegisters, (float)va_arg(args, float));
+				logger.fwarning("CallIntMethod: float arguments not yet supported");
+				break;
+			case 'D':  // double
+				// frame.setObjRegister(nbRegisters, (double)va_arg(args, double));
+				logger.fwarning("CallIntMethod: double arguments not yet supported");
+				break;
+			case 'L':  // object
+			case '[':  // array
+			{
+				logger.fwarning("CallIntMethod: object/array arguments not yet supported");
+				break;
+			}
+			default:
+				throw VmException(fmt::format("CallIntMethod: unknown argument type '{}'", arg));
+		}
+	}
+	while (!thread->end()) {
+		thread->execute();
+	}
+	va_end(args);
+	// Get the return value
+	return thread->getReturnValue();
 }
 jint NativeInterface::CallIntMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	throw VmException("CallIntMethodV not implemented");
