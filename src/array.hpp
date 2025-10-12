@@ -43,6 +43,7 @@ namespace sandvik {
 
 			const Class& getClassType() const override;
 
+			bool isArray() const override;
 			ArrayRef getArray(uint32_t idx_) const;
 
 			size_t getDimensions() const;

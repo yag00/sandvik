@@ -58,6 +58,10 @@ Array::Array(std::shared_ptr<ObjectRefVector> data_, const Class& classtype_, co
 	}
 }
 
+bool Array::isArray() const {
+	return true;
+}
+
 const Class& Array::getClassType() const {
 	return _classtype;
 }
