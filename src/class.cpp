@@ -234,6 +234,18 @@ Method& Class::getMethod(uint32_t idx_) {
 	throw VmException(fmt::format("Method not found at index: {}", idx_));
 }
 
+bool Class::hasField(const std::string& name_) const {
+	auto it = _fields.find(name_);
+	return it != _fields.end();
+}
+
+bool Class::hasField(uint32_t idx_) const {
+	if (idx_ >= _fields.size()) {
+		return false;
+	}
+	return true;
+}
+
 Field& Class::getField(const std::string& name_) {
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
