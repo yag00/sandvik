@@ -26,9 +26,11 @@
 
 #include "jni/jni.h"
 
+#include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
+#include "field.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
 #include "jnihandlemap.hpp"
@@ -416,60 +418,13 @@ jmethodID NativeInterface::GetMethodID(JNIEnv *env, jclass clazz, const char *na
 	}
 }
 
-jobject NativeInterface::CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallObjectMethod not implemented");
-}
-jobject NativeInterface::CallObjectMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallObjectMethodV not implemented");
-}
-jobject NativeInterface::CallObjectMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallObjectMethodA not implemented");
-}
-jboolean NativeInterface::CallBooleanMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallBooleanMethod not implemented");
-}
-jboolean NativeInterface::CallBooleanMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallBooleanMethodV not implemented");
-}
-jboolean NativeInterface::CallBooleanMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallBooleanMethodA not implemented");
-}
-jbyte NativeInterface::CallByteMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallByteMethod not implemented");
-}
-jbyte NativeInterface::CallByteMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallByteMethodV not implemented");
-}
-jbyte NativeInterface::CallByteMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallByteMethodA not implemented");
-}
-jchar NativeInterface::CallCharMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallCharMethod not implemented");
-}
-jchar NativeInterface::CallCharMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallCharMethodV not implemented");
-}
-jchar NativeInterface::CallCharMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallCharMethodA not implemented");
-}
-jshort NativeInterface::CallShortMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallShortMethod not implemented");
-}
-jshort NativeInterface::CallShortMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallShortMethodV not implemented");
-}
-jshort NativeInterface::CallShortMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallShortMethodA not implemented");
-}
-jint NativeInterface::CallIntMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+std::shared_ptr<JThread> NativeInterface::__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, va_list &args) {
 	if (obj == nullptr) {
 		throw NullPointerException("CallIntMethod on null object");
 	}
 	NativeInterface *jenv = static_cast<NativeInterface *>(env);
 	auto &vm = jenv->getVm();
 	auto jobj = jenv->getHandles().fromJObject(obj);
-	va_list args;
-	va_start(args, methodID);
 	// Find the method in the object's class
 	Class &clazz = jobj->getClass();
 	if (!clazz.hasMethod((uint32_t)(uintptr_t)methodID)) {
@@ -519,9 +474,82 @@ jint NativeInterface::CallIntMethod(JNIEnv *env, jobject obj, jmethodID methodID
 	while (!thread->end()) {
 		thread->execute();
 	}
-	va_end(args);
 	// Get the return value
-	return thread->getReturnValue();
+	return thread;
+}
+
+jobject NativeInterface::CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	return jenv->getHandles().toJObject(result->getReturnObject());
+}
+jobject NativeInterface::CallObjectMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
+	throw VmException("CallObjectMethodV not implemented");
+}
+jobject NativeInterface::CallObjectMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
+	throw VmException("CallObjectMethodA not implemented");
+}
+jboolean NativeInterface::CallBooleanMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return (jboolean)result->getReturnValue();
+}
+jboolean NativeInterface::CallBooleanMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
+	throw VmException("CallBooleanMethodV not implemented");
+}
+jboolean NativeInterface::CallBooleanMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
+	throw VmException("CallBooleanMethodA not implemented");
+}
+jbyte NativeInterface::CallByteMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return (jbyte)result->getReturnValue();
+}
+jbyte NativeInterface::CallByteMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
+	throw VmException("CallByteMethodV not implemented");
+}
+jbyte NativeInterface::CallByteMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
+	throw VmException("CallByteMethodA not implemented");
+}
+jchar NativeInterface::CallCharMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return (jchar)result->getReturnValue();
+}
+jchar NativeInterface::CallCharMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
+	throw VmException("CallCharMethodV not implemented");
+}
+jchar NativeInterface::CallCharMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
+	throw VmException("CallCharMethodA not implemented");
+}
+jshort NativeInterface::CallShortMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return (jshort)result->getReturnValue();
+}
+jshort NativeInterface::CallShortMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
+	throw VmException("CallShortMethodV not implemented");
+}
+jshort NativeInterface::CallShortMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
+	throw VmException("CallShortMethodA not implemented");
+}
+jint NativeInterface::CallIntMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return result->getReturnValue();
 }
 jint NativeInterface::CallIntMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	throw VmException("CallIntMethodV not implemented");
@@ -530,7 +558,11 @@ jint NativeInterface::CallIntMethodA(JNIEnv *env, jobject obj, jmethodID methodI
 	throw VmException("CallIntMethodA not implemented");
 }
 jlong NativeInterface::CallLongMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallLongMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return (jlong)result->getReturnDoubleValue();
 }
 jlong NativeInterface::CallLongMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	throw VmException("CallLongMethodV not implemented");
@@ -539,7 +571,11 @@ jlong NativeInterface::CallLongMethodA(JNIEnv *env, jobject obj, jmethodID metho
 	throw VmException("CallLongMethodA not implemented");
 }
 jfloat NativeInterface::CallFloatMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallFloatMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return (jfloat)result->getReturnValue();
 }
 jfloat NativeInterface::CallFloatMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	throw VmException("CallFloatMethodV not implemented");
@@ -548,7 +584,11 @@ jfloat NativeInterface::CallFloatMethodA(JNIEnv *env, jobject obj, jmethodID met
 	throw VmException("CallFloatMethodA not implemented");
 }
 jdouble NativeInterface::CallDoubleMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallDoubleMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	auto result = __CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
+	return (jdouble)result->getReturnDoubleValue();
 }
 jdouble NativeInterface::CallDoubleMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	throw VmException("CallDoubleMethodV not implemented");
@@ -557,7 +597,10 @@ jdouble NativeInterface::CallDoubleMethodA(JNIEnv *env, jobject obj, jmethodID m
 	throw VmException("CallDoubleMethodA not implemented");
 }
 void NativeInterface::CallVoidMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
-	throw VmException("CallVoidMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	__CallObjectMethod(env, obj, methodID, args);
+	va_end(args);
 }
 void NativeInterface::CallVoidMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	throw VmException("CallVoidMethodV not implemented");
@@ -673,28 +716,163 @@ jobject NativeInterface::GetObjectField(JNIEnv *env, jobject obj, jfieldID field
 	throw VmException("GetObjectField not implemented");
 }
 jboolean NativeInterface::GetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetBooleanField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetBooleanField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetBooleanField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetBooleanField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "Z") {
+		throw ClassCastException("GetBooleanField: field is not boolean");
+	}
+	return (jboolean)field.getIntValue();
 }
+
 jbyte NativeInterface::GetByteField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetByteField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetByteField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetByteField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetByteField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "B") {
+		throw ClassCastException("GetByteField: field is not byte");
+	}
+	return (jbyte)field.getIntValue();
 }
+
 jchar NativeInterface::GetCharField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetCharField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetCharField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetCharField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetCharField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "C") {
+		throw ClassCastException("GetCharField: field is not char");
+	}
+	return (jchar)field.getIntValue();
 }
+
 jshort NativeInterface::GetShortField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetShortField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetShortField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetShortField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetShortField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "S") {
+		throw ClassCastException("GetShortField: field is not short");
+	}
+	return (jshort)field.getIntValue();
 }
+
 jint NativeInterface::GetIntField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetIntField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetIntField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetIntField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetIntField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "I") {
+		throw ClassCastException("GetIntField: field is not int");
+	}
+	return (jint)field.getIntValue();
 }
+
 jlong NativeInterface::GetLongField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetLongField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetLongField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetLongField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetLongField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "J") {
+		throw ClassCastException("GetLongField: field is not long");
+	}
+	return (jlong)field.getLongValue();
 }
+
 jfloat NativeInterface::GetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetFloatField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetFloatField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetFloatField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetFloatField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "F") {
+		throw ClassCastException("GetFloatField: field is not float");
+	}
+	return (jfloat)field.getIntValue();
 }
+
 jdouble NativeInterface::GetDoubleField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetDoubleField not implemented");
+	if (obj == nullptr) {
+		throw NullPointerException("GetDoubleField on null object");
+	}
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto jobj = jenv->getHandles().fromJObject(obj);
+	if (!jobj) {
+		throw ClassCastException("GetDoubleField: invalid object");
+	}
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetDoubleField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "D") {
+		throw ClassCastException("GetDoubleField: field is not double");
+	}
+	return (jdouble)field.getLongValue();
 }
 
 void NativeInterface::SetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID, jobject val) {
@@ -950,28 +1128,60 @@ void NativeInterface::SetObjectArrayElement(JNIEnv *env, jobjectArray array, jsi
 	throw VmException("SetObjectArrayElement not implemented");
 }
 jbooleanArray NativeInterface::NewBooleanArray(JNIEnv *env, jsize len) {
-	throw VmException("NewBooleanArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("boolean");
+	auto arrayObj = Array::make(type, len);
+	return (jbooleanArray)jenv->getHandles().toJObject(arrayObj);
 }
 jbyteArray NativeInterface::NewByteArray(JNIEnv *env, jsize len) {
-	throw VmException("NewByteArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("byte");
+	auto arrayObj = Array::make(type, len);
+	return (jbyteArray)jenv->getHandles().toJObject(arrayObj);
 }
 jcharArray NativeInterface::NewCharArray(JNIEnv *env, jsize len) {
-	throw VmException("NewCharArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("char");
+	auto arrayObj = Array::make(type, len);
+	return (jcharArray)jenv->getHandles().toJObject(arrayObj);
 }
 jshortArray NativeInterface::NewShortArray(JNIEnv *env, jsize len) {
-	throw VmException("NewShortArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("short");
+	auto arrayObj = Array::make(type, len);
+	return (jshortArray)jenv->getHandles().toJObject(arrayObj);
 }
 jintArray NativeInterface::NewIntArray(JNIEnv *env, jsize len) {
-	throw VmException("NewIntArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("int");
+	auto arrayObj = Array::make(type, len);
+	return (jintArray)jenv->getHandles().toJObject(arrayObj);
 }
 jlongArray NativeInterface::NewLongArray(JNIEnv *env, jsize len) {
-	throw VmException("NewLongArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("long");
+	auto arrayObj = Array::make(type, len);
+	return (jlongArray)jenv->getHandles().toJObject(arrayObj);
 }
 jfloatArray NativeInterface::NewFloatArray(JNIEnv *env, jsize len) {
-	throw VmException("NewFloatArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("float");
+	auto arrayObj = Array::make(type, len);
+	return (jfloatArray)jenv->getHandles().toJObject(arrayObj);
 }
 jdoubleArray NativeInterface::NewDoubleArray(JNIEnv *env, jsize len) {
-	throw VmException("NewDoubleArray not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	ClassLoader &classloader = jenv->getClassLoader();
+	const auto &type = classloader.getOrLoad("double");
+	auto arrayObj = Array::make(type, len);
+	return (jdoubleArray)jenv->getHandles().toJObject(arrayObj);
 }
 
 jboolean *NativeInterface::GetBooleanArrayElements(JNIEnv *env, jbooleanArray array, jboolean *isCopy) {
@@ -1055,7 +1265,22 @@ void NativeInterface::SetByteArrayRegion(JNIEnv *env, jbyteArray array, jsize st
 	throw VmException("SetByteArrayRegion not implemented");
 }
 void NativeInterface::SetCharArrayRegion(JNIEnv *env, jcharArray array, jsize start, jsize len, const jchar *buf) {
-	throw VmException("SetCharArrayRegion not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto arrObj = jenv->getHandles().fromJObject(array);
+	logger.fdebug("SetCharArrayRegion: arrObj={}", arrObj->debug());
+	if (!arrObj && !arrObj->isArray()) {
+		throw ClassCastException("SetCharArrayRegion: not an array");
+	}
+	Array &arr = static_cast<Array &>(*arrObj);
+	if (start < 0 || len < 0 || start + len > arr.getArrayLength()) {
+		throw ArrayIndexOutOfBoundsException("SetCharArrayRegion: invalid start/len");
+	}
+	if (!buf) {
+		throw NullPointerException("SetCharArrayRegion: buf is null");
+	}
+	for (jsize i = 0; i < len; ++i) {
+		arr.setElement(start + i, Object::make((uint64_t)buf[i]));
+	}
 }
 void NativeInterface::SetShortArrayRegion(JNIEnv *env, jshortArray array, jsize start, jsize len, const jshort *buf) {
 	throw VmException("SetShortArrayRegion not implemented");

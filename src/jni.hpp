@@ -27,6 +27,7 @@ namespace sandvik {
 	class Vm;
 	class ClassLoader;
 	class JNIHandleMap;
+	class JThread;
 	class NativeInterface : public JNIEnv {
 		public:
 			explicit NativeInterface(Vm &vm_);
@@ -331,6 +332,9 @@ namespace sandvik {
 			static jlong GetDirectBufferCapacity(JNIEnv *env, jobject buf);
 
 			static jobjectRefType GetObjectRefType(JNIEnv *env, jobject obj);
+
+		private:
+			static std::shared_ptr<JThread> __CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, va_list &args);
 
 		private:
 			Vm &_vm;
