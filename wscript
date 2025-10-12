@@ -92,6 +92,7 @@ def configure(conf):
 	conf.check_lief()
 	conf.check_ffi()
 	conf.check_axml()
+	conf.check_xxhash()
 
 	#-------------------------------------------------
 	#check for test libraries
@@ -140,7 +141,7 @@ def build(bld):
 		name            = APPNAME,
 		target          = APPNAME,
 		includes        = ['src'],
-		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
+		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
 		linkflags       = ["-Wl,-z,defs"],
 		install_path    = '${PREFIX}/lib',
 		resources       = 'sanddirt.dex.jar',
@@ -153,7 +154,7 @@ def build(bld):
 		name            = "vm_sandvik",
 		target          = "sandvik",
 		includes        = ['src'],
-		use             = [APPNAME, 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'PTHREAD'],
+		use             = [APPNAME, 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
 		linkflags       = ["-rdynamic", "-Wl,-z,defs"],
 		install_path    = '${PREFIX}',
 	)

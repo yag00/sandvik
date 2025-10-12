@@ -56,6 +56,8 @@ namespace sandvik {
 			Method& getMethod(const std::string& name_, const std::string& descriptor_);
 			Method& getMethod(uint32_t idx_);
 
+			bool hasField(const std::string& name_) const;
+			bool hasField(uint32_t idx_) const;
 			Field& getField(const std::string& name_);
 			Field& getField(uint32_t idx_);
 			std::vector<std::string> getFieldList() const;

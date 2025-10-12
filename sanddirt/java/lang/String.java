@@ -1,4 +1,5 @@
 package java.lang;
+import java.util.Locale;
 /**
  * @@sandvik modified
  * The {@code String} class represents character strings. All
@@ -87,6 +88,13 @@ public class String
      * @param str the string to copy
      */
     public String(java.lang.StringBuilder str) { initialize(str); }
+    /*
+     * Package private constructor which shares value array for speed.
+     * this constructor is always expected to be called with share==true.
+     * a separate constructor is needed because we already have a public
+     * String(char[]) constructor that makes a copy of the given char[].
+     */
+    String(char[] value, boolean share) { initialize(value); }
     /**
      * Return the character at the specified index.
      * @param pos index in the String
@@ -322,7 +330,7 @@ public class String
      * Return a copy of string with upper case character.
      * @return a upper cased string
      */
-    public native final java.lang.String toUpperCase();
+    public native final java.lang.String toUpperCase(Locale locale);
     /**
      * Create a string from an array of char.
      * @param val array of char
@@ -417,4 +425,42 @@ public class String
      *          guaranteed to be from a pool of unique strings.
      */
     public native String intern();
+    /**
+     * Returns a formatted string using the specified format string and
+     * arguments.
+     *
+     * <p> The locale always used is the one returned by {@link
+     * java.util.Locale#getDefault() Locale.getDefault()}.
+     *
+     * @param  format
+     *         A <a href="../util/Formatter.html#syntax">format string</a>
+     *
+     * @param  args
+     *         Arguments referenced by the format specifiers in the format
+     *         string.  If there are more arguments than format specifiers, the
+     *         extra arguments are ignored.  The number of arguments is
+     *         variable and may be zero.  The maximum number of arguments is
+     *         limited by the maximum dimension of a Java array as defined by
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         The behaviour on a
+     *         {@code null} argument depends on the <a
+     *         href="../util/Formatter.html#syntax">conversion</a>.
+     *
+     * @throws  java.util.IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a
+     *          href="../util/Formatter.html#detail">Details</a> section of the
+     *          formatter class specification.
+     *
+     * @return  A formatted string
+     *
+     * @see  java.util.Formatter
+     * @since  1.5
+     */
+    public static String format(String format, Object... args) {
+        return new String(format + " format string not implemented yet");
+    }
 }

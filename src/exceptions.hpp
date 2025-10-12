@@ -203,6 +203,13 @@ namespace sandvik {
 			}
 			~NoSuchMethodException() noexcept override = default;
 	};
+	/** @brief OutOfMemoryError exception class */
+	class OutOfMemoryError : public JavaException {
+		public:
+			explicit OutOfMemoryError(const std::string& message = "") : JavaException("java.lang.OutOfMemoryError", message) {
+			}
+			~OutOfMemoryError() noexcept override = default;
+	};
 }  // namespace sandvik
 
 #endif

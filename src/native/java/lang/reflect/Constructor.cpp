@@ -30,13 +30,15 @@
 #include "system/logger.hpp"
 
 extern "C" {
-	JNIEXPORT jint JNICALL Java_java_lang_Integer_parseInt__Ljava_lang_String_2I(JNIEnv* env, jclass clazz, jstring str, jint radix) {
-		auto objstr = sandvik::native::getString(str);
-		try {
-			int value = std::stoi(objstr->str(), nullptr, radix);
-			return static_cast<jint>(value);
-		} catch (const std::exception& e) {
-			throw sandvik::NumberFormatException(fmt::format("Failed to parse '{}' to integer value with radix {}: {}", objstr->str(), radix, e.what()));
-		}
+	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Constructor_newInstance(JNIEnv* env, jobject ctorObj, jobjectArray args) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto ctor = sandvik::native::getObject(ctorObj);
+		logger.debug(fmt::format("Constructor.newInstance: declaringClass = {}", ctor->debug()));
+		auto declaringClass = ctor->getField("declaringClass");
+		logger.debug(fmt::format("Constructor.newInstance: declaringClass = {}", declaringClass->debug()));
+		auto instance = sandvik::Object::make(declaringClass->getClass());
+		logger.debug(fmt::format("Constructor.newInstance: Created instance of class {}", instance->debug()));
+		jobject jInstance = jenv->getHandles().toJObject(instance);
+		return jInstance;
 	}
 }

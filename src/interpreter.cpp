@@ -293,7 +293,7 @@ Interpreter::~Interpreter() {
 
 void Interpreter::execute() {
 	auto& frame = _rt.currentFrame();
-	auto& method = frame.getMethod();
+	const auto& method = frame.getMethod();
 	auto code = method.getBytecode();
 	auto func = fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature());
 	if (code == nullptr) {
@@ -310,7 +310,6 @@ void Interpreter::execute() {
 	try {
 		_dispatch[*bytecode](bytecode + 1);
 	} catch (JavaException& e) {
-		// ClassLoader& classloader = _rt.getClassLoader();
 		auto exctype = e.getExceptionType();
 		logger.fdebug("handling exception {} ({}) in method {}", exctype, e.what(), func);
 		auto exc = Object::make(_rt.getClassLoader().getOrLoad(exctype));
@@ -1053,7 +1052,12 @@ void Interpreter::if_eq(const uint8_t* operand_) {
 	auto objA = frame.getObjRegister(regA);
 	auto objB = frame.getObjRegister(regB);
 	if (objA->isNull() || objB->isNull()) {
-		throw NullPointerException("if-ne on null object");
+		if (objA->isNull() && objB->isNull()) {
+			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+		} else {
+			frame.pc() += 3;
+		}
+		return;
 	}
 	if (*objA == *objB) {
 		frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
@@ -1071,7 +1075,12 @@ void Interpreter::if_ne(const uint8_t* operand_) {
 	auto objA = frame.getObjRegister(regA);
 	auto objB = frame.getObjRegister(regB);
 	if (objA->isNull() || objB->isNull()) {
-		throw NullPointerException("if-ne on null object");
+		if (objA->isNull() && objB->isNull()) {
+			frame.pc() += 3;
+		} else {
+			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
+		}
+		return;
 	}
 	if (*objA != *objB) {
 		frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
@@ -2147,36 +2156,32 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	std::string classname, fieldname;
-	try {
-		auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname);
-		if (!field.isStatic()) {
-			throw VmException("sput_object: Cannot use sput_object on a non-static field");
-		}
-		if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
-			throw VmException("sput_object: Field {} type mismatch, expected object but got {}", field.getName(), field.getType());
-		}
-		// static field access, class instance may not be instantiated yet
-		auto& clazz = field.getClass();
-		if (!clazz.isStaticInitialized()) {
-			// cancel the current instruction
-			frame.pc()--;
-			executeClinit(clazz);
-			return;
-		}
-		auto& fieldclass = classloader.getOrLoad(field.getFieldTypeClassname());
-		// set result of the sput-object
-		auto value = frame.getObjRegister(src);
-		logger.fdebug("sput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug());
-		// @todo : this is a hack to handle setting null to an object field. Need to properly handle this case.
-		if (value->isNumberObject() && (value->getValue() == 0)) {
-			auto obj = Object::make(fieldclass);
-			field.setObjectValue(obj);
-		} else {
-			field.setObjectValue(value);
-		}
-	} catch (const std::exception& e) {
-		throw VmException("sput_object: Failed to resolve field {}.{}: {}", classname, fieldname, e.what());
+	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname);
+	if (!field.isStatic()) {
+		throw VmException("sput_object: Cannot use sput_object on a non-static field");
 	}
+	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
+		throw VmException("sput_object: Field {} type mismatch, expected object but got {}", field.getName(), field.getType());
+	}
+	// static field access, class instance may not be instantiated yet
+	auto& clazz = field.getClass();
+	if (!clazz.isStaticInitialized()) {
+		// cancel the current instruction
+		frame.pc()--;
+		executeClinit(clazz);
+		return;
+	}
+	// set result of the sput-object
+	auto value = frame.getObjRegister(src);
+	// @todo : this is a hack to handle setting null to an object field. Need to properly handle this case.
+	if (value->isNumberObject() && (value->getValue() == 0)) {
+		auto& fieldclass = classloader.getOrLoad(field.getFieldTypeClassname());
+		auto obj = Object::make(fieldclass);
+		field.setObjectValue(obj);
+	} else {
+		field.setObjectValue(value);
+	}
+
 	frame.pc() += 3;
 }
 // sput-boolean vA, field@BBBB

@@ -16,13 +16,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "field.hpp"
+
 #include <fmt/format.h>
 #include <jni/jni.h>
 
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
-#include "field.hpp"
 #include "jni.hpp"
 #include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
@@ -30,13 +31,17 @@
 #include "system/logger.hpp"
 
 extern "C" {
-	JNIEXPORT jint JNICALL Java_java_lang_Integer_parseInt__Ljava_lang_String_2I(JNIEnv* env, jclass clazz, jstring str, jint radix) {
-		auto objstr = sandvik::native::getString(str);
-		try {
-			int value = std::stoi(objstr->str(), nullptr, radix);
-			return static_cast<jint>(value);
-		} catch (const std::exception& e) {
-			throw sandvik::NumberFormatException(fmt::format("Failed to parse '{}' to integer value with radix {}: {}", objstr->str(), radix, e.what()));
-		}
+	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Field_get(JNIEnv* env, jobject fieldObj, jobject targetObj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto field = sandvik::native::getObject(fieldObj);
+		auto target = sandvik::native::getObject(targetObj);
+		// Get the field name from the Field object
+		auto nameObj = field->getField("name");
+		std::string fieldName = nameObj->str();
+		// Get the value of the field from the target object
+		auto value = target->getField(fieldName);
+		// Return the value as a jobject
+		jobject jValue = jenv->getHandles().toJObject(value);
+		return jValue;
 	}
 }

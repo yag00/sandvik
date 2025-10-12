@@ -89,4 +89,53 @@ public class System {
      * @since   JDK1.1
      */
     public static native int identityHashCode(Object x);
+
+    /**
+     * Gets the system property indicated by the specified key.
+     * <p>
+     * First, if there is a security manager, its
+     * <code>checkPropertyAccess</code> method is called with the key as
+     * its argument. This may result in a SecurityException.
+     * <p>
+     * If there is no current set of system properties, a set of system
+     * properties is first created and initialized in the same manner as
+     * for the <code>getProperties</code> method.
+     *
+     * @param      key   the name of the system property.
+     * @return     the string value of the system property,
+     *             or <code>null</code> if there is no property with that key.
+     *
+     * @exception  SecurityException  if a security manager exists and its
+     *             <code>checkPropertyAccess</code> method doesn't allow
+     *              access to the specified system property.
+     * @exception  NullPointerException if <code>key</code> is
+     *             <code>null</code>.
+     * @exception  IllegalArgumentException if <code>key</code> is empty.
+     * @see        #setProperty
+     * @see        java.lang.SecurityException
+     * @see        java.lang.SecurityManager#checkPropertyAccess(java.lang.String)
+     * @see        java.lang.System#getProperties()
+     */
+    public static native String getProperty(String key);
+    /**
+     * Terminates the currently running Java Virtual Machine. The
+     * argument serves as a status code; by convention, a nonzero status
+     * code indicates abnormal termination.
+     * <p>
+     * This method calls the <code>exit</code> method in class
+     * <code>Runtime</code>. This method never returns normally.
+     * <p>
+     * The call <code>System.exit(n)</code> is effectively equivalent to
+     * the call:
+     * <blockquote><pre>
+     * Runtime.getRuntime().exit(n)
+     * </pre></blockquote>
+     *
+     * @param      status   exit status.
+     * @throws  SecurityException
+     *        if a security manager exists and its <code>checkExit</code>
+     *        method doesn't allow exit with the specified status.
+     * @see        java.lang.Runtime#exit(int)
+     */
+    public static native void exit(int status);
 }
