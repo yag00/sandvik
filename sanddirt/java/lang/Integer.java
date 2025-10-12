@@ -509,13 +509,13 @@ public final class Integer extends Number implements Comparable<Integer> {
      * @exception  NumberFormatException if the {@code String}
      *             does not contain a parsable {@code int}.
      */
-    public static int parseInt(String s, int radix) throws NumberFormatException {
-        /*
-         * WARNING: This method may be invoked early during VM initialization
-         * before IntegerCache is initialized. Care must be taken to not use
-         * the valueOf method.
-         */
-
+    public static native int parseInt(String s, int radix) throws NumberFormatException;
+    /*public static int parseInt(String s, int radix) throws NumberFormatException {
+        //
+        // WARNING: This method may be invoked early during VM initialization
+        // before IntegerCache is initialized. Care must be taken to not use
+        // the valueOf method.
+        //
         if (s == null) {
             throw new NumberFormatException("null");
         }
@@ -568,7 +568,7 @@ public final class Integer extends Number implements Comparable<Integer> {
             throw NumberFormatException.forInputString(s);
         }
         return negative ? result : -result;
-    }
+    } */
 
     /**
      * Parses the string argument as a signed decimal integer. The

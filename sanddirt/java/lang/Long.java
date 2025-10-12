@@ -538,16 +538,19 @@ public final class Long extends Number implements Comparable<Long> {
      * @throws     NumberFormatException  if the string does not contain a
      *             parsable {@code long}.
      */
-    public static long parseLong(String s, int radix) throws NumberFormatException {
+    public static native long parseLong(String s, int radix) throws NumberFormatException;
+    /*public static long parseLong(String s, int radix) throws NumberFormatException {
         if (s == null) {
             throw new NumberFormatException("null");
         }
 
         if (radix < Character.MIN_RADIX) {
-            throw new NumberFormatException("radix " + radix + " less than Character.MIN_RADIX");
+            throw new NumberFormatException("radix " + radix + " less than
+    Character.MIN_RADIX");
         }
         if (radix > Character.MAX_RADIX) {
-            throw new NumberFormatException("radix " + radix + " greater than Character.MAX_RADIX");
+            throw new NumberFormatException("radix " + radix + " greater than
+    Character.MAX_RADIX");
         }
 
         long result = 0;
@@ -590,7 +593,7 @@ public final class Long extends Number implements Comparable<Long> {
             throw NumberFormatException.forInputString(s);
         }
         return negative ? result : -result;
-    }
+    }*/
 
     /**
      * Parses the string argument as a signed decimal {@code long}.

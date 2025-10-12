@@ -30,13 +30,13 @@
 #include "system/logger.hpp"
 
 extern "C" {
-	JNIEXPORT jint JNICALL Java_java_lang_Integer_parseInt__Ljava_lang_String_2(JNIEnv* env, jclass clazz, jstring str) {
+	JNIEXPORT jint JNICALL Java_java_lang_Integer_parseInt__Ljava_lang_String_2I(JNIEnv* env, jclass clazz, jstring str, jint radix) {
 		auto objstr = sandvik::native::getString(str);
 		try {
-			int value = std::stoi(objstr->str());
+			int value = std::stoi(objstr->str(), nullptr, radix);
 			return static_cast<jint>(value);
 		} catch (const std::exception& e) {
-			throw sandvik::NumberFormatException(fmt::format("Failed to parse '{}' to integer value: {}", objstr->str(), e.what()));
+			throw sandvik::NumberFormatException(fmt::format("Failed to parse '{}' to integer value with radix {}: {}", objstr->str(), radix, e.what()));
 		}
 	}
 }
