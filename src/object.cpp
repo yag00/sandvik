@@ -142,6 +142,37 @@ bool Object::operator==(std::nullptr_t) const {
 	return false;
 }
 
+void Object::monitorEnter() {
+	std::unique_lock<std::mutex> lock(_mutex);
+	// Wait until the monitor is free
+	_monitorCondition.wait(lock, [this]() { return _monitorOwner == std::thread::id(); });
+	_monitorOwner = std::this_thread::get_id();
+}
+
+void Object::monitorExit() {
+	std::unique_lock<std::mutex> lock(_mutex);
+	if (_monitorOwner != std::this_thread::get_id()) {
+		throw std::runtime_error("Cannot unlock an object not owned by the current thread.");
+	}
+	_monitorOwner = std::thread::id();  // Reset monitor ownership
+	_monitorCondition.notify_one();
+}
+
+void Object::monitorCheck() const {
+	// Block until the current thread either owns the monitor or the monitor is free.
+	// We don't take ownership here; we only wait until it's safe for the caller to proceed.
+	while (true) {
+		{
+			std::unique_lock<std::mutex> lock(_mutex);
+			if (_monitorOwner == std::thread::id() || _monitorOwner == std::this_thread::get_id()) {
+				return;
+			}
+		}
+		// Yield to avoid tight spinning while another thread holds the monitor.
+		std::this_thread::yield();
+	}
+}
+
 bool Object::isNumberObject() const {
 	return false;
 }
@@ -204,6 +235,7 @@ bool Object::isInstanceOf(const std::string& instance_) const {
 }
 
 ObjectRef Object::getField(const std::string& name_) const {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
 		return it->second;
@@ -212,6 +244,7 @@ ObjectRef Object::getField(const std::string& name_) const {
 }
 
 void Object::setField(const std::string& name_, ObjectRef value_) {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	_fields[name_] = value_;
 }
 

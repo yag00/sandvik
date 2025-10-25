@@ -19,9 +19,12 @@
 #ifndef __OBJECT_HPP__
 #define __OBJECT_HPP__
 
+#include <condition_variable>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace sandvik {
@@ -243,11 +246,19 @@ namespace sandvik {
 			 */
 			ObjectRef getField(const std::string& name_) const;
 
+			// Monitor enter/exit methods
+			void monitorEnter();
+			void monitorExit();
+
 		protected:
+			void monitorCheck() const;
 			/**
 			 * @brief Map storing field names and their corresponding ObjectRef values.
 			 */
 			std::map<std::string, ObjectRef> _fields;
+			mutable std::mutex _mutex;
+			std::condition_variable _monitorCondition;
+			std::thread::id _monitorOwner;  // Tracks the thread that owns the monitor
 	};
 }  // namespace sandvik
 

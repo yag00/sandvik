@@ -677,8 +677,8 @@ void Interpreter::monitor_enter(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("monitor_enter on null object");
 	}
-	logger.warning("monitor_enter not implemented!");
-	//_rt.monitorEnter(obj);
+	obj->monitorEnter();
+	logger.fdebug("monitor enter on object {}", obj->debug());
 	frame.pc()++;
 }
 // monitor-exit vAA
@@ -689,8 +689,8 @@ void Interpreter::monitor_exit(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("monitor_exit on null object");
 	}
-	logger.warning("monitor_exit not implemented!");
-	//_rt.monitorExit(obj);
+	logger.fdebug("monitor exit on object {}", obj->debug());
+	obj->monitorExit();
 	frame.pc()++;
 }
 // check-cast vAA, type@BBBB

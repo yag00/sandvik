@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <thread>
+#include <chrono>
 #include <string.h>
 #include <gtest/gtest.h>
 
@@ -178,4 +180,27 @@ TEST(object, array) {
 			EXPECT_EQ(elem->getValue(), static_cast<int32_t>(i * 3 + j + 0x11));
 		}
 	}
+}
+
+TEST(object, lock) {
+	logger.setLevel(Logger::LogLevel::DEBUG);
+	auto obj = std::make_shared<Object>();
+	obj->setField("value", Object::make(42));
+	obj->monitorEnter();
+
+	std::thread writer([obj]() {
+		auto val = obj->getField("value");
+		obj->setField("value", Object::make(43));
+	});
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	EXPECT_EQ(obj->getField("value")->getValue(), 42);
+	std::this_thread::yield();
+	obj->setField("value", Object::make(2));
+	EXPECT_EQ(obj->getField("value")->getValue(), 2);
+	obj->monitorExit();
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	EXPECT_EQ(obj->getField("value")->getValue(), 43);
+
+	writer.join();
 }
