@@ -132,6 +132,13 @@ namespace sandvik {
 			}
 			~IllegalAccessException() noexcept override = default;
 	};
+	/** @brief IllegalArgumentException exception class */
+	class IllegalArgumentException : public JavaException {
+		public:
+			explicit IllegalArgumentException(const std::string& message = "") : JavaException("java.lang.IllegalArgumentException", message) {
+			}
+			~IllegalArgumentException() noexcept override = default;
+	};
 
 	/** @brief ExceptionInInitializerError exception class */
 	class ExceptionInInitializerError : public JavaException {
