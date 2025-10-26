@@ -244,6 +244,22 @@ namespace sandvik {
 			virtual void monitorEnter();
 			virtual void monitorExit();
 
+			/** Causes the current thread to wait until either another thread invokes the notify methods
+			 * @param timeout_ the maximum time to wait in milliseconds.
+			 */
+			void wait(uint64_t timeout_ = 0);
+			/**
+			 * Wakes up a single thread that is waiting on this object's
+			 * monitor. If any threads are waiting on this object, one of them
+			 * is chosen to be awakened. The choice is arbitrary and occurs at
+			 * the discretion of the implementation. */
+			void notify();
+			/**
+			 * Wakes up all threads that are waiting on this object's monitor. A
+			 * thread waits on an object's monitor by calling one of the
+			 * wait method. */
+			void notifyAll();
+
 		protected:
 			void monitorCheck() const;
 			/**

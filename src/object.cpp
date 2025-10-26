@@ -163,6 +163,18 @@ void Object::monitorCheck() const {
 	_monitor->check();
 }
 
+void Object::wait(uint64_t timeout_) {
+	_monitor->wait(timeout_);
+}
+
+void Object::notify() {
+	_monitor->notify();
+}
+
+void Object::notifyAll() {
+	_monitor->notifyAll();
+}
+
 bool Object::isNumberObject() const {
 	return false;
 }

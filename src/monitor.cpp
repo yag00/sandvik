@@ -26,6 +26,7 @@ void Monitor::enter() {
 	_condition.wait(lock, [this]() { return _owner == std::thread::id(); });
 	_owner = std::this_thread::get_id();
 }
+
 void Monitor::exit() {
 	std::unique_lock<std::mutex> lock(_mutex);
 	if (_owner != std::this_thread::get_id()) {
@@ -34,6 +35,7 @@ void Monitor::exit() {
 	_owner = std::thread::id();  // Reset monitor ownership
 	_condition.notify_one();
 }
+
 void Monitor::check() const {
 	// Block until the current thread either owns the monitor or the monitor is free.
 	// We don't take ownership here; we only wait until it's safe for the caller to proceed.
@@ -47,4 +49,38 @@ void Monitor::check() const {
 		// Yield to avoid tight spinning while another thread holds the monitor.
 		std::this_thread::yield();
 	}
+}
+
+bool Monitor::wait(uint64_t timeout_) {
+	std::unique_lock<std::mutex> lock(_mutex);
+	bool timed_out = false;
+	// Release ownership temporarily
+	_owner = std::thread::id();
+	_condition.notify_one();  // allow others to enter during wait
+	if (timeout_ == 0) {
+		_wait_condition.wait(lock);
+	} else {
+		auto duration = std::chrono::milliseconds(timeout_);
+		timed_out = (_wait_condition.wait_for(lock, duration) == std::cv_status::timeout);
+	}
+	// Reacquire ownership before returning
+	_condition.wait(lock, [this]() { return _owner == std::thread::id(); });
+	_owner = std::this_thread::get_id();
+	return !timed_out;
+}
+
+void Monitor::notify() {
+	std::unique_lock<std::mutex> lock(_mutex);
+	if (_owner != std::this_thread::get_id()) {
+		throw std::runtime_error("Cannot call notify() on a monitor not owned by current thread.");
+	}
+	_wait_condition.notify_one();
+}
+
+void Monitor::notifyAll() {
+	std::unique_lock<std::mutex> lock(_mutex);
+	if (_owner != std::this_thread::get_id()) {
+		throw std::runtime_error("Cannot call notifyAll() on a monitor not owned by current thread.");
+	}
+	_wait_condition.notify_all();
 }

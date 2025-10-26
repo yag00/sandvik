@@ -47,10 +47,25 @@ namespace sandvik {
 			 */
 			void check() const;
 
+			/** Causes the current thread to wait until either another thread invokes the notify methods
+			 * @param timeout_ the maximum time to wait in milliseconds.
+			 * @return true if notified before timeout, false if timed out.
+			 */
+			bool wait(uint64_t timeout_ = 0);
+			/**
+			 * Wakes up a single thread that is waiting on this monitor.
+			 * If any threads are waiting on this monitor, one of them
+			 * is chosen to be awakened. */
+			void notify();
+			/**
+			 * Wakes up all threads that are waiting on this monitor. */
+			void notifyAll();
+
 		private:
 			mutable std::mutex _mutex;
-			std::condition_variable _condition;
-			std::thread::id _owner;  // Tracks the thread that owns the monitor
+			std::condition_variable _condition;       // used for monitor-enter/exit coordination
+			std::condition_variable _wait_condition;  // used for wait/notify
+			std::thread::id _owner;                   // Tracks the thread that owns the monitor
 	};
 }  // namespace sandvik
 

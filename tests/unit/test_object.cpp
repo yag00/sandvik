@@ -205,3 +205,33 @@ TEST(object, lock) {
 
 	writer.join();
 }
+
+TEST(object, wait_notify) {
+	logger.setLevel(Logger::LogLevel::DEBUG);
+	auto obj = std::make_shared<Object>();
+
+	int counter = 0;
+	bool done = false;
+
+	auto waiter = [obj, &counter, &done]() {
+		std::cout << "[waiter] Waiting...\n";
+		obj->wait(); // wait indefinitely
+		std::cout << "[waiter] Woke up! Counter=" << counter << "\n";
+		done = true;
+	};
+
+	auto notifier = [obj, &counter]() {
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		counter = 42;
+		std::cout << "[notifier] Notifying...\n";
+		obj->notifyAll();
+	};
+
+	std::thread t1(waiter);
+	std::thread t2(notifier);
+	t1.join();
+	t2.join();
+
+	EXPECT_EQ(counter, 42);
+	EXPECT_TRUE(done);
+}
