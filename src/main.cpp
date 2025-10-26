@@ -40,6 +40,8 @@ int main(int argc, char** argv) {
 	args::CompletionFlag completion(parser, {"complete"});
 
 	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
+	args::ValueFlag<std::string> logFile(parser, "logfile", "Set the log output file", {"logfile"}, "");
+	args::Flag noConsole(parser, "no-console", "Disable console output", {"no-console"});
 	args::ValueFlag<std::string> dexFile(parser, "file", "Specify the DEX file to load", {"dex"}, "");
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
 	args::ValueFlag<std::string> jarFile(parser, "file", "Specify the Jar files to load", {"jar"}, "");
@@ -73,6 +75,12 @@ int main(int argc, char** argv) {
 	}
 
 	logger.setLevel(Logger::LogLevel::INFO);
+	if (args::get(logFile) != "") {
+		logger.logToFile(args::get(logFile));
+	}
+	if (noConsole) {
+		logger.logToConsole(false);
+	}
 	logger.fok(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit());
 	if (logLevel) {
 		std::string level = args::get(logLevel);

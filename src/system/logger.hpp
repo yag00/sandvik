@@ -25,8 +25,11 @@
 #include <fmt/format.h>
 
 #include <fstream>
+#include <map>
+#include <mutex>
 #include <string>
 #include <system/singleton.hpp>
+#include <thread>
 
 #define logger ::sandvik::getLogger()
 
@@ -37,6 +40,17 @@ namespace sandvik {
 		public:
 			/** enum for log level */
 			enum class LogLevel { NONE, ERROR, OK, WARNING, INFO, DEBUG };
+
+			/** add thread to logger : log messages from this thread will be prefixed with thread name
+			 * @param tid_ thread id
+			 * @param name_ thread name
+			 */
+			void addThread(std::thread::id tid_, const std::string &name_);
+			/** remove thread from logger : log messages from this thread won't be prefixed with thread name
+			 * @param tid_ thread id
+			 * @param name_ thread name
+			 */
+			void removeThread(std::thread::id tid_);
 
 			/** log to file
 			 * @param filename_ filename for log
@@ -177,6 +191,13 @@ namespace sandvik {
 			bool _time = false;
 			LogLevel _level = LogLevel::INFO;
 			std::ofstream _file;
+
+			/** map thread id, thread name */
+			std::map<std::thread::id, std::string> _threads;
+			/** map thread name, output properties <log to console, log to file> */
+			std::map<std::string, std::pair<bool, bool>> _threadLogOutputs;
+			/** thread safe logging */
+			std::mutex _mutex;
 	};
 	inline Logger &getLogger() {
 		return Logger::getInstance();
