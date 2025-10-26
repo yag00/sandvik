@@ -28,6 +28,7 @@
 #include "class.hpp"
 #include "classloader.hpp"
 #include "field.hpp"
+#include "monitor.hpp"
 #include "system/logger.hpp"
 
 namespace sandvik {
@@ -69,6 +70,11 @@ namespace sandvik {
 			std::string debug() const override;
 
 			bool operator==(const Object& other) const override;
+
+			// need to override monitor methods to lock the class object
+			// for static fields access
+			void monitorEnter() override;
+			void monitorExit() override;
 
 		private:
 			Class& _type;
@@ -127,6 +133,9 @@ ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+Object::Object() : _monitor(std::make_unique<Monitor>()) {
+}
+
 bool Object::operator==(const Object& other) const {
 	// Same pointer -> equal
 	if (this == &other) return true;
@@ -143,34 +152,15 @@ bool Object::operator==(std::nullptr_t) const {
 }
 
 void Object::monitorEnter() {
-	std::unique_lock<std::mutex> lock(_mutex);
-	// Wait until the monitor is free
-	_monitorCondition.wait(lock, [this]() { return _monitorOwner == std::thread::id(); });
-	_monitorOwner = std::this_thread::get_id();
+	_monitor->enter();
 }
 
 void Object::monitorExit() {
-	std::unique_lock<std::mutex> lock(_mutex);
-	if (_monitorOwner != std::this_thread::get_id()) {
-		throw std::runtime_error("Cannot unlock an object not owned by the current thread.");
-	}
-	_monitorOwner = std::thread::id();  // Reset monitor ownership
-	_monitorCondition.notify_one();
+	_monitor->exit();
 }
 
 void Object::monitorCheck() const {
-	// Block until the current thread either owns the monitor or the monitor is free.
-	// We don't take ownership here; we only wait until it's safe for the caller to proceed.
-	while (true) {
-		{
-			std::unique_lock<std::mutex> lock(_mutex);
-			if (_monitorOwner == std::thread::id() || _monitorOwner == std::this_thread::get_id()) {
-				return;
-			}
-		}
-		// Yield to avoid tight spinning while another thread holds the monitor.
-		std::this_thread::yield();
-	}
+	_monitor->check();
 }
 
 bool Object::isNumberObject() const {
@@ -389,6 +379,12 @@ const Class& ConstClassObject::getClassType() const {
 
 std::string ConstClassObject::debug() const {
 	return fmt::format("Class<? {}>", _type.getFullname());
+}
+void ConstClassObject::monitorEnter() {
+	_type.monitorEnter();
+}
+void ConstClassObject::monitorExit() {
+	_type.monitorExit();
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool NullObject::operator==(std::nullptr_t) const {

@@ -32,6 +32,7 @@ namespace LIEF {
 
 namespace sandvik {
 	class ClassLoader;
+	class Monitor;
 	class Object;
 	class Method;
 	class Field;
@@ -39,7 +40,7 @@ namespace sandvik {
 		public:
 			Class(ClassLoader& classloader_, const std::string& packagename_, const std::string& fullname_);
 			Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
-			virtual ~Class() = default;
+			virtual ~Class();
 
 			void debug() const;
 
@@ -75,6 +76,11 @@ namespace sandvik {
 			Class& getSuperClass() const;
 			std::string getSuperClassname() const;
 
+			// Monitor enter/exit methods
+			void monitorEnter();
+			void monitorExit();
+			void monitorCheck() const;
+
 		private:
 			ClassLoader& _classloader;
 			bool _isStaticInitialized;
@@ -93,6 +99,8 @@ namespace sandvik {
 			std::map<std::string, std::unique_ptr<Field>> _fields;
 			std::vector<std::string> _interfaces;
 			friend class ClassBuilder;
+
+			std::unique_ptr<Monitor> _monitor;
 	};
 }  // namespace sandvik
 

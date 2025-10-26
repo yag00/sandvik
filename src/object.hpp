@@ -32,6 +32,7 @@ namespace sandvik {
 	class Class;
 	class Object;
 	class Array;
+	class Monitor;
 
 	using ObjectRef = std::shared_ptr<Object>;
 	/**
@@ -44,14 +45,7 @@ namespace sandvik {
 	 */
 	class Object {
 		public:
-			/**
-			 * @brief Default constructor.
-			 */
-			Object() = default;
-
-			/**
-			 * @brief Virtual destructor.
-			 */
+			Object();
 			virtual ~Object() = default;
 
 			/**
@@ -247,8 +241,8 @@ namespace sandvik {
 			ObjectRef getField(const std::string& name_) const;
 
 			// Monitor enter/exit methods
-			void monitorEnter();
-			void monitorExit();
+			virtual void monitorEnter();
+			virtual void monitorExit();
 
 		protected:
 			void monitorCheck() const;
@@ -256,9 +250,7 @@ namespace sandvik {
 			 * @brief Map storing field names and their corresponding ObjectRef values.
 			 */
 			std::map<std::string, ObjectRef> _fields;
-			mutable std::mutex _mutex;
-			std::condition_variable _monitorCondition;
-			std::thread::id _monitorOwner;  // Tracks the thread that owns the monitor
+			std::unique_ptr<Monitor> _monitor;
 	};
 }  // namespace sandvik
 

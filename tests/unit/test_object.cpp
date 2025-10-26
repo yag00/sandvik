@@ -28,6 +28,7 @@
 #include <frame.hpp>
 #include <array.hpp>
 #include <method.hpp>
+#include <monitor.hpp>
 #include <object.hpp>
 #include <system/logger.hpp>
 
