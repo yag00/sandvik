@@ -83,7 +83,7 @@ namespace sandvik {
 
 		private:
 			ClassLoader& _classloader;
-			bool _isStaticInitialized;
+			bool _isStaticInitialized = false;
 
 			std::string _packagename;
 			std::string _fullname;

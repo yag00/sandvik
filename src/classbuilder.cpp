@@ -41,7 +41,8 @@ void ClassBuilder::setInterface() {
 
 void ClassBuilder::addVirtualMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
                                     std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_) {
-	auto method = std::make_unique<Method>(*_class, name_, signature_, _methodIndex++);
+	auto method = std::make_unique<Method>(*_class, name_, signature_, _methodIndex);
+	_methodIndex++;
 	method->_isVirtual = true;
 	method->_accessFlags = flags_;
 	method->_function = function_;
@@ -50,7 +51,8 @@ void ClassBuilder::addVirtualMethod(const std::string& name_, const std::string&
 
 void ClassBuilder::addMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
                              std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_) {
-	auto method = std::make_unique<Method>(*_class, name_, signature_, _methodIndex++);
+	auto method = std::make_unique<Method>(*_class, name_, signature_, _methodIndex);
+	_methodIndex++;
 	method->_isVirtual = false;
 	method->_accessFlags = flags_;
 	method->_function = function_;

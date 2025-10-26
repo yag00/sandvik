@@ -40,7 +40,6 @@ using namespace sandvik;
 
 Class::Class(ClassLoader& classloader_, const std::string& packagename_, const std::string& fullname_)
     : _classloader(classloader_),
-      _isStaticInitialized(false),
       _packagename(packagename_),
       _fullname(fullname_),
       _dexIdx(-1),
@@ -60,7 +59,6 @@ Class::Class(ClassLoader& classloader_, const std::string& packagename_, const s
 
 Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_)
     : _classloader(classloader_),
-      _isStaticInitialized(false),
       _packagename(class_.package_name()),
       _fullname(class_.pretty_name()),
       _name(class_.name()),

@@ -376,15 +376,15 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 		throw VmException("throw operand is not an object!");
 	}
 
-	while (1) {
+	while (true) {
 		try {
 			auto& frame = _rt.currentFrame();
-			auto& method = frame.getMethod();
+			const auto& method = frame.getMethod();
 			uint32_t catchAllAddrress = 0;
 			auto exceptionHandler = method.getExceptionHandler(frame.pc() - 1, catchAllAddrress);
 			for (auto& exc : exceptionHandler) {
 				auto& classloader = _rt.getClassLoader();
-				auto& exceptionType = classloader.resolveClass(frame.getDexIdx(), exc.first);
+				const auto& exceptionType = classloader.resolveClass(frame.getDexIdx(), exc.first);
 				if (exceptionType.isInstanceOf(exception_)) {
 					logger.fdebug("Catch exception {} at {:x}", exceptionType.getName(), exc.second);
 					frame.pc() = exc.second << 1;

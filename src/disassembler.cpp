@@ -551,7 +551,7 @@ std::string Disassembler::format_i12x(const std::string& name_, const uint8_t* o
 
 std::string Disassembler::format_i11n(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const {
 	size_ += 1;
-	int8_t value = static_cast<int8_t>((operand_[0] >> 4) & 0x0F);
+	auto value = static_cast<int8_t>((operand_[0] >> 4) & 0x0F);
 	if (value & 0x08) {
 		value |= 0xF0;  // Sign extend the 4-bit value to 8 bits
 	}
