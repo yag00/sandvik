@@ -71,16 +71,10 @@ bool Monitor::wait(uint64_t timeout_) {
 
 void Monitor::notify() {
 	std::unique_lock<std::mutex> lock(_mutex);
-	if (_owner != std::this_thread::get_id()) {
-		throw std::runtime_error("Cannot call notify() on a monitor not owned by current thread.");
-	}
 	_wait_condition.notify_one();
 }
 
 void Monitor::notifyAll() {
 	std::unique_lock<std::mutex> lock(_mutex);
-	if (_owner != std::this_thread::get_id()) {
-		throw std::runtime_error("Cannot call notifyAll() on a monitor not owned by current thread.");
-	}
 	_wait_condition.notify_all();
 }
