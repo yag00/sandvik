@@ -42,7 +42,7 @@ extern "C" {
 		// initialize System.err
 		auto stream_stderr = sandvik::Object::make(printStreamClass);
 		stream_stderr->setField("file", sandvik::Object::make(2));
-		systemClass.getField("err").setObjectValue(stream_stdout);
+		systemClass.getField("err").setObjectValue(stream_stderr);
 	}
 
 	JNIEXPORT void JNICALL Java_java_lang_System_loadLibrary(JNIEnv* env, jobject obj, jstring libName) {
