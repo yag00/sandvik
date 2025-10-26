@@ -81,4 +81,32 @@ extern "C" {
 		jobject jstr = jenv->getHandles().toJObject(strObj);
 		return jstr;
 	}
+
+	JNIEXPORT jcharArray JNICALL Java_java_lang_String_toCharArray(JNIEnv* env, jobject obj) {
+		auto this_ptr = sandvik::native::getString(obj);
+		const auto& str = this_ptr->str();
+		jsize len = static_cast<jsize>(str.size());
+
+		jcharArray arr = env->NewCharArray(len);
+		if (arr == nullptr) {
+			throw sandvik::OutOfMemoryError("Failed to allocate char array");
+		}
+
+		if (len > 0) {
+			std::vector<jchar> buf;
+			buf.reserve(len);
+			for (unsigned char c : str) {
+				buf.push_back(static_cast<jchar>(c));
+			}
+			env->SetCharArrayRegion(arr, 0, len, buf.data());
+		}
+
+		return arr;
+	}
+
+	JNIEXPORT jint JNICALL Java_java_lang_String_length(JNIEnv* env, jobject obj) {
+		auto this_ptr = sandvik::native::getString(obj);
+		const auto& str = this_ptr->str();
+		return static_cast<jint>(str.size());
+	}
 }
