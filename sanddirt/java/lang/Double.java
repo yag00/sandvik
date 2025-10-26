@@ -25,6 +25,10 @@
 
 package java.lang;
 
+import sun.misc.DoubleConsts;
+import sun.misc.FloatingDecimal;
+import sun.misc.FpUtils;
+
 /**
  * @@sandvik modified
  * The {@code Double} class wraps a value of the primitive type
@@ -127,33 +131,12 @@ public final class Double extends Number implements Comparable<Double> {
     public static final int BYTES = SIZE / Byte.SIZE;
 
     /**
-     * Bias used in representing a <code>double</code> exponent.
-     */
-    public static final int EXP_BIAS = 1023;
-
-    /**
-     * Bit mask to isolate the sign bit of a <code>double</code>.
-     */
-    public static final long SIGN_BIT_MASK = 0x8000000000000000L;
-
-    /**
-     * Bit mask to isolate the exponent field of a
-     * <code>double</code>.
-     */
-    public static final long EXP_BIT_MASK = 0x7FF0000000000000L;
-    /**
-     * Bit mask to isolate the significand field of a
-     * <code>double</code>.
-     */
-    public static final long SIGNIF_BIT_MASK = 0x000FFFFFFFFFFFFFL;
-
-    /**
      * The {@code Class} instance representing the primitive type
      * {@code double}.
      *
      * @since JDK1.1
      */
-    public static Class<Double> TYPE;
+    public static final Class<Double> TYPE = (Class<Double>) Class.getPrimitiveClass("double");
 
     /**
      * Returns a string representation of the {@code double}
@@ -217,7 +200,7 @@ public final class Double extends Number implements Comparable<Double> {
      * @param   d   the {@code double} to be converted.
      * @return a string representation of the argument.
      */
-    public native static String toString(double d);
+    public static String toString(double d) { return FloatingDecimal.toJavaFormatString(d); }
 
     /**
      * Returns a hexadecimal string representation of the
@@ -316,13 +299,13 @@ public final class Double extends Number implements Comparable<Double> {
             if (d == 0.0) {
                 answer.append("0.0p0");
             } else {
-                boolean subnormal = (d < MIN_NORMAL);
+                boolean subnormal = (d < DoubleConsts.MIN_NORMAL);
 
                 // Isolate significand bits and OR in a high-order bit
                 // so that the string representation has a known
                 // length.
-                long signifBits =
-                    (Double.doubleToLongBits(d) & SIGNIF_BIT_MASK) | 0x1000000000000000L;
+                long signifBits = (Double.doubleToLongBits(d) & DoubleConsts.SIGNIF_BIT_MASK)
+                    | 0x1000000000000000L;
 
                 // Subnormal values have a 0 implicit bit; normal
                 // values have a 1 implicit bit.
@@ -342,7 +325,7 @@ public final class Double extends Number implements Comparable<Double> {
                 // value for double; otherwise, extract and report d's
                 // exponent (the representation of a subnormal uses
                 // E_min -1).
-                answer.append(subnormal ? MIN_EXPONENT : Math.getExponent(d));
+                answer.append(subnormal ? DoubleConsts.MIN_EXPONENT : Math.getExponent(d));
             }
             return answer.toString();
         }
@@ -544,7 +527,9 @@ public final class Double extends Number implements Comparable<Double> {
      * @see    java.lang.Double#valueOf(String)
      * @since 1.2
      */
-    public native static double parseDouble(String s) throws NumberFormatException;
+    public static double parseDouble(String s) throws NumberFormatException {
+        return FloatingDecimal.parseDouble(s);
+    }
 
     /**
      * Returns {@code true} if the specified number is a
@@ -578,7 +563,7 @@ public final class Double extends Number implements Comparable<Double> {
      * floating-point value, {@code false} otherwise.
      * @since 1.8
      */
-    public static boolean isFinite(double d) { return Math.abs(d) <= MAX_VALUE; }
+    public static boolean isFinite(double d) { return Math.abs(d) <= DoubleConsts.MAX_VALUE; }
 
     /**
      * The value of the Double.
@@ -817,7 +802,8 @@ public final class Double extends Number implements Comparable<Double> {
         long result = doubleToRawLongBits(value);
         // Check for NaN based on values of bit fields, maximum
         // exponent and nonzero significand.
-        if (((result & EXP_BIT_MASK) == EXP_BIT_MASK) && (result & SIGNIF_BIT_MASK) != 0L)
+        if (((result & DoubleConsts.EXP_BIT_MASK) == DoubleConsts.EXP_BIT_MASK)
+            && (result & DoubleConsts.SIGNIF_BIT_MASK) != 0L)
             result = 0x7ff8000000000000L;
         return result;
     }

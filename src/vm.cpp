@@ -195,11 +195,14 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	} catch (const std::exception& e) {
 		logger.debug(e.what());
 	}
+	_isRunning = true;
 	mainThread.run(true);
+	_isRunning = false;
 }
 
 void Vm::stop() {
 	logger.info("Stopping VM...");
+	_isRunning = false;
 }
 
 JThread& Vm::newThread(const std::string& name_) {
@@ -229,4 +232,21 @@ JThread& Vm::currentThread() const {
 		}
 	}
 	throw VmException("Current thread not found in VM");
+}
+
+void Vm::deleteThread(const std::string& name_) {
+	for (auto it = _threads.begin(); it != _threads.end(); ++it) {
+		if ((*it)->getName() == name_) {
+			_threads.erase(it);
+			return;
+		}
+	}
+}
+
+std::string Vm::getProperty(const std::string& name_) const {
+	auto it = _properties.find(name_);
+	if (it != _properties.end()) {
+		return it->second;
+	}
+	throw VmException("Property '{}' not found", name_);
 }

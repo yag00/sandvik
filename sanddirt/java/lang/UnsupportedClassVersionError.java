@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2008, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,23 +26,26 @@
 package java.lang;
 
 /**
- * The {@code Void} class is an uninstantiable placeholder class to hold a
- * reference to the {@code Class} object representing the Java keyword
- * void.
+ * Thrown when the Java Virtual Machine attempts to read a class
+ * file and determines that the major and minor version numbers
+ * in the file are not supported.
  *
- * @author  unascribed
- * @since   JDK1.1
+ * @since   1.2
  */
-public final class Void {
-    /**
-     * The {@code Class} object representing the pseudo-type corresponding to
-     * the keyword {@code void}.
-     */
-    @SuppressWarnings("unchecked")
-    public static final Class<Void> TYPE = (Class<Void>) Class.getPrimitiveClass("void");
+public class UnsupportedClassVersionError extends ClassFormatError {
+    private static final long serialVersionUID = -7123279212883497373L;
 
-    /*
-     * The Void class cannot be instantiated.
+    /**
+     * Constructs a <code>UnsupportedClassVersionError</code>
+     * with no detail message.
      */
-    private Void() {}
+    public UnsupportedClassVersionError() { super(); }
+
+    /**
+     * Constructs a <code>UnsupportedClassVersionError</code> with
+     * the specified detail message.
+     *
+     * @param   s   the detail message.
+     */
+    public UnsupportedClassVersionError(String s) { super(s); }
 }

@@ -36,6 +36,7 @@
 #include "jnihandlemap.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
+#include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "vm.hpp"
@@ -1113,7 +1114,8 @@ void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char
 }
 
 jsize NativeInterface::GetArrayLength(JNIEnv *env, jarray array) {
-	throw VmException("GetArrayLength not implemented");
+	auto obj = sandvik::native::getArray(array);
+	return (jsize)obj->getArrayLength();
 }
 
 jobjectArray NativeInterface::NewObjectArray(JNIEnv *env, jsize len, jclass clazz, jobject init) {
@@ -1238,7 +1240,21 @@ void NativeInterface::GetByteArrayRegion(JNIEnv *env, jbyteArray array, jsize st
 	throw VmException("GetByteArrayRegion not implemented");
 }
 void NativeInterface::GetCharArrayRegion(JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) {
-	throw VmException("GetCharArrayRegion not implemented");
+	NativeInterface *jenv = static_cast<NativeInterface *>(env);
+	auto arrObj = jenv->getHandles().fromJObject(array);
+	if (!arrObj || !arrObj->isArray()) {
+		throw ClassCastException("GetCharArrayRegion: not an array");
+	}
+	Array &arr = static_cast<Array &>(*arrObj);
+	if (start < 0 || len < 0 || start + len > arr.getArrayLength()) {
+		throw ArrayIndexOutOfBoundsException("GetCharArrayRegion: invalid start/len");
+	}
+	if (!buf) {
+		throw NullPointerException("GetCharArrayRegion: buf is null");
+	}
+	for (jsize i = 0; i < len; ++i) {
+		buf[i] = (jchar)arr.getElement(start + i)->getValue();
+	}
 }
 void NativeInterface::GetShortArrayRegion(JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) {
 	throw VmException("GetShortArrayRegion not implemented");
@@ -1265,7 +1281,6 @@ void NativeInterface::SetByteArrayRegion(JNIEnv *env, jbyteArray array, jsize st
 void NativeInterface::SetCharArrayRegion(JNIEnv *env, jcharArray array, jsize start, jsize len, const jchar *buf) {
 	NativeInterface *jenv = static_cast<NativeInterface *>(env);
 	auto arrObj = jenv->getHandles().fromJObject(array);
-	logger.fdebug("SetCharArrayRegion: arrObj={}", arrObj->debug());
 	if (!arrObj && !arrObj->isArray()) {
 		throw ClassCastException("SetCharArrayRegion: not an array");
 	}

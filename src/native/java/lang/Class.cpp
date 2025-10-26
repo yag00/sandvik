@@ -41,18 +41,6 @@ extern "C" {
 		return (jstring)jstr;
 	}
 
-	JNIEXPORT jobject JNICALL Java_java_lang_Object_getClass(JNIEnv* env, jobject obj) {
-		auto jenv = sandvik::native::getNativeInterface(env);
-		auto ptr = sandvik::native::getObject(obj);
-		if (ptr->isClass()) {
-			auto clazz = sandvik::Object::make(ptr->getClass());
-			jobject jclassObj = jenv->getHandles().toJObject(clazz);
-			return jclassObj;
-		} else {
-			throw sandvik::ClassCastException("Object is not a java.lang.Class");
-		}
-	}
-
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_forName(JNIEnv* env, jclass, jstring name) {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto objstr = sandvik::native::getString(name);
@@ -65,6 +53,7 @@ extern "C" {
 		jobject jclassObj = jenv->getHandles().toJObject(classObj);
 		return jclassObj;
 	}
+
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredConstructor(JNIEnv* env, jobject obj) {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto classObj = sandvik::native::getObject(obj);
@@ -114,5 +103,20 @@ extern "C" {
 
 		jobject jfieldObj = jenv->getHandles().toJObject(fieldObj);
 		return jfieldObj;
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_Class_getPrimitiveClass(JNIEnv* env, jclass, jstring name) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto nameObj = sandvik::native::getString(name);
+		std::string primName = nameObj->str();
+
+		auto& classloader = jenv->getClassLoader();
+		logger.debug(fmt::format("Class.getPrimitiveClass: looking up primitive '{}'", primName));
+
+		// Obtain the internal class representation and wrap it in a java.lang.Class instance.
+		auto& primClass = classloader.getOrLoad(primName);
+		auto classObj = sandvik::Object::makeConstClass(classloader, primClass);
+		jobject jclassObj = jenv->getHandles().toJObject(classObj);
+		return jclassObj;
 	}
 }

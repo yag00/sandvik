@@ -20,6 +20,7 @@
 
 #include <fmt/format.h>
 
+#include "array.hpp"
 #include "exceptions.hpp"
 #include "jni.hpp"
 #include "object.hpp"
@@ -45,6 +46,17 @@ Object* native::getString(jstring jstr) {
 	}
 	if (!ptr->isString()) {
 		throw ClassCastException("Object is not a java.lang.String");
+	}
+	return ptr;
+}
+
+Array* native::getArray(jobject jarray) {
+	auto ptr = (Array*)jarray;
+	if (ptr == nullptr) {
+		throw NullPointerException("null array");
+	}
+	if (!ptr->isArray()) {
+		throw ClassCastException("Object is not an array");
 	}
 	return ptr;
 }

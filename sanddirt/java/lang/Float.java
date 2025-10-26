@@ -25,9 +25,11 @@
 
 package java.lang;
 
-import java.lang.Double;
+import sun.misc.DoubleConsts;
+import sun.misc.FloatConsts;
+import sun.misc.FloatingDecimal;
+
 /**
- * @@sandvik modified
  * The {@code Float} class wraps a value of primitive type
  * {@code float} in an object. An object of type
  * {@code Float} contains a single field whose type is
@@ -126,34 +128,13 @@ public final class Float extends Number implements Comparable<Float> {
     public static final int BYTES = SIZE / Byte.SIZE;
 
     /**
-     * Bias used in representing a <code>float</code> exponent.
-     */
-    public static final int EXP_BIAS = 127;
-
-    /**
-     * Bit mask to isolate the sign bit of a <code>float</code>.
-     */
-    public static final int SIGN_BIT_MASK = 0x80000000;
-
-    /**
-     * Bit mask to isolate the exponent field of a
-     * <code>float</code>.
-     */
-    public static final int EXP_BIT_MASK = 0x7F800000;
-
-    /**
-     * Bit mask to isolate the significand field of a
-     * <code>float</code>.
-     */
-    public static final int SIGNIF_BIT_MASK = 0x007FFFFF;
-
-    /**
      * The {@code Class} instance representing the primitive type
      * {@code float}.
      *
      * @since JDK1.1
      */
-    public static Class<Float> TYPE;
+    @SuppressWarnings("unchecked")
+    public static final Class<Float> TYPE = (Class<Float>) Class.getPrimitiveClass("float");
 
     /**
      * Returns a string representation of the {@code float}
@@ -221,7 +202,7 @@ public final class Float extends Number implements Comparable<Float> {
      * @param   f   the float to be converted.
      * @return a string representation of the argument.
      */
-    public native static String toString(float f);
+    public static String toString(float f) { return FloatingDecimal.toJavaFormatString(f); }
 
     /**
      * Returns a hexadecimal string representation of the
@@ -298,13 +279,14 @@ public final class Float extends Number implements Comparable<Float> {
      * @author Joseph D. Darcy
      */
     public static String toHexString(float f) {
-        if (Math.abs(f) < MIN_NORMAL && f != 0.0f) { // float subnormal
+        if (Math.abs(f) < FloatConsts.MIN_NORMAL && f != 0.0f) { // float subnormal
             // Adjust exponent to create subnormal double, then
             // replace subnormal double exponent with subnormal float
             // exponent
-            String s = Double.toHexString(Math.scalb((double) f,
-                                                     /* -1022+126 */
-                                                     Double.MIN_EXPONENT - MIN_EXPONENT));
+            String s = Double.toHexString(
+                Math.scalb((double) f,
+                           /* -1022+126 */
+                           DoubleConsts.MIN_EXPONENT - FloatConsts.MIN_EXPONENT));
             return s.replaceFirst("p-1022$", "p-126");
         } else // double string will be the same as float string
             return Double.toHexString(f);
@@ -459,7 +441,9 @@ public final class Float extends Number implements Comparable<Float> {
      * @see    java.lang.Float#valueOf(String)
      * @since 1.2
      */
-    public native static float parseFloat(String s) throws NumberFormatException;
+    public static float parseFloat(String s) throws NumberFormatException {
+        return FloatingDecimal.parseFloat(s);
+    }
 
     /**
      * Returns {@code true} if the specified number is a
@@ -493,7 +477,7 @@ public final class Float extends Number implements Comparable<Float> {
      * floating-point value, {@code false} otherwise.
      * @since 1.8
      */
-    public static boolean isFinite(float f) { return Math.abs(f) <= MAX_VALUE; }
+    public static boolean isFinite(float f) { return Math.abs(f) <= FloatConsts.MAX_VALUE; }
 
     /**
      * The value of the Float.
@@ -723,7 +707,8 @@ public final class Float extends Number implements Comparable<Float> {
         int result = floatToRawIntBits(value);
         // Check for NaN based on values of bit fields, maximum
         // exponent and nonzero significand.
-        if (((result & EXP_BIT_MASK) == EXP_BIT_MASK) && (result & SIGNIF_BIT_MASK) != 0)
+        if (((result & FloatConsts.EXP_BIT_MASK) == FloatConsts.EXP_BIT_MASK)
+            && (result & FloatConsts.SIGNIF_BIT_MASK) != 0)
             result = 0x7fc00000;
         return result;
     }

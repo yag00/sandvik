@@ -25,11 +25,13 @@
 
 namespace sandvik {
 	class Object;
+	class Array;
 	class NativeInterface;
 	namespace native {
 		Object* getObject(jobject jobj);
 		Object* getString(jobject jstr);
 		Object* getString(jstring jstr);
+		Array* getArray(jobject jarray);
 		NativeInterface* getNativeInterface(JNIEnv* env);
 	};  // namespace native
 };  // namespace sandvik

@@ -24,6 +24,7 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
+#include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -57,5 +58,21 @@ extern "C" {
 		}
 		auto* object = sandvik::native::getObject(obj);
 		return static_cast<jint>(object->identityHashCode());
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_System_getProperty(JNIEnv* env, jobject, jstring key) {
+		if (!key) {
+			throw sandvik::NullPointerException("java.lang.System.getProperty: key is null");
+		}
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+		auto prop = sandvik::native::getString(key);
+		try {
+			auto value = jenv->getVm().getProperty(prop->str());
+			auto strObj = sandvik::Object::make(classloader, value);
+			return jenv->getHandles().toJObject(strObj);
+		} catch (const std::exception& e) {
+			return nullptr;
+		}
 	}
 }

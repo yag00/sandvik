@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,26 +23,23 @@
  * questions.
  */
 
-package java.lang;
-
 /**
- * The {@code Void} class is an uninstantiable placeholder class to hold a
- * reference to the {@code Class} object representing the Java keyword
- * void.
+ * Provides classes for performing arbitrary-precision integer
+ * arithmetic ({@code BigInteger}) and arbitrary-precision decimal
+ * arithmetic ({@code BigDecimal}).  {@code BigInteger} is analogous
+ * to the primitive integer types except that it provides arbitrary
+ * precision, hence operations on {@code BigInteger}s do not overflow
+ * or lose precision.  In addition to standard arithmetic operations,
+ * {@code BigInteger} provides modular arithmetic, GCD calculation,
+ * primality testing, prime generation, bit manipulation, and a few
+ * other miscellaneous operations.
  *
- * @author  unascribed
- * @since   JDK1.1
+ * {@code BigDecimal} provides arbitrary-precision signed decimal
+ * numbers suitable for currency calculations and the like.  {@code
+ * BigDecimal} gives the user complete control over rounding behavior,
+ * allowing the user to choose from a comprehensive set of eight
+ * rounding modes.
+ *
+ * @since JDK1.1
  */
-public final class Void {
-    /**
-     * The {@code Class} object representing the pseudo-type corresponding to
-     * the keyword {@code void}.
-     */
-    @SuppressWarnings("unchecked")
-    public static final Class<Void> TYPE = (Class<Void>) Class.getPrimitiveClass("void");
-
-    /*
-     * The Void class cannot be instantiated.
-     */
-    private Void() {}
-}
+package java.math;

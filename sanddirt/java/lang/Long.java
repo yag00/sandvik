@@ -29,7 +29,6 @@ import java.lang.annotation.Native;
 import java.math.*;
 
 /**
- * @@sandvik modified
  * The {@code Long} class wraps a value of the primitive type {@code
  * long} in an object. An object of type {@code Long} contains a
  * single field whose type is {@code long}.
@@ -70,7 +69,8 @@ public final class Long extends Number implements Comparable<Long> {
      *
      * @since   JDK1.1
      */
-    public static Class<Long> TYPE;
+    @SuppressWarnings("unchecked")
+    public static final Class<Long> TYPE = (Class<Long>) Class.getPrimitiveClass("long");
 
     /**
      * Returns a string representation of the first argument in the
@@ -538,19 +538,16 @@ public final class Long extends Number implements Comparable<Long> {
      * @throws     NumberFormatException  if the string does not contain a
      *             parsable {@code long}.
      */
-    public static native long parseLong(String s, int radix) throws NumberFormatException;
-    /*public static long parseLong(String s, int radix) throws NumberFormatException {
+    public static long parseLong(String s, int radix) throws NumberFormatException {
         if (s == null) {
             throw new NumberFormatException("null");
         }
 
         if (radix < Character.MIN_RADIX) {
-            throw new NumberFormatException("radix " + radix + " less than
-    Character.MIN_RADIX");
+            throw new NumberFormatException("radix " + radix + " less than Character.MIN_RADIX");
         }
         if (radix > Character.MAX_RADIX) {
-            throw new NumberFormatException("radix " + radix + " greater than
-    Character.MAX_RADIX");
+            throw new NumberFormatException("radix " + radix + " greater than Character.MAX_RADIX");
         }
 
         long result = 0;
@@ -593,7 +590,7 @@ public final class Long extends Number implements Comparable<Long> {
             throw NumberFormatException.forInputString(s);
         }
         return negative ? result : -result;
-    }*/
+    }
 
     /**
      * Parses the string argument as a signed decimal {@code long}.

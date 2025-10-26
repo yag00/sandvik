@@ -150,4 +150,6 @@ public class PrintStream extends FilterOutputStream {
      * @throws IOException if IO error occurs
      */
     public native void close() throws IOException;
+
+    public native PrintStream format(String format, Object... args);
 }

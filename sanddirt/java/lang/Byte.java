@@ -26,7 +26,7 @@
 package java.lang;
 
 /**
- * @@sandvik modified
+ *
  * The {@code Byte} class wraps a value of primitive type {@code byte}
  * in an object.  An object of type {@code Byte} contains a single
  * field whose type is {@code byte}.
@@ -58,7 +58,8 @@ public final class Byte extends Number implements Comparable<Byte> {
      * The {@code Class} instance representing the primitive type
      * {@code byte}.
      */
-    public static Class<Byte> TYPE;
+    @SuppressWarnings("unchecked")
+    public static final Class<Byte> TYPE = (Class<Byte>) Class.getPrimitiveClass("byte");
 
     /**
      * Returns a new {@code String} object representing the

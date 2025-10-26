@@ -125,6 +125,14 @@ namespace sandvik {
 			~IllegalAccessError() noexcept override = default;
 	};
 
+	/** @brief IndexOutOfBoundsException exception class */
+	class IndexOutOfBoundsException : public JavaException {
+		public:
+			explicit IndexOutOfBoundsException(const std::string& message = "") : JavaException("java.lang.IndexOutOfBoundsException", message) {
+			}
+			~IndexOutOfBoundsException() noexcept override = default;
+	};
+
 	/** @brief IllegalAccessException exception class */
 	class IllegalAccessException : public JavaException {
 		public:

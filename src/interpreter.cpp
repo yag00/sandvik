@@ -375,6 +375,7 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 	if (!exception->isClass()) {
 		throw VmException("throw operand is not an object!");
 	}
+
 	while (1) {
 		try {
 			auto& frame = _rt.currentFrame();
@@ -397,27 +398,21 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 				frame.setException(exception_);
 				return;
 			}
-			// No handler found - propagate to caller
-			_rt.popFrame();
-			if (_rt.stackDepth() == 0) {
-				// uncaught exception
-				auto detailMessage = exception->getField("detailMessage");
-				std::string msg = detailMessage->isString() ? detailMessage->str() : "";
-				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
-				throw JavaException(exception->getClass().getFullname(), msg);
-			}
-			_rt.currentFrame().setException(exception_);
 		} catch (const std::exception& e) {
-			_rt.popFrame();
-			if (_rt.stackDepth() == 0) {
-				// uncaught exception
-				auto detailMessage = exception->getField("detailMessage");
-				std::string msg = detailMessage->isString() ? detailMessage->str() : "";
-				logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
-				throw JavaException(exception->getClass().getFullname(), msg);
-			}
-			_rt.currentFrame().setException(exception_);
+			logger.fdebug("Exception handling failed: {}", e.what());
 		}
+		// No handler found - propagate to caller
+		if (_rt.stackDepth() > 0) {
+			_rt.popFrame();
+		}
+		if (_rt.stackDepth() == 0) {
+			// uncaught exception
+			auto detailMessage = exception->getField("detailMessage");
+			std::string msg = detailMessage->isString() ? detailMessage->str() : "";
+			logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
+			throw JavaException(exception->getClass().getFullname(), msg);
+		}
+		_rt.currentFrame().setException(exception_);
 	}
 }
 

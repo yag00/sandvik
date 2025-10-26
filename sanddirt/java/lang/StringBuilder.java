@@ -204,4 +204,16 @@ public class StringBuilder implements java.io.Serializable, java.lang.CharSequen
      * @return string representation
      */
     public native final java.lang.String toString();
+
+    public native StringBuilder insert(int index, char[] str, int offset, int len);
+    public native StringBuilder insert(int offset, Object obj);
+    public native StringBuilder insert(int offset, String str);
+    public native StringBuilder insert(int offset, char[] str);
+    public native StringBuilder insert(int dstOffset, CharSequence s);
+    public native StringBuilder insert(int dstOffset, CharSequence s, int start, int end);
+    public native StringBuilder insert(int offset, boolean b);
+    public native StringBuilder insert(int offset, char c);
+    public native StringBuilder insert(int offset, int i);
+    public native StringBuilder insert(int offset, long l);
+    public native StringBuilder insert(int offset, float f);
 }

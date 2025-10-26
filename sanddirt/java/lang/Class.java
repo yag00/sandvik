@@ -18,6 +18,11 @@ package java.lang;
  * loader.
  */
 public class Class<T> implements java.io.Serializable {
+    /*
+     * Return the Virtual Machine's Class object for the named
+     * primitive type.
+     */
+    static native Class<?> getPrimitiveClass(String name);
     /**
      * Return {@code this} if the class is assignable as the subclass.
      * @param subclass class to assign

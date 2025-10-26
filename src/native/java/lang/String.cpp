@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
@@ -108,5 +109,62 @@ extern "C" {
 		auto this_ptr = sandvik::native::getString(obj);
 		const auto& str = this_ptr->str();
 		return static_cast<jint>(str.size());
+	}
+
+	JNIEXPORT void JNICALL Java_java_lang_String_initialize___3CII(JNIEnv* env, jobject obj, jcharArray chars, jint offset, jint count) {
+		auto this_ptr = sandvik::native::getString(obj);
+		auto array = sandvik::native::getArray(chars);
+		auto arrLen = array->getArrayLength();
+
+		if (offset < 0 || count < 0 || static_cast<jsize>(offset) + static_cast<jsize>(count) > arrLen) {
+			throw sandvik::StringIndexOutOfBoundsException("offset/count out of range");
+		}
+
+		if (count == 0) {
+			this_ptr->setString(std::string());
+			return;
+		}
+
+		std::vector<jchar> buf(static_cast<size_t>(count));
+		env->GetCharArrayRegion(chars, offset, count, buf.data());
+
+		std::string s;
+		s.reserve(static_cast<size_t>(count));
+		for (jsize i = 0; i < count; ++i) {
+			s.push_back(static_cast<char>(static_cast<unsigned char>(buf[static_cast<size_t>(i)] & 0xFF)));
+		}
+		this_ptr->setString(std::move(s));
+	}
+
+	JNIEXPORT void JNICALL Java_java_lang_String_getChars__II_3CI(JNIEnv* env, jobject obj, jint srcBegin, jint srcEnd, jcharArray dst, jint dstBegin) {
+		logger.ferror("String.getChars(srcBegin={}, srcEnd={}, dst={}, dstBegin={})", srcBegin, srcEnd, (void*)dst, dstBegin);
+		auto this_ptr = sandvik::native::getString(obj);
+		const auto& str = this_ptr->str();
+		logger.ferror("String value: '{}'", str);
+		const auto str_len = str.size();
+
+		// Validate source indices
+		if (srcBegin < 0 || srcEnd < 0 || srcBegin > srcEnd || srcEnd > str_len) {
+			throw sandvik::StringIndexOutOfBoundsException("srcBegin/srcEnd out of range");
+		}
+		// Validate destination array
+		if (dst == nullptr) {
+			throw sandvik::NullPointerException("destination char array is null");
+		}
+
+		auto copyLen = srcEnd - srcBegin;
+		auto dstLen = env->GetArrayLength(dst);
+		if (dstBegin < 0 || copyLen > dstLen - dstBegin) {
+			throw sandvik::IndexOutOfBoundsException("destination index out of range");
+		}
+
+		if (copyLen > 0) {
+			std::vector<jchar> buf;
+			buf.reserve(copyLen);
+			for (jsize i = 0; i < copyLen; ++i) {
+				buf.push_back(static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(srcBegin + i)])));
+			}
+			env->SetCharArrayRegion(dst, dstBegin, copyLen, buf.data());
+		}
 	}
 }

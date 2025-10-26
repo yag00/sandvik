@@ -26,7 +26,6 @@
 package java.lang;
 
 /**
- * @@sandvik modified
  * The {@code Short} class wraps a value of primitive type {@code
  * short} in an object.  An object of type {@code Short} contains a
  * single field whose type is {@code short}.
@@ -58,7 +57,8 @@ public final class Short extends Number implements Comparable<Short> {
      * The {@code Class} instance representing the primitive type
      * {@code short}.
      */
-    public static Class<Short> TYPE;
+    @SuppressWarnings("unchecked")
+    public static final Class<Short> TYPE = (Class<Short>) Class.getPrimitiveClass("short");
 
     /**
      * Returns a new {@code String} object representing the

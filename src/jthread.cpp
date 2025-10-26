@@ -115,10 +115,18 @@ Frame& JThread::currentFrame() const {
 void JThread::run(bool wait_) {
 	_thread = std::thread([this]() {
 		auto id = std::this_thread::get_id();
-		logger.addThread(id, this->_name);
+		logger.addThread(id, _name);
 		logger.fdebug("Starting thread '{}'", _name);
-		while (!end()) {
-			execute();
+		try {
+			while (!end() && _vm.isRunning()) {
+				execute();
+			}
+		} catch (const std::exception& e) {
+			logger.ferror("Thread '{}': {}", _name, e.what());
+			// terminate the whole VM on unhandled exception in thread
+			_vm.stop();
+			// clear the stack, call to end() will be true
+			_stack.clear();
 		}
 		logger.fdebug("End of thread '{}'", _name);
 		logger.removeThread(id);

@@ -42,6 +42,19 @@ extern "C" {
 		(void)env;
 		(void)clazz;
 	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_Object_getClass(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto ptr = sandvik::native::getObject(obj);
+		if (ptr->isClass()) {
+			auto clazz = sandvik::Object::make(ptr->getClass());
+			jobject jclassObj = jenv->getHandles().toJObject(clazz);
+			return jclassObj;
+		} else {
+			throw sandvik::ClassCastException("Object is not a java.lang.Class");
+		}
+	}
+
 	JNIEXPORT void JNICALL Java_java_lang_Object_notify(JNIEnv* env, jobject obj) {
 		auto this_ptr = sandvik::native::getObject(obj);
 		this_ptr->notify();

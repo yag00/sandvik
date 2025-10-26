@@ -69,7 +69,8 @@ public final class Integer extends Number implements Comparable<Integer> {
      *
      * @since   JDK1.1
      */
-    public static Class<Integer> TYPE;
+    @SuppressWarnings("unchecked")
+    public static final Class<Integer> TYPE = (Class<Integer>) Class.getPrimitiveClass("int");
 
     /**
      * All possible chars for representing a number as a String
@@ -760,7 +761,7 @@ public final class Integer extends Number implements Comparable<Integer> {
             // high value may be configured by property
             int h = 127;
             String integerCacheHighPropValue =
-                null; // sun.misc.VM.getSavedProperty("java.lang.Integer.IntegerCache.high");
+                System.getProperty("java.lang.Integer.IntegerCache.high");
             if (integerCacheHighPropValue != null) {
                 try {
                     int i = parseInt(integerCacheHighPropValue);

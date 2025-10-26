@@ -19,6 +19,7 @@
 #ifndef __JVM_HPP__
 #define __JVM_HPP__
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -41,13 +42,20 @@ namespace sandvik {
 			void addClassPath(const std::string& classpath_);
 			std::string getClassPath() const;
 
+			std::string getProperty(const std::string& name_) const;
+
 			void run();
 			void run(const std::string& mainClass_, const std::vector<std::string>& args_);
 			void stop();
+			inline bool isRunning() const volatile {
+				return _isRunning;
+			}
+
 			JThread& newThread(const std::string& name_);
 			JThread& newThread(std::shared_ptr<Object> thread_);
 			JThread& getThread(const std::string& name_);
 			JThread& currentThread() const;
+			void deleteThread(const std::string& name_);
 
 			void loadLibrary(const std::string& libName_);
 			void* findNativeSymbol(const std::string& symbolName_);
@@ -63,7 +71,9 @@ namespace sandvik {
 			std::vector<std::unique_ptr<SharedLibrary>> _sharedlibs;
 			std::vector<std::unique_ptr<JThread>> _threads;
 			std::unique_ptr<NativeInterface> _jnienv;
+			std::map<std::string, std::string> _properties;
 			bool _isPrimitiveClassInitialized = false;
+			volatile bool _isRunning = false;
 	};
 }  // namespace sandvik
 

@@ -135,14 +135,18 @@ void run_common_test(const std::string& mainclassname) {
 	Vm vm;
 
 	// Redirect stdout to output.txt
-	FILE* file = freopen("test_DefaultMethods.out", "w", stdout);
+	auto filename = fmt::format("test_{}.out", mainclassname);
+	FILE* file = freopen(filename.c_str(), "w", stdout);
 	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
 
-	vm.loadRt();
-	vm.loadRt("../tests/java/unit/TestUnitDex.jar");
-	vm.run(mainclassname, {});
-
-	std::ifstream outputFile("test_DefaultMethods.out");
+	try {
+		vm.loadRt();
+		vm.loadRt("../tests/java/unit/TestUnitDex.jar");
+		vm.run(mainclassname, {});
+	} catch (const std::exception& e) {
+		FAIL() << fmt::format("Exception thrown during test {}: {}", mainclassname, e.what());
+	}
+	std::ifstream outputFile(filename.c_str());
 	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)),
 							 std::istreambuf_iterator<char>());
 	outputFile.close();
