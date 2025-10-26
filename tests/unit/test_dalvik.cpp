@@ -268,3 +268,6 @@ TEST(VM, Thread) {
 TEST(VM, Thread2) {
 	run_common_test("TestThread2");
 }
+TEST(VM, ThreadComplex) {
+	run_common_test("TestThreadComplex");
+}
