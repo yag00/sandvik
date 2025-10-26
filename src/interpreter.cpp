@@ -1949,6 +1949,9 @@ void Interpreter::sget(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	if (!field.isStatic()) {
+		throw VmException("sget: Cannot use sget on a non-static field");
+	}
 	if (field.getType() != "I" && field.getType() != "F") {
 		throw VmException("sget: Field {} type mismatch, expected int but got {}", field.getName(), field.getType());
 	}
@@ -1972,6 +1975,9 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	if (!field.isStatic()) {
+		throw VmException("sget_wide: Cannot use sget on a non-static field");
+	}
 	if (field.getType() != "J" && field.getType() != "D") {
 		throw VmException("sget_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType());
 	}
@@ -2022,6 +2028,9 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	if (!field.isStatic()) {
+		throw VmException("sget_boolean: Cannot use sget_boolean on a non-static field");
+	}
 	if (field.getType() != "Z") {
 		throw VmException("sget_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType());
 	}
@@ -2045,6 +2054,9 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	if (!field.isStatic()) {
+		throw VmException("sget_byte: Cannot use sget_byte on a non-static field");
+	}
 	if (field.getType() != "B") {
 		throw VmException("sget_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType());
 	}
@@ -2068,6 +2080,9 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	if (!field.isStatic()) {
+		throw VmException("sget_wide: Cannot use sget on a non-static field");
+	}
 	if (field.getType() != "C") {
 		throw VmException("sget_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType());
 	}
@@ -2091,6 +2106,9 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	if (!field.isStatic()) {
+		throw VmException("sget_short: Cannot use sget on a non-static field");
+	}
 	if (field.getType() != "S") {
 		throw VmException("sget_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType());
 	}
@@ -2117,7 +2135,6 @@ void Interpreter::sput(const uint8_t* operand_) {
 	if (!field.isStatic()) {
 		throw VmException("sput: Cannot use sput on a non-static field");
 	}
-
 	if (field.getType() != "I" && field.getType() != "F") {
 		throw VmException("sput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType());
 	}
@@ -2138,7 +2155,6 @@ void Interpreter::sput_wide(const uint8_t* operand_) {
 	if (!field.isStatic()) {
 		throw VmException("sput_wide: Cannot use sput_wide on a non-static field");
 	}
-
 	if (field.getType() != "J" && field.getType() != "D") {
 		throw VmException("sput_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType());
 	}
@@ -2195,7 +2211,6 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 	if (!field.isStatic()) {
 		throw VmException("sput_boolean: Cannot use sput_boolean on a non-static field");
 	}
-
 	if (field.getType() != "Z") {
 		throw VmException("sput_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType());
 	}
@@ -2216,7 +2231,6 @@ void Interpreter::sput_byte(const uint8_t* operand_) {
 	if (!field.isStatic()) {
 		throw VmException("sput_byte: Cannot use sput_byte on a non-static field");
 	}
-
 	if (field.getType() != "B") {
 		throw VmException("sput_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType());
 	}
@@ -2237,7 +2251,6 @@ void Interpreter::sput_char(const uint8_t* operand_) {
 	if (!field.isStatic()) {
 		throw VmException("sput_char: Cannot use sput_char on a non-static field");
 	}
-
 	if (field.getType() != "C") {
 		throw VmException("sput_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType());
 	}
@@ -2258,7 +2271,6 @@ void Interpreter::sput_short(const uint8_t* operand_) {
 	if (!field.isStatic()) {
 		throw VmException("sput_short: Cannot use sput_short on a non-static field");
 	}
-
 	if (field.getType() != "S") {
 		throw VmException("sput_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType());
 	}
