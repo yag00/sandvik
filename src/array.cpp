@@ -23,6 +23,7 @@
 #include <algorithm>
 
 #include "class.hpp"
+#include "monitor.hpp"
 #include "object.hpp"
 
 using namespace sandvik;

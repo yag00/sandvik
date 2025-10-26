@@ -28,6 +28,7 @@
 #include "class.hpp"
 #include "classloader.hpp"
 #include "field.hpp"
+#include "monitor.hpp"
 #include "system/logger.hpp"
 
 namespace sandvik {
@@ -69,6 +70,11 @@ namespace sandvik {
 			std::string debug() const override;
 
 			bool operator==(const Object& other) const override;
+
+			// need to override monitor methods to lock the class object
+			// for static fields access
+			void monitorEnter() override;
+			void monitorExit() override;
 
 		private:
 			Class& _type;
@@ -127,6 +133,9 @@ ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+Object::Object() : _monitor(std::make_unique<Monitor>()) {
+}
+
 bool Object::operator==(const Object& other) const {
 	// Same pointer -> equal
 	if (this == &other) return true;
@@ -140,6 +149,18 @@ bool Object::operator==(const Object& other) const {
 
 bool Object::operator==(std::nullptr_t) const {
 	return false;
+}
+
+void Object::monitorEnter() {
+	_monitor->enter();
+}
+
+void Object::monitorExit() {
+	_monitor->exit();
+}
+
+void Object::monitorCheck() const {
+	_monitor->check();
 }
 
 bool Object::isNumberObject() const {
@@ -204,6 +225,7 @@ bool Object::isInstanceOf(const std::string& instance_) const {
 }
 
 ObjectRef Object::getField(const std::string& name_) const {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
 		return it->second;
@@ -212,6 +234,7 @@ ObjectRef Object::getField(const std::string& name_) const {
 }
 
 void Object::setField(const std::string& name_, ObjectRef value_) {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	_fields[name_] = value_;
 }
 
@@ -356,6 +379,12 @@ const Class& ConstClassObject::getClassType() const {
 
 std::string ConstClassObject::debug() const {
 	return fmt::format("Class<? {}>", _type.getFullname());
+}
+void ConstClassObject::monitorEnter() {
+	_type.monitorEnter();
+}
+void ConstClassObject::monitorExit() {
+	_type.monitorExit();
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool NullObject::operator==(std::nullptr_t) const {

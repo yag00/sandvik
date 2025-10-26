@@ -19,9 +19,12 @@
 #ifndef __OBJECT_HPP__
 #define __OBJECT_HPP__
 
+#include <condition_variable>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace sandvik {
@@ -29,6 +32,7 @@ namespace sandvik {
 	class Class;
 	class Object;
 	class Array;
+	class Monitor;
 
 	using ObjectRef = std::shared_ptr<Object>;
 	/**
@@ -41,14 +45,7 @@ namespace sandvik {
 	 */
 	class Object {
 		public:
-			/**
-			 * @brief Default constructor.
-			 */
-			Object() = default;
-
-			/**
-			 * @brief Virtual destructor.
-			 */
+			Object();
 			virtual ~Object() = default;
 
 			/**
@@ -243,11 +240,17 @@ namespace sandvik {
 			 */
 			ObjectRef getField(const std::string& name_) const;
 
+			// Monitor enter/exit methods
+			virtual void monitorEnter();
+			virtual void monitorExit();
+
 		protected:
+			void monitorCheck() const;
 			/**
 			 * @brief Map storing field names and their corresponding ObjectRef values.
 			 */
 			std::map<std::string, ObjectRef> _fields;
+			std::unique_ptr<Monitor> _monitor;
 	};
 }  // namespace sandvik
 

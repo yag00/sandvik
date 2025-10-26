@@ -31,6 +31,7 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "method.hpp"
+#include "monitor.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
@@ -46,7 +47,8 @@ Class::Class(ClassLoader& classloader_, const std::string& packagename_, const s
       _isInterface(false),
       _isAbstract(false),
       _hasSuperClass(false),
-      _superClassname("") {
+      _superClassname(""),
+      _monitor(std::make_unique<Monitor>()) {
 	// Extract class name from fullname
 	auto pos = fullname_.find_last_of('.');
 	if (pos != std::string::npos) {
@@ -65,7 +67,8 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
       _dexIdx(dexIdx_),
       _isInterface(class_.has(LIEF::DEX::ACC_INTERFACE)),
       _isAbstract(class_.has(LIEF::DEX::ACC_ABSTRACT)),
-      _hasSuperClass(class_.has_parent()) {
+      _hasSuperClass(class_.has_parent()),
+      _monitor(std::make_unique<Monitor>()) {
 	// Initialize methods
 	for (const auto& method : class_.methods()) {
 		const auto& name = method.name();
@@ -82,6 +85,9 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 	for (const auto& interface : class_.interfaces()) {
 		_interfaces.push_back(interface);
 	}
+}
+
+Class::~Class() {
 }
 
 bool Class::isStaticInitialized() {
@@ -299,21 +305,16 @@ bool Class::isExternal() const {
 
 void Class::debug() const {
 	logger.fdebug("Class: {}", getFullname());
-	/*for (auto& method : _class.methods()) {
-	    logger.debug("Bytecode for method " + method.name() + get_method_descriptor(method) + ":");
-	    std::ostringstream oss;
-	    size_t count = 0;
-	    for (const auto& byte : method.bytecode()) {
-	        oss << fmt::format(" {:02x}", byte);
-	        count++;
-	        if (count % 32 == 0) {
-	            logger.debug(oss.str());
-	            oss.str("");
-	            oss.clear();
-	        }
-	    }
-	    if (!oss.str().empty()) {
-	        logger.debug(oss.str());
-	    }
-	}*/
+}
+
+void Class::monitorEnter() {
+	_monitor->enter();
+}
+
+void Class::monitorExit() {
+	_monitor->exit();
+}
+
+void Class::monitorCheck() const {
+	_monitor->check();
 }

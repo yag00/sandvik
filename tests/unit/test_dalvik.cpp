@@ -262,3 +262,9 @@ TEST(VM, DeepStack) {
 TEST(VM, SwitchOnString) {
 	run_common_test("TestSwitchOnString");
 }
+TEST(VM, Thread) {
+	run_common_test("TestThread");
+}
+TEST(VM, Thread2) {
+	run_common_test("TestThread2");
+}

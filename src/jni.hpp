@@ -334,7 +334,7 @@ namespace sandvik {
 			static jobjectRefType GetObjectRefType(JNIEnv *env, jobject obj);
 
 		private:
-			static std::shared_ptr<JThread> __CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, va_list &args);
+			static JThread &__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, va_list &args);
 
 		private:
 			Vm &_vm;

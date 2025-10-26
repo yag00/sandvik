@@ -29,10 +29,11 @@ namespace sandvik {
 	class SharedLibrary;
 	class NativeInterface;
 	class JThread;
+	class Object;
 	class Vm {
 		public:
 			explicit Vm();
-			~Vm() = default;
+			~Vm();
 
 			void loadRt(const std::string& path = "");
 			void loadDex(const std::string& path);
@@ -43,7 +44,10 @@ namespace sandvik {
 			void run();
 			void run(const std::string& mainClass_, const std::vector<std::string>& args_);
 			void stop();
-			std::unique_ptr<JThread> newThread(const std::string& name_);
+			JThread& newThread(const std::string& name_);
+			JThread& newThread(std::shared_ptr<Object> thread_);
+			JThread& getThread(const std::string& name_);
+			JThread& currentThread() const;
 
 			void loadLibrary(const std::string& libName_);
 			void* findNativeSymbol(const std::string& symbolName_);
@@ -57,6 +61,7 @@ namespace sandvik {
 			std::unique_ptr<ClassLoader> _classloader;
 			std::vector<std::string> _ldpath;
 			std::vector<std::unique_ptr<SharedLibrary>> _sharedlibs;
+			std::vector<std::unique_ptr<JThread>> _threads;
 			std::unique_ptr<NativeInterface> _jnienv;
 			bool _isPrimitiveClassInitialized = false;
 	};

@@ -77,31 +77,55 @@ bool Field::isStatic() const {
 }
 
 uint32_t Field::getIntValue() const {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	return static_cast<uint32_t>(_value);
 }
 
 uint64_t Field::getLongValue() const {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	return _value;
 }
 std::string Field::getStringValue() const {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	return _strValue;
 }
 
 std::shared_ptr<Object> Field::getObjectValue() const {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	return _obj;
 }
 
 void Field::setIntValue(uint32_t value) {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	_value = value;
 }
 void Field::setLongValue(uint64_t value) {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	_value = value;
 }
 
 void Field::setStringValue(const std::string& value) {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	_strValue = value;
 }
 
 void Field::setObjectValue(std::shared_ptr<Object> value) {
+	if (isStatic()) {
+		_class.monitorCheck();
+	}
 	_obj = value;
 }

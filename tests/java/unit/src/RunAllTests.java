@@ -104,5 +104,11 @@ public class RunAllTests {
 
         System.out.println("== Running TestSwitchOnString ==");
         TestSwitchOnString.main(new String[]{});
+
+        System.out.println("== Running TestThread ==");
+        TestThread.main(new String[]{});
+
+        System.out.println("== Running TestThread2 ==");
+        TestThread2.main(new String[]{});
     }
 }

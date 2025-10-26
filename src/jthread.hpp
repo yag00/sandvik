@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace sandvik {
@@ -33,7 +34,15 @@ namespace sandvik {
 	class JThread {
 		public:
 			explicit JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_);
-			~JThread() = default;
+			explicit JThread(Vm& vm_, ClassLoader& classloader_, std::shared_ptr<Object> thread_);
+			~JThread();
+
+			inline std::string getName() const {
+				return _name;
+			}
+			inline std::thread::id getId() const {
+				return _thread.get_id();
+			}
 
 			Vm& vm() const;
 			ClassLoader& getClassLoader() const;
@@ -44,8 +53,10 @@ namespace sandvik {
 			Frame& currentFrame() const;
 			uint64_t stackDepth() const;
 
-			void execute();
+			void run(bool wait_ = false);
+			void join();
 
+			std::shared_ptr<Object> getThreadObject() const;
 			std::shared_ptr<Object> getReturnObject() const;
 			int32_t getReturnValue() const;
 			int64_t getReturnDoubleValue() const;
@@ -54,6 +65,8 @@ namespace sandvik {
 			void setReturnDoubleValue(int64_t ret_);
 
 		private:
+			void execute();
+
 			Vm& _vm;
 			ClassLoader& _classloader;
 			std::string _name;
@@ -61,6 +74,9 @@ namespace sandvik {
 
 			std::vector<std::unique_ptr<Frame>> _stack;
 			std::shared_ptr<Object> _objectReturn;
+			std::shared_ptr<Object> _thisThread;
+
+			std::thread _thread;
 	};
 }  // namespace sandvik
 

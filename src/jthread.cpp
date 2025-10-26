@@ -22,10 +22,12 @@
 #include <fmt/format.h>
 
 #include "class.hpp"
+#include "classloader.hpp"
 #include "exceptions.hpp"
 #include "frame.hpp"
 #include "interpreter.hpp"
 #include "method.hpp"
+#include "object.hpp"
 #include "system/logger.hpp"
 #include "vm.hpp"
 
@@ -33,6 +35,40 @@ using namespace sandvik;
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
     : _vm(vm_), _classloader(classloader_), _name(name_), _interpreter(std::make_unique<Interpreter>(*this)) {
+	_thisThread = Object::make(_classloader.getOrLoad("java/lang/Thread"));
+	_thisThread->setField("name", Object::make(_classloader, name_));
+	_thisThread->setField("priority", Object::make(5));  // normal priority
+}
+
+JThread::JThread(Vm& vm_, ClassLoader& classloader_, std::shared_ptr<Object> thread_)
+    : _vm(vm_), _classloader(classloader_), _interpreter(std::make_unique<Interpreter>(*this)) {
+	_thisThread = thread_;
+	_name = _thisThread->getField("name")->str();
+	auto target = _thisThread->getField("target");
+	if (target == nullptr || target == Object::makeNull()) {
+		throw VmException("Thread object has no target Runnable");
+	}
+	logger.fdebug("Runnable '{}' ", target->debug());
+	auto& clazz = target->getClass();
+	auto& method = clazz.getMethod("run", "()V");
+	Frame& frame = newFrame(method);
+	frame.setObjRegister(method.getNbRegisters() - 1, target);
+}
+
+JThread::~JThread() {
+	if (_thread.joinable()) {
+		auto current = std::this_thread::get_id();
+		if (_thread.get_id() != current) {
+			try {
+				_thread.join();
+			} catch (const std::exception& ex) {
+				logger.ferror("Failed to join thread '{}': {}", _name, ex.what());
+			}
+		} else {
+			logger.fwarning("Destructor invoked from thread '{}' itself; detaching to avoid deadlock", _name);
+			_thread.detach();
+		}
+	}
 }
 
 Vm& JThread::vm() const {
@@ -76,8 +112,36 @@ Frame& JThread::currentFrame() const {
 	return *(_stack.back().get());
 }
 
+void JThread::run(bool wait_) {
+	_thread = std::thread([this]() {
+		auto id = std::this_thread::get_id();
+		logger.addThread(id, this->_name);
+		logger.fdebug("Starting thread '{}'", _name);
+		while (!end()) {
+			execute();
+		}
+		logger.fdebug("End of thread '{}'", _name);
+		logger.removeThread(id);
+	});
+	if (wait_) {
+		if (_thread.joinable()) {
+			_thread.join();
+		}
+	}
+}
+
+void JThread::join() {
+	if (_thread.joinable()) {
+		_thread.join();
+	}
+}
+
 void JThread::execute() {
 	_interpreter->execute();
+}
+
+std::shared_ptr<Object> JThread::getThreadObject() const {
+	return _thisThread;
 }
 
 std::shared_ptr<Object> JThread::getReturnObject() const {

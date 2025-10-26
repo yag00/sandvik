@@ -53,6 +53,14 @@ void Logger::logToFile(const std::string &filename_) {
 	}
 }
 
+void Logger::addThread(std::thread::id tid_, const std::string &name_) {
+	_threads[tid_] = name_;
+}
+
+void Logger::removeThread(std::thread::id tid_) {
+	_threads.erase(tid_);
+}
+
 Logger::LogLevel Logger::getLevel() const {
 	return _level;
 }
@@ -180,11 +188,19 @@ void Logger::log(LogLevel level, const std::string &msg) {
 		return;
 	}
 
+	std::string threadname = "";
+	auto thread = _threads.find(std::this_thread::get_id());
+	if (thread != _threads.end()) {
+		// Prefix message with thread name
+		threadname = fmt::format("[{}] ", thread->second);
+	}
+
 	if (_file.is_open()) {
 		std::string rawlog;
 		if (_time) {
 			rawlog += fmt::format("[{}] ", getTime());
 		}
+		rawlog += threadname;
 		switch (level) {
 			case LogLevel::INFO:
 				rawlog += fmt::format("[*] {}", msg);
@@ -204,13 +220,16 @@ void Logger::log(LogLevel level, const std::string &msg) {
 			default:
 				break;
 		}
+		std::lock_guard<std::mutex> lock(_mutex);
 		_file << rawlog << std::endl;
 	}
 
 	if (_stdout) {
+		std::lock_guard<std::mutex> lock(_mutex);
 		if (_time) {
 			fmt::print(fmt::fg(fmt::color::white), "[{}] ", getTime());
 		}
+		fmt::print(fmt::fg(fmt::color::white), "{}", threadname);
 		switch (level) {
 			case LogLevel::INFO:
 				fmt::print(fmt::fg(fmt::color::white), "[*] {}", msg);

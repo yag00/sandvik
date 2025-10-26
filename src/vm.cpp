@@ -55,6 +55,10 @@ Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_uniq
 	loadLibrary("");
 }
 
+Vm::~Vm() {
+	logger.debug("VM instance destroyed.");
+}
+
 void Vm::loadRt(const std::string& path) {
 	_classloader->loadRt(path);
 	if (!_isPrimitiveClassInitialized) {
@@ -158,7 +162,8 @@ void Vm::run(const std::string& mainClass_, const std::vector<std::string>& args
 
 void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	logger.info("Running class: " + clazz_.getFullname());
-	JThread mainThread(*this, *_classloader, "main");
+
+	JThread& mainThread = newThread("main");
 
 	uint32_t nbRegisters = 0;
 	if (clazz_.hasMethod("onCreate", "(Landroid/os/Bundle;)V")) {
@@ -190,16 +195,38 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	} catch (const std::exception& e) {
 		logger.debug(e.what());
 	}
-	while (!mainThread.end()) {
-		mainThread.execute();
-	}
+	mainThread.run(true);
 }
 
 void Vm::stop() {
 	logger.info("Stopping VM...");
-	// Add cleanup logic if necessary
 }
 
-std::unique_ptr<JThread> Vm::newThread(const std::string& name_) {
-	return std::make_unique<JThread>(*this, *_classloader, name_);
+JThread& Vm::newThread(const std::string& name_) {
+	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, name_));
+	return *(_threads.back());
+}
+
+JThread& Vm::newThread(std::shared_ptr<Object> thread_) {
+	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, thread_));
+	return *(_threads.back());
+}
+
+JThread& Vm::getThread(const std::string& name_) {
+	for (const auto& thread : _threads) {
+		if (thread->getName() == name_) {
+			return *thread;
+		}
+	}
+	throw VmException("Thread with name '{}' not found", name_);
+}
+
+JThread& Vm::currentThread() const {
+	auto currentId = std::this_thread::get_id();
+	for (const auto& thread : _threads) {
+		if (thread->getId() == currentId) {
+			return *thread;
+		}
+	}
+	throw VmException("Current thread not found in VM");
 }
