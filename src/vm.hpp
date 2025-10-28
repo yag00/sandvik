@@ -19,9 +19,12 @@
 #ifndef __JVM_HPP__
 #define __JVM_HPP__
 
+#include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace sandvik {
@@ -47,8 +50,8 @@ namespace sandvik {
 			void run();
 			void run(const std::string& mainClass_, const std::vector<std::string>& args_);
 			void stop();
-			inline bool isRunning() const volatile {
-				return _isRunning;
+			inline bool isRunning() const {
+				return _isRunning.load();
 			}
 
 			JThread& newThread(const std::string& name_);
@@ -69,11 +72,15 @@ namespace sandvik {
 			std::unique_ptr<ClassLoader> _classloader;
 			std::vector<std::string> _ldpath;
 			std::vector<std::unique_ptr<SharedLibrary>> _sharedlibs;
+
 			std::vector<std::unique_ptr<JThread>> _threads;
+
 			std::unique_ptr<NativeInterface> _jnienv;
 			std::map<std::string, std::string> _properties;
 			bool _isPrimitiveClassInitialized = false;
-			volatile bool _isRunning = false;
+			std::atomic<bool> _isRunning{false};
+
+			mutable std::mutex _mutex;
 	};
 }  // namespace sandvik
 

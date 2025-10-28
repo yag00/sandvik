@@ -184,10 +184,10 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 
 	// Set the arguments for the main method
 	const auto& stringClass = _classloader->getOrLoad("java.lang.String");
-	auto args = Array::make(stringClass, args_.size());
+	auto args = Array::make(stringClass, (uint32_t)args_.size());
 	for (size_t i = 0; i < args_.size(); ++i) {
 		auto strObj = Object::make(*_classloader, args_[i]);
-		std::static_pointer_cast<Array>(args)->setElement(i, strObj);
+		std::static_pointer_cast<Array>(args)->setElement((uint32_t)i, strObj);
 	}
 	mainThread.currentFrame().setObjRegister(nbRegisters, args);
 	try {
@@ -195,27 +195,30 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	} catch (const std::exception& e) {
 		logger.debug(e.what());
 	}
-	_isRunning = true;
+	_isRunning.store(true);
 	mainThread.run(true);
-	_isRunning = false;
+	_isRunning.store(false);
 }
 
 void Vm::stop() {
 	logger.info("Stopping VM...");
-	_isRunning = false;
+	_isRunning.store(false);
 }
 
 JThread& Vm::newThread(const std::string& name_) {
+	std::unique_lock<std::mutex> lock(_mutex);
 	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, name_));
 	return *(_threads.back());
 }
 
 JThread& Vm::newThread(std::shared_ptr<Object> thread_) {
+	std::unique_lock<std::mutex> lock(_mutex);
 	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, thread_));
 	return *(_threads.back());
 }
 
 JThread& Vm::getThread(const std::string& name_) {
+	std::unique_lock<std::mutex> lock(_mutex);
 	for (const auto& thread : _threads) {
 		if (thread->getName() == name_) {
 			return *thread;
@@ -225,6 +228,7 @@ JThread& Vm::getThread(const std::string& name_) {
 }
 
 JThread& Vm::currentThread() const {
+	std::unique_lock<std::mutex> lock(_mutex);
 	auto currentId = std::this_thread::get_id();
 	for (const auto& thread : _threads) {
 		if (thread->getId() == currentId) {
@@ -235,6 +239,7 @@ JThread& Vm::currentThread() const {
 }
 
 void Vm::deleteThread(const std::string& name_) {
+	std::unique_lock<std::mutex> lock(_mutex);
 	for (auto it = _threads.begin(); it != _threads.end(); ++it) {
 		if ((*it)->getName() == name_) {
 			_threads.erase(it);

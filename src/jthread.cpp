@@ -79,6 +79,10 @@ ClassLoader& JThread::getClassLoader() const {
 	return _classloader;
 }
 
+bool JThread::isRunning() const {
+	return _isRunning.load();
+}
+
 bool JThread::end() const {
 	return _stack.empty();
 }
@@ -113,16 +117,19 @@ Frame& JThread::currentFrame() const {
 }
 
 void JThread::run(bool wait_) {
+	_isRunning.store(true);
 	_thread = std::thread([this]() {
 		auto id = std::this_thread::get_id();
-		logger.addThread(id, _name);
+		if (_name != "main") {
+			logger.addThread(id, _name);
+		}
 		logger.fdebug("Starting thread '{}'", _name);
 		try {
 			while (!end() && _vm.isRunning()) {
-				execute();
+				_interpreter->execute();
 			}
 		} catch (const std::exception& e) {
-			logger.ferror("Thread '{}': {}", _name, e.what());
+			logger.error(e.what());
 			// terminate the whole VM on unhandled exception in thread
 			_vm.stop();
 			// clear the stack, call to end() will be true
@@ -130,6 +137,7 @@ void JThread::run(bool wait_) {
 		}
 		logger.fdebug("End of thread '{}'", _name);
 		logger.removeThread(id);
+		_isRunning.store(false);
 	});
 	if (wait_) {
 		if (_thread.joinable()) {
@@ -142,10 +150,7 @@ void JThread::join() {
 	if (_thread.joinable()) {
 		_thread.join();
 	}
-}
-
-void JThread::execute() {
-	_interpreter->execute();
+	_vm.deleteThread(_name);
 }
 
 std::shared_ptr<Object> JThread::getThreadObject() const {

@@ -64,9 +64,9 @@ namespace sandvik {
 			void setReturnValue(int32_t ret_);
 			void setReturnDoubleValue(int64_t ret_);
 
-		private:
-			void execute();
+			bool isRunning() const;
 
+		private:
 			Vm& _vm;
 			ClassLoader& _classloader;
 			std::string _name;
@@ -77,6 +77,7 @@ namespace sandvik {
 			std::shared_ptr<Object> _thisThread;
 
 			std::thread _thread;
+			std::atomic<bool> _isRunning{false};
 	};
 }  // namespace sandvik
 
