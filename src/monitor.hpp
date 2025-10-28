@@ -38,27 +38,26 @@ namespace sandvik {
 			Monitor(Monitor&& other) noexcept = delete;
 			Monitor& operator=(Monitor&& other) noexcept = delete;
 
-			/** monitor enter */
+			/** @brief monitor enter */
 			virtual void enter();
-			/** monitor exit */
+			/** @brief monitor exit */
 			virtual void exit();
-			/** monitor check : block until the current thread either owns the monitor or the monitor is free.
+			/** @brief monitor check : block until the current thread either owns the monitor or the monitor is free.
 			 *  We don't take ownership here; we only wait until it's safe for the caller to proceed.
 			 */
 			void check() const;
 
-			/** Causes the current thread to wait until either another thread invokes the notify methods
+			/** @brief Causes the current thread to wait until either another thread invokes the notify methods
 			 * @param timeout_ the maximum time to wait in milliseconds.
 			 * @return true if notified before timeout, false if timed out.
 			 */
 			bool wait(uint64_t timeout_ = 0);
-			/**
-			 * Wakes up a single thread that is waiting on this monitor.
+			/** @brief Wakes up a single thread that is waiting on this monitor.
+			 *
 			 * If any threads are waiting on this monitor, one of them
 			 * is chosen to be awakened. */
 			void notify();
-			/**
-			 * Wakes up all threads that are waiting on this monitor. */
+			/** @brief Wakes up all threads that are waiting on this monitor. */
 			void notifyAll();
 
 		private:

@@ -27,8 +27,10 @@
 
 namespace sandvik {
 	class Dex;
+	/** @brief Runtime loader namespace */
 	namespace rtld {
+		/** @brief Loads DEX files from the specified runtime path. */
 		void load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_);
-	}
+	}  // namespace rtld
 }  // namespace sandvik
 #endif  // __RTLD_LOADER_HPP__

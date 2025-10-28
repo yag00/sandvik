@@ -64,8 +64,8 @@ void Logger::removeThread(std::thread::id tid_) {
 Logger::LogLevel Logger::getLevel() const {
 	return _level;
 }
-void Logger::setLevel(Logger::LogLevel level) {
-	_level = level;
+void Logger::setLevel(Logger::LogLevel level_) {
+	_level = level_;
 }
 
 bool Logger::isDisplayingTime() const {

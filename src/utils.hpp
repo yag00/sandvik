@@ -29,9 +29,25 @@ namespace LIEF {
 }  // namespace LIEF
 
 namespace sandvik {
+	/** @brief Get the type descriptor for a given type.
+	 * @param type Type to get the descriptor for.
+	 * @return Type descriptor as a string.
+	 */
 	std::string get_type_descriptor(const LIEF::DEX::Type& type);
+	/** @brief Get the type descriptor for a given method.
+	 * @param method Method to get the descriptor for.
+	 * @return Method descriptor as a string.
+	 */
 	std::string get_method_descriptor(const LIEF::DEX::Method& method);
+	/** @brief Get the primitive type for a given descriptor.
+	 * @param descriptor Type descriptor.
+	 * @return Primitive type as a string.
+	 */
 	std::string get_primitive_type(const std::string& descriptor);
+	/** @brief Check if the given class name represents a primitive type.
+	 * @param classname Class name to check.
+	 * @return true if the class name is a primitive type, false otherwise.
+	 */
 	bool is_primitive_type(const std::string& classname);
 }  // namespace sandvik
 

@@ -38,7 +38,7 @@
 using namespace sandvik;
 
 /** Constructor: Loads the JAR file */
-Apk::Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& _dexs) : _path(path_), _dexs(_dexs) {
+Apk::Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) : _path(path_), _dexs(dexs_) {
 	if (!ZipReader::isValidArchive(_path)) {
 		throw VmException("Invalid APK file: {}", _path);
 	}

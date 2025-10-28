@@ -27,12 +27,24 @@
 
 namespace sandvik {
 	class Object;
+	/** @brief JNI Handle Map
+	 *
+	 * A mapping between JNI jobject references and C++ Object instances */
 	class JNIHandleMap {
 		public:
+			/** @brief Converts a C++ Object instance to a JNI jobject reference.
+			 * @param obj Shared pointer to the C++ Object instance
+			 * @return Corresponding JNI jobject reference
+			 */
 			jobject toJObject(const std::shared_ptr<Object>& obj);
-
+			/** @brief Converts a JNI jobject reference to a C++ Object instance.
+			 * @param handle JNI jobject reference
+			 * @return Corresponding shared pointer to the C++ Object instance
+			 */
 			std::shared_ptr<Object> fromJObject(jobject handle);
-
+			/** @brief Releases the mapping for a given JNI jobject reference.
+			 * @param handle JNI jobject reference to release
+			 */
 			void release(jobject handle);
 
 		private:

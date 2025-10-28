@@ -20,6 +20,7 @@
 #define __TYPES_HPP__
 
 namespace sandvik {
+	/** @brief Enumeration of Java types */
 	enum class TYPES {
 		UNKNOWN = 0,
 		PRIMITIVE = 1,

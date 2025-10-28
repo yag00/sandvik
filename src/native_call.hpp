@@ -33,13 +33,21 @@
 namespace sandvik {
 	class Object;
 	class NativeInterface;
+	/** @brief Helper class to invoke native functions */
 	class NativeCallHelper {
 		public:
-			// Constructor/Destructor
+			/** Constructor for NativeCallHelper.
+			 * @param nif Reference to the NativeInterface. */
 			explicit NativeCallHelper(NativeInterface& nif);
 			~NativeCallHelper();
 
-			// Main method to invoke native functions
+			/** @brief method to invoke native functions
+			 * @param functionPtr Pointer to the native function to invoke
+			 * @param env Pointer to the JNI environment
+			 * @param args Vector of Object references representing the arguments
+			 * @param paramTypes String representing the parameter types in JNI format
+			 * @param isStatic Boolean indicating if the method is static
+			 * @param returnType String representing the return type in JNI format */
 			std::shared_ptr<Object> invoke(void* functionPtr, JNIEnv* env, const std::vector<std::shared_ptr<Object>>& args, const std::string& returnType,
 			                               const std::string& paramTypes, bool isStatic = false);
 

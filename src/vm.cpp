@@ -255,3 +255,7 @@ std::string Vm::getProperty(const std::string& name_) const {
 	}
 	throw VmException("Property '{}' not found", name_);
 }
+
+void Vm::setProperty(const std::string& name_, const std::string& value_) {
+	_properties[name_] = value_;
+}

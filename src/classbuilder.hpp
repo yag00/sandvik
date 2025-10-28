@@ -29,20 +29,56 @@ namespace sandvik {
 	class Frame;
 	class Object;
 	class Class;
+	/**
+	 * @class ClassBuilder
+	 * @brief Helper class to build Class objects dynamically.
+	 *
+	 * The ClassBuilder class provides methods to define methods, fields, and superclass
+	 * for a Class object. It allows adding virtual methods, regular methods, and fields,
+	 * as well as setting the superclass and interfaces. Once all components are added,
+	 * the finalize method is called to complete the class definition.
+	 */
 	class ClassBuilder {
 		public:
+			/** @brief Constructs a ClassBuilder
+			 * @param classLoader Reference to the ClassLoader
+			 * @param packageName Package name of the class
+			 * @param className Name of the class
+			 */
 			ClassBuilder(ClassLoader& classLoader, const std::string& packageName, const std::string& className);
 
+			/** @brief Adds a virtual method to the class
+			 * @param name_ Name of the method
+			 * @param signature_ Signature of the method
+			 * @param flags_ Method flags
+			 * @param function_ Function implementing the method
+			 */
 			void addVirtualMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
 			                      std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_);
+			/** @brief Adds a regular method to the class
+			 * @param name_ Name of the method
+			 * @param signature_ Signature of the method
+			 * @param flags_ Method flags
+			 * @param function_ Function implementing the method
+			 */
 			void addMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
 			               std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_);
 
+			/** @brief Adds a field to the class
+			 * @param name_ Name of the field
+			 * @param type_ Type of the field
+			 * @param isStatic_ Whether the field is static
+			 * @param value_ Initial value of the field
+			 */
 			void addField(const std::string& name_, const std::string& type_, bool isStatic_, std::shared_ptr<Object> value_ = nullptr);
 
+			/** @brief Sets the superclass of the class
+			 * @param superClassName_ Name of the superclass
+			 */
 			void setSuperClass(const std::string& superClassName_);
+			/** @brief Sets the class as an interface */
 			void setInterface();
-
+			/** @brief Finalizes the class definition */
 			void finalize();
 
 		private:

@@ -32,7 +32,7 @@ using namespace LIEF::DEX;
 using enum Type::PRIMITIVES;
 using enum Type::TYPES;
 
-std::string sandvik::get_type_descriptor(const Type& type) {
+std::string sandvik::get_type_descriptor(const LIEF::DEX::Type& type) {
 	switch (type.type()) {
 		case PRIMITIVE:
 			switch (type.primitive()) {
@@ -75,7 +75,7 @@ std::string sandvik::get_type_descriptor(const Type& type) {
 			throw VmException("Unknown or unsupported type {}", (int)type.type());
 	}
 }
-std::string sandvik::get_method_descriptor(const Method& method) {
+std::string sandvik::get_method_descriptor(const LIEF::DEX::Method& method) {
 	std::ostringstream oss;
 	oss << '(';
 	for (const auto& param : method.prototype()->parameters_type()) {

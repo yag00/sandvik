@@ -49,7 +49,6 @@ Sandvik can be used to run Dalvik bytecode files (`.dex`) or Android application
 ```
 
 ### Options
-
 - `-h, --help`
 	Display available options.
 
@@ -59,17 +58,26 @@ Sandvik can be used to run Dalvik bytecode files (`.dex`) or Android application
 - `--log=[level]`
 	Set the log level. Available levels: `NONE`, `DEBUG`, `INFO`, `WARN`, `ERROR`.
 
+- `--logfile=[logfile]`
+	Set the log output file.
+
+- `--no-console`
+	Disable console output.
+
 - `--dex=[file]`
 	Specify the DEX file to load.
 
 - `--apk=[file]`
 	Specify the APK file to load.
 
+- `--jar=[file]`
+	Specify the Jar files to load.
+
 - `--main=[classname]`
 	Specify the main class to run.
 
 - `--runtime=[runtime]`
-	Specify the runtime path.
+	Specify path to override the default Java runtime.
 
 - `args...`
 	Positional arguments for the Java program.
