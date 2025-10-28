@@ -20,6 +20,7 @@
 #define __JNIHANDLEMAP_HPP__
 
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -49,6 +50,7 @@ namespace sandvik {
 
 		private:
 			std::unordered_map<jobject, std::shared_ptr<Object>> _table;
+			std::mutex _mutex;
 	};
 }  // namespace sandvik
 

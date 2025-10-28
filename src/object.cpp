@@ -22,6 +22,7 @@
 
 #include <fmt/format.h>
 
+#include <atomic>
 #include <stdexcept>
 
 #include "array.hpp"
@@ -67,6 +68,93 @@ namespace sandvik {
 			std::string debug() const override;
 
 			/**
+			 * @brief Atomically sets to the given value and returns the old value.
+			 *
+			 * @param newValue the new value
+			 * @return the previous value
+			 */
+			int32_t getAndSet(int32_t newValue) override;
+			/**
+			 * @brief Atomically sets to the given value and returns the old value.
+			 *
+			 * @param newValue the new value
+			 * @return the previous value
+			 */
+			int64_t getAndSet(int64_t newValue) override;
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the previous value
+			 */
+			int32_t getAndAdd(int32_t delta) override;
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the previous value
+			 */
+			int64_t getAndAdd(int64_t delta) override;
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the updated value
+			 */
+			int32_t addAndGet(int32_t delta) override;
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the updated value
+			 */
+			int64_t addAndGet(int64_t delta) override;
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful. False return indicates that
+			 * the actual value was not equal to the expected value.
+			 */
+			bool compareAndSet(int32_t expect, int32_t update) override;
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful. False return indicates that
+			 * the actual value was not equal to the expected value.
+			 */
+			bool compareAndSet(int64_t expect, int64_t update) override;
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * May fail spuriously and does not provide ordering guarantees, so is
+			 * only rarely an appropriate alternative to compareAndSet.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful
+			 */
+			bool weakCompareAndSet(int32_t expect, int32_t update) override;
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * May fail spuriously and does not provide ordering guarantees, so is
+			 * only rarely an appropriate alternative to compareAndSet.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful
+			 */
+			bool weakCompareAndSet(int64_t expect, int64_t update) override;
+
+			/**
 			 * @brief Equality operator for comparing with another Object.
 			 * @param other Reference to the other Object.
 			 * @return True if objects are equal, false otherwise.
@@ -74,7 +162,7 @@ namespace sandvik {
 			bool operator==(const Object& other) const override;
 
 		private:
-			uint64_t _value;
+			std::atomic<uint64_t> _value;
 	};
 	/** @brief Object class representing Java Class objects. */
 	class ObjectClass : public Object {
@@ -298,6 +386,37 @@ int64_t Object::getLongValue() const {
 	throw std::bad_cast();
 }
 
+int32_t Object::getAndSet(int32_t newValue) {
+	throw std::bad_cast();
+}
+int64_t Object::getAndSet(int64_t newValue) {
+	throw std::bad_cast();
+}
+int32_t Object::getAndAdd(int32_t delta) {
+	throw std::bad_cast();
+}
+int64_t Object::getAndAdd(int64_t delta) {
+	throw std::bad_cast();
+}
+int32_t Object::addAndGet(int32_t delta) {
+	throw std::bad_cast();
+}
+int64_t Object::addAndGet(int64_t delta) {
+	throw std::bad_cast();
+}
+bool Object::compareAndSet(int32_t expect, int32_t update) {
+	throw std::bad_cast();
+}
+bool Object::compareAndSet(int64_t expect, int64_t update) {
+	throw std::bad_cast();
+}
+bool Object::weakCompareAndSet(int32_t expect, int32_t update) {
+	throw std::bad_cast();
+}
+bool Object::weakCompareAndSet(int64_t expect, int64_t update) {
+	throw std::bad_cast();
+}
+
 bool Object::isArray() const {
 	return false;
 }
@@ -377,17 +496,50 @@ bool NumberObject::operator==(const Object& other) const {
 }
 
 int32_t NumberObject::getValue() const {
-	return (int32_t)(int64_t)_value;
+	return (int32_t)(int64_t)_value.load();
 }
 int64_t NumberObject::getLongValue() const {
-	return (int64_t)_value;
+	return (int64_t)_value.load();
 }
-
+int32_t NumberObject::getAndSet(int32_t newValue) {
+	return static_cast<int32_t>(_value.exchange(static_cast<uint64_t>(static_cast<int64_t>(newValue))));
+}
+int64_t NumberObject::getAndSet(int64_t newValue) {
+	return static_cast<int64_t>(_value.exchange(static_cast<uint64_t>(newValue)));
+}
+int32_t NumberObject::getAndAdd(int32_t delta) {
+	return static_cast<int32_t>(_value.fetch_add(static_cast<uint64_t>(static_cast<int64_t>(delta))));
+}
+int64_t NumberObject::getAndAdd(int64_t delta) {
+	return static_cast<int64_t>(_value.fetch_add(static_cast<uint64_t>(delta)));
+}
+int32_t NumberObject::addAndGet(int32_t delta) {
+	return static_cast<int32_t>(_value.fetch_add(static_cast<uint64_t>(static_cast<int64_t>(delta))) + static_cast<int64_t>(delta));
+}
+int64_t NumberObject::addAndGet(int64_t delta) {
+	return static_cast<int64_t>(_value.fetch_add(static_cast<uint64_t>(delta)) + static_cast<uint64_t>(delta));
+}
+bool NumberObject::compareAndSet(int32_t expect, int32_t update) {
+	uint64_t expected = static_cast<uint64_t>(static_cast<int64_t>(expect));
+	return _value.compare_exchange_strong(expected, static_cast<uint64_t>(static_cast<int64_t>(update)));
+}
+bool NumberObject::compareAndSet(int64_t expect, int64_t update) {
+	uint64_t expected = static_cast<uint64_t>(expect);
+	return _value.compare_exchange_strong(expected, static_cast<uint64_t>(update));
+}
+bool NumberObject::weakCompareAndSet(int32_t expect, int32_t update) {
+	uint64_t expected = static_cast<uint64_t>(static_cast<int64_t>(expect));
+	return _value.compare_exchange_weak(expected, static_cast<uint64_t>(static_cast<int64_t>(update)));
+}
+bool NumberObject::weakCompareAndSet(int64_t expect, int64_t update) {
+	uint64_t expected = static_cast<uint64_t>(expect);
+	return _value.compare_exchange_weak(expected, static_cast<uint64_t>(update));
+}
 bool NumberObject::isNumberObject() const {
 	return true;
 }
 std::string NumberObject::debug() const {
-	return fmt::format("NumberObject: {:#x}", _value);
+	return fmt::format("NumberObject: {:#x}", _value.load());
 }
 ///////////////////////////////////////////////////////////////////////////////
 StringObject::StringObject(Class& class_, const std::string& value_) : ObjectClass(class_), _value(value_) {

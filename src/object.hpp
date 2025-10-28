@@ -175,6 +175,93 @@ namespace sandvik {
 			 */
 			virtual int64_t getLongValue() const;
 
+			/**
+			 * @brief Atomically sets to the given value and returns the old value.
+			 *
+			 * @param newValue the new value
+			 * @return the previous value
+			 */
+			virtual int32_t getAndSet(int32_t newValue);
+			/**
+			 * @brief Atomically sets to the given value and returns the old value.
+			 *
+			 * @param newValue the new value
+			 * @return the previous value
+			 */
+			virtual int64_t getAndSet(int64_t newValue);
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the previous value
+			 */
+			virtual int32_t getAndAdd(int32_t delta);
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the previous value
+			 */
+			virtual int64_t getAndAdd(int64_t delta);
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the updated value
+			 */
+			virtual int32_t addAndGet(int32_t delta);
+			/**
+			 * @brief Atomically adds the given value to the current value.
+			 *
+			 * @param delta the value to add
+			 * @return the updated value
+			 */
+			virtual int64_t addAndGet(int64_t delta);
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful. False return indicates that
+			 * the actual value was not equal to the expected value.
+			 */
+			virtual bool compareAndSet(int32_t expect, int32_t update);
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful. False return indicates that
+			 * the actual value was not equal to the expected value.
+			 */
+			virtual bool compareAndSet(int64_t expect, int64_t update);
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * May fail spuriously and does not provide ordering guarantees, so is
+			 * only rarely an appropriate alternative to compareAndSet.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful
+			 */
+			virtual bool weakCompareAndSet(int32_t expect, int32_t update);
+			/**
+			 * @brief Atomically sets the value to the given updated value
+			 * if the current value == the expected value.
+			 *
+			 * May fail spuriously and does not provide ordering guarantees, so is
+			 * only rarely an appropriate alternative to compareAndSet.
+			 *
+			 * @param expect the expected value
+			 * @param update the new value
+			 * @return true if successful
+			 */
+			virtual bool weakCompareAndSet(int64_t expect, int64_t update);
+
 			///@}
 
 			/**

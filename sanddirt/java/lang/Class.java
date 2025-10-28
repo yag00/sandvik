@@ -17,6 +17,12 @@ package java.lang;
  * are loaded and by calls to the {@code defineClass} method in the class
  * loader.
  */
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
 public class Class<T> implements java.io.Serializable {
     /*
      * Return the Virtual Machine's Class object for the named
@@ -159,11 +165,6 @@ public class Class<T> implements java.io.Serializable {
      */
     public native java.lang.reflect.Method getEnclosingMethod();
     /**
-     * Return all enumerations of this class.
-     * @return array of enumeration constants or null if not an enum class
-     */
-    public native T[] getEnumConstants();
-    /**
      * Return the public field of the class whose name is the given one.
      * @param fieldName name of the field
      * @return field or null if not public
@@ -283,4 +284,65 @@ public class Class<T> implements java.io.Serializable {
      * @return a representation string of the class
      */
     public native java.lang.String toString();
+
+    /**
+     * Returns the elements of this enum class or null if this
+     * Class object does not represent an enum type.
+     *
+     * @return an array containing the values comprising the enum class
+     *     represented by this Class object in the order they're
+     *     declared, or null if this Class object does not
+     *     represent an enum type
+     * @since 1.5
+     */
+    public T[] getEnumConstants() {
+        T[] values = getEnumConstantsShared();
+        return (values != null) ? values.clone() : null;
+    }
+
+    /**
+     * Returns the elements of this enum class or null if this
+     * Class object does not represent an enum type;
+     * identical to getEnumConstants except that the result is
+     * uncloned, cached, and shared by all callers.
+     */
+    T[] getEnumConstantsShared() {
+        if (enumConstants == null) {
+            if (!isEnum())
+                return null;
+            try {
+                final Method values = getMethod("values");
+                @SuppressWarnings("unchecked") T[] temporaryConstants = (T[]) values.invoke(null);
+                enumConstants = temporaryConstants;
+            }
+            // These can happen when users concoct enum-like classes
+            // that don't comply with the enum spec.
+            catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException ex) {
+                return null;
+            }
+        }
+        return enumConstants;
+    }
+    private volatile transient T[] enumConstants = null;
+
+    /**
+     * Returns a map from simple name to enum constant.  This package-private
+     * method is used internally by Enum to implement
+     * {@code public static <T extends Enum<T>> T valueOf(Class<T>, String)}
+     * efficiently.  Note that the map is returned by this method is
+     * created lazily on first use.  Typically it won't ever get created.
+     */
+    Map<String, T> enumConstantDirectory() {
+        if (enumConstantDirectory == null) {
+            T[] universe = getEnumConstantsShared();
+            if (universe == null)
+                throw new IllegalArgumentException(getName() + " is not an enum type");
+            Map<String, T> m = new HashMap<>(2 * universe.length);
+            for (T constant : universe)
+                m.put(((Enum<?>) constant).name(), constant);
+            enumConstantDirectory = m;
+        }
+        return enumConstantDirectory;
+    }
+    private volatile transient Map<String, T> enumConstantDirectory = null;
 }

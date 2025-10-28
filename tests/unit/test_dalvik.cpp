@@ -275,6 +275,9 @@ TEST(VM, Thread2) {
 TEST(VM, ThreadComplex) {
 	run_common_test("TestThreadComplex");
 }
-TEST(VM, TestInvokeSuper) {
+TEST(VM, InvokeSuper) {
 	run_common_test("TestInvokeSuper");
+}
+TEST(VM, AtomicInteger) {
+	run_common_test("TestAtomicInteger");
 }

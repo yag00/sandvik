@@ -116,5 +116,11 @@ public class RunAllTests {
 
         System.out.println("== Running TestInvokeSuper ==");
         TestInvokeSuper.main(new String[]{});
+
+        System.out.println("== Running TestAtomicInteger ==");
+        TestAtomicInteger.main(new String[]{});
+
+        System.out.println("== Running TestEnums ==");
+        TestEnums.main(new String[]{});
     }
 }

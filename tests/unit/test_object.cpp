@@ -235,3 +235,66 @@ TEST(object, wait_notify) {
 	EXPECT_EQ(counter, 42);
 	EXPECT_TRUE(done);
 }
+
+TEST(object, atomic) {
+	// Create a numeric object and validate basic accessors
+	auto num = Object::make(0);
+	ASSERT_NE(num, nullptr);
+	EXPECT_TRUE(num->isNumberObject());
+	EXPECT_EQ(num->getValue(), 0);
+	EXPECT_EQ(num->getLongValue(), 0);
+
+	// getAndSet (int32)
+	int32_t prev32 = num->getAndSet(42);
+	EXPECT_EQ(prev32, 0);
+	EXPECT_EQ(num->getValue(), 42);
+
+	// getAndSet (int64)
+	int64_t prev64 = num->getAndSet(static_cast<int64_t>(100000));
+	EXPECT_EQ(prev64, 42);
+	EXPECT_EQ(num->getLongValue(), static_cast<int64_t>(100000));
+
+	// getAndAdd (int32)
+	int32_t prev32add = num->getAndAdd(5);
+	EXPECT_EQ(prev32add, static_cast<int32_t>(100000));
+	EXPECT_EQ(num->getLongValue(), static_cast<int64_t>(100005));
+
+	// getAndAdd (int64)
+	int64_t prev64add = num->getAndAdd(static_cast<int64_t>(1000));
+	EXPECT_EQ(prev64add, static_cast<int64_t>(100005));
+	EXPECT_EQ(num->getLongValue(), static_cast<int64_t>(101005));
+
+	// addAndGet (int32)
+	int32_t new32 = num->addAndGet(10);
+	EXPECT_EQ(new32, static_cast<int32_t>(101005 + 10));
+	EXPECT_EQ(num->getLongValue(), static_cast<int64_t>(101015));
+
+	// compareAndSet (int32) failure and success
+	EXPECT_FALSE(num->compareAndSet(static_cast<int32_t>(0), static_cast<int32_t>(1)));
+	EXPECT_TRUE(num->compareAndSet(static_cast<int32_t>(101015), static_cast<int32_t>(42)));
+	EXPECT_EQ(num->getValue(), 42);
+
+	// weakCompareAndSet (int32) - retry loop to account for spurious failures
+	bool weak_ok = false;
+	for (int i = 0; i < 100 && !weak_ok; ++i) {
+		weak_ok = num->weakCompareAndSet(static_cast<int32_t>(42), static_cast<int32_t>(43));
+	}
+	EXPECT_TRUE(weak_ok);
+	EXPECT_EQ(num->getValue(), 43);
+
+	// Multithreaded increment test using getAndAdd to verify atomicity
+	auto concurrent = Object::make(0);
+	const int nthreads = 8;
+	const int iters = 10000;
+	std::vector<std::thread> threads;
+	threads.reserve(nthreads);
+	for (int t = 0; t < nthreads; ++t) {
+		threads.emplace_back([concurrent]() {
+			for (int i = 0; i < iters; ++i) {
+				concurrent->getAndAdd(1);
+			}
+		});
+	}
+	for (auto& th : threads) th.join();
+	EXPECT_EQ(concurrent->getLongValue(), static_cast<int64_t>(nthreads) * iters);
+}
