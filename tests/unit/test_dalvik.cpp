@@ -275,3 +275,6 @@ TEST(VM, Thread2) {
 TEST(VM, ThreadComplex) {
 	run_common_test("TestThreadComplex");
 }
+TEST(VM, TestInvokeSuper) {
+	run_common_test("TestInvokeSuper");
+}

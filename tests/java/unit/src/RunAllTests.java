@@ -113,5 +113,8 @@ public class RunAllTests {
 
         System.out.println("== Running TestThreadComplex ==");
         TestThreadComplex.main(new String[]{});
+
+        System.out.println("== Running TestInvokeSuper ==");
+        TestInvokeSuper.main(new String[]{});
     }
 }
