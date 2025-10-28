@@ -38,7 +38,7 @@
 using namespace sandvik;
 
 /** Constructor: Loads the JAR file */
-Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_dex(classes_dex_) {
+Apk::Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& _dexs) : _path(path_), _dexs(_dexs) {
 	if (!ZipReader::isValidArchive(_path)) {
 		throw VmException("Invalid APK file: {}", _path);
 	}
@@ -46,21 +46,34 @@ Apk::Apk(const std::string& path_, Dex& classes_dex_) : _path(path_), _classes_d
 	_zipReader = std::make_unique<ZipReader>();
 	_zipReader->open(_path);
 
-	// load classes.dex
-	std::string file = "classes.dex";
-	uint64_t size = 0;
-	char* buffer = _zipReader->extractToMemory(file, size);
-	if (buffer == nullptr) {
-		throw VmException("Failed to extract {}", file);
+	// load all *.dex files
+	std::vector<std::string> dexFiles;
+	for (const auto& entry : _zipReader->getList()) {
+		if (entry.size() >= 4 && entry.substr(entry.size() - 4) == ".dex") {
+			dexFiles.push_back(entry);
+		}
 	}
-	std::vector<uint8_t> dexBuffer(buffer, buffer + size);
-	free(buffer);
-	_classes_dex.load(dexBuffer);
+	if (dexFiles.empty()) {
+		throw VmException("No DEX files found in APK: {}", _path);
+	}
+	for (const auto& file : dexFiles) {
+		logger.fdebug("Loading DEX file from APK: {}", file);
+		uint64_t size = 0;
+		auto buffer = _zipReader->extractToMemory(file, size);
+		if (buffer == nullptr) {
+			throw VmException("Failed to extract {}", file);
+		}
+		std::vector<uint8_t> dexBuffer(buffer, buffer + size);
+		auto dex = std::make_unique<Dex>();
+		dex->load(dexBuffer);
+		free(buffer);
+		_dexs.push_back(std::move(dex));
+	}
 
 	// load AndroidManifest.xml
-	file = "AndroidManifest.xml";
-	size = 0;
-	buffer = _zipReader->extractToMemory(file, size);
+	std::string file = "AndroidManifest.xml";
+	uint64_t size = 0;
+	auto buffer = _zipReader->extractToMemory(file, size);
 	if (buffer == nullptr) {
 		throw VmException("Failed to extract {}", file);
 	}
@@ -83,8 +96,10 @@ std::string Apk::getMainActivity() const {
 
 std::vector<std::string> Apk::getClassNames() const {
 	std::vector<std::string> classNames;
-	for (const auto& classname : _classes_dex.getClassNames()) {
-		classNames.push_back(classname);
+	for (const auto& dex : _dexs) {
+		for (const auto& classname : dex->getClassNames()) {
+			classNames.push_back(classname);
+		}
 	}
 	return classNames;
 }
@@ -168,9 +183,8 @@ std::string Apk::findMainActivity() const {
 										mainActivity = activityName;
 									}
 
-									// Convert to Java class format (replace . with /)
-									std::replace(mainActivity.begin(), mainActivity.end(), '.', '/');
-									return "L" + mainActivity + ";";
+									logger.fdebug("APK main activity: {}", mainActivity);
+									return mainActivity;
 								}
 							}
 						}
@@ -192,8 +206,4 @@ std::string Apk::findMainActivity() const {
 		logger.ferror("AXML parsing failed: {}", e.what());
 		return "";
 	}
-}
-
-std::unique_ptr<Class> Apk::findClass(ClassLoader& classloader_, const std::string& name) const {
-	return _classes_dex.findClass(classloader_, name);
 }

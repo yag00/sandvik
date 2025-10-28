@@ -32,7 +32,7 @@ namespace sandvik {
 	class ZipReader;
 	class Apk {
 		public:
-			Apk(const std::string& path_, Dex& classes_dex_);
+			Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_);
 			~Apk();
 
 			// Prevent copying
@@ -49,14 +49,13 @@ namespace sandvik {
 
 			std::vector<std::string> getClassNames() const;
 			std::string getMainActivity() const;
-			std::unique_ptr<Class> findClass(ClassLoader& classloader_, const std::string& name) const;
 
 		protected:
 			std::string findMainActivity() const;
 
 		private:
 			std::string _path;
-			Dex& _classes_dex;
+			std::vector<std::unique_ptr<Dex>>& _dexs;
 			std::unique_ptr<ZipReader> _zipReader;
 			std::string _manifest;
 			std::string _mainActivity;

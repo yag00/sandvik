@@ -107,7 +107,8 @@ int main(int argc, char** argv) {
 		std::cerr << parser;
 		return 1;
 	}
-	if (args::get(mainClass).empty()) {
+
+	if (args::get(mainClass).empty() && args::get(apkFile).empty()) {
 		std::cerr << "Main class not specified" << std::endl << std::endl;
 		std::cerr << parser;
 		return 1;
@@ -125,16 +126,16 @@ int main(int argc, char** argv) {
 		logger.error("No valid file specified");
 		return 1;
 	}
-
-	std::string mainClassValue = args::get(mainClass);
-	if (mainClassValue.empty()) {
-		logger.error("Main class not specified");
-		return 1;
-	}
-	logger.finfo("Running main class: {}", mainClassValue);
-	std::vector<std::string> args = args::get(positionalArgs);
 	try {
-		vm.run(mainClassValue, args);
+		if (!args::get(apkFile).empty()) {
+			// running APK file, main class is extracted from the APK manifest
+			vm.run();
+		} else {
+			// running normal class
+			std::vector<std::string> args = args::get(positionalArgs);
+			vm.run(args::get(mainClass), args);
+		}
+
 	} catch (const std::exception& e) {
 		logger.setLevel(Logger::LogLevel::INFO);
 		logger.error(e.what());

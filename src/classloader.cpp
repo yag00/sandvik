@@ -63,11 +63,9 @@ void ClassLoader::loadDex(const std::string& dex_) {
 
 void ClassLoader::loadApk(const std::string& apk_) {
 	try {
-		auto dex = std::make_unique<Dex>();
-		auto apk = std::make_unique<Apk>(apk_, *dex);
+		auto apk = std::make_unique<Apk>(apk_, _dexs);
 		logger.fdebug("APK loaded: {}", apk->getPath());
 		_apks.push_back(std::move(apk));
-		_dexs.push_back(std::move(dex));
 	} catch (const std::exception& e) {
 		logger.ferror("Failed to load APK: {}", e.what());
 		return;
@@ -107,14 +105,7 @@ Class& ClassLoader::getMainActivityClass() {
 	for (const auto& apk : _apks) {
 		auto className = apk->getMainActivity();
 		if (!className.empty()) {
-			auto it = _classes.find(className);
-			if (it != _classes.end()) {
-				return *(it->second);
-			} else {
-				auto classPtr = apk->findClass(*this, className);
-				_classes[className] = std::move(classPtr);
-				return *(_classes[className]);
-			}
+			return getOrLoad(className);
 		}
 	}
 	throw VmException("Main activity class not found");
