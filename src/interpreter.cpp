@@ -2321,7 +2321,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
 
 	Method* vmethod = nullptr;
-	while (1) {
+	while (true) {
 		try {
 			vmethod = &instance->getMethod(methodname, signature);
 			break;  // Method found, exit loop
@@ -2369,7 +2369,75 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 }
 // invoke-super {vD, vE, vF, vG, vA}, meth@CCCC
 void Interpreter::invoke_super(const uint8_t* operand_) {
-	invoke_direct(operand_);
+	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
+	auto& classloader = _rt.getClassLoader();
+	auto& frame = _rt.currentFrame();
+
+	uint16_t methodRef = *(const uint16_t*)&operand_[1];
+	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
+	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
+	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;
+	uint8_t vF = (vA > 1) ? (operand_[4] >> 4) & 0x0F : 0;
+	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
+
+	std::string classname, methodname, signature;
+	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
+
+	auto instance = &classloader.getOrLoad(classname);
+	Method* vmethod = nullptr;
+	while (true) {
+		try {
+			vmethod = &instance->getMethod(methodname, signature);
+			break;  // Method found, exit loop
+		} catch (std::exception& e) {
+			logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
+			if (instance->hasSuperClass()) {
+				// If the method is not found in the current class, try the superclass
+				instance = &classloader.getOrLoad(instance->getSuperClassname());
+				if (!instance->isStaticInitialized()) {
+					frame.pc()--;
+					executeClinit(*instance);
+					return;
+				}
+			} else {
+				// If no superclass, break the loop
+				break;
+			}
+		}
+	}
+
+	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
+	auto method_str = fmt::format("{}.{}{}(", vmethod->getClass().getFullname(), vmethod->getName(), vmethod->getSignature());
+	std::vector<std::shared_ptr<Object>> args{};
+	for (uint8_t i = 0; i < vA; ++i) {
+		auto obj = frame.getObjRegister(regs[i]);
+		if (i == 0 && !vmethod->isStatic()) {
+			method_str += "this=";
+		}
+		method_str += obj->debug();
+		if (i < vA - 1) {
+			method_str += ", ";
+		}
+		args.push_back(obj);
+	}
+	method_str += ")";
+
+	if (vmethod->isNative()) {
+		executeNativeMethod(*vmethod, args);
+	} else {
+		if (vmethod->getBytecode() == nullptr) {
+			vmethod->execute(frame, args);
+		} else {
+			logger.fok("invoke-super call method {} static={}", method_str, vmethod->isStatic());
+			auto& newframe = _rt.newFrame(*vmethod);
+			// set args on new frame
+			// When a method is invoked, the parameters to the method are placed into the last n registers.
+			for (uint32_t i = 0; i < vA; i++) {
+				newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			}
+		}
+	}
+	frame.pc() += 5;
 }
 // invoke-direct {vD, vE, vF, vG, vA}, meth@CCCC
 void Interpreter::invoke_direct(const uint8_t* operand_) {
