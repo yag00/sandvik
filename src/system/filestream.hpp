@@ -22,25 +22,41 @@
 #include <system/stream.hpp>
 
 namespace sandvik {
+	/** @brief Input file stream */
 	class IFileStream : public Stream {
 		public:
+			/** Constructor from filename
+			 * @param filename Filename to open */
 			explicit IFileStream(const std::string& filename);
-
 			virtual ~IFileStream();
 
+			/** write method
+			 * @param buf_ Buffer to write data from
+			 * @param count_ Number of bytes to write
+			 * @return number of byte written (should be equal to count)
+			 * @throw std::exception */
 			virtual long write(const char* buf_, long count_) override;
+			/** close the stream */
 			virtual void close() override;
 
 		private:
 			void __close();
 	};
-
+	/** @brief Output file stream */
 	class OFileStream : public Stream {
 		public:
+			/** Constructor from filename
+			 * @param filename Filename to open */
 			explicit OFileStream(const std::string& filename);
 			virtual ~OFileStream();
 
+			/** read method
+			 * @param buf_ Buffer to read data into
+			 * @param count_ Number of bytes to read
+			 * @return number of bytes read (should be equal to count)
+			 * @throw std::exception */
 			virtual long read(char* buf_, long count_) override;
+			/** close the stream */
 			virtual void close() override;
 
 		private:

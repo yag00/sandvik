@@ -25,13 +25,27 @@
 #include <vector>
 
 namespace sandvik {
+	/** @brief Disassembler for DEX bytecode. */
 	class Disassembler {
 		public:
 			Disassembler();
 			~Disassembler() = default;
 
+			/** @brief return the name of an opcode
+			 * @param opcode_ Opcode byte.
+			 * @return String representation of the opcode.
+			 */
 			std::string disassemble(const uint8_t opcode_) const;
+			/** @brief Disassembles one opcode
+			 * @param bytecode_ Pointer to the bytecode.
+			 * @param size_ Reference to size variable, updated with the size of disassembled code.
+			 * @return String representation of the disassembled bytecode.
+			 */
 			std::string disassemble(const uint8_t* bytecode_, uint32_t& size_) const;
+			/** @brief Disassembles one opcode
+			 * @param bytecode_ Pointer to the bytecode.
+			 * @return String representation of the disassembled bytecode.
+			 */
 			std::string disassemble(const uint8_t* bytecode_) const;
 
 		private:

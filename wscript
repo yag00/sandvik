@@ -136,7 +136,7 @@ def build(bld):
 	#-------------------------------------------------
 	sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c'], excl=['src/main.cpp'])
 	bld.shlib(
-		features        = 'resources',
+		features        = ['resources', 'doxygen'],
 		source          = sources,
 		name            = APPNAME,
 		target          = APPNAME,
@@ -145,6 +145,7 @@ def build(bld):
 		linkflags       = ["-Wl,-z,defs"],
 		install_path    = '${PREFIX}/lib',
 		resources       = 'sanddirt.dex.jar',
+		doxyfile        = 'doc/sandvik.doxygen',
 	)
 	#-------------------------------------------------
 	# build sandvik main executable

@@ -32,27 +32,82 @@ namespace LIEF {
 namespace sandvik {
 	class Class;
 	class Object;
+	/** @brief Represents a field in a Java class. */
 	class Field {
 		public:
+			/** @brief Constructs a new Field.
+			 * @param class_ Reference to the Class that owns this field
+			 * @param name_ Name of the field
+			 * @param type_ Type of the field
+			 * @param isStatic_ Indicates if the field is static
+			 */
 			Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_);
+			/** @brief Constructs a Field from a LIEF DEX Field.
+			 * @param class_ Reference to the Class that owns this field
+			 * @param field_ Reference to the LIEF DEX Field
+			 */
 			Field(Class& class_, const LIEF::DEX::Field& field_);
 			~Field() = default;
 
+			/** @brief Returns a string representation of the field.
+			 * @return String representation.
+			 */
 			std::string str() const;
 
+			/** @brief Gets the class name of the field's type.
+			 * @return Class name of the field's type.
+			 */
 			std::string getFieldTypeClassname() const;
 
+			/** @brief Gets the field's integer (32-bit) value.
+			 * @return Integer value.
+			 */
 			uint32_t getIntValue() const;
+			/** @brief Gets the field's long (64-bit) value.
+			 * @return Long value.
+			 */
 			uint64_t getLongValue() const;
+			/** @brief Gets the field's string value.
+			 * @return String value.
+			 */
 			std::string getStringValue() const;
+			/** @brief Gets the field's Object value.
+			 * @return Shared pointer to the Object value.
+			 */
 			std::shared_ptr<Object> getObjectValue() const;
+
+			/** @brief Sets the field's integer (32-bit) value.
+			 * @param value Integer value to set.
+			 */
 			void setIntValue(uint32_t value);
+			/** @brief Sets the field's long (64-bit) value.
+			 * @param value Long value to set.
+			 */
 			void setLongValue(uint64_t value);
+			/** @brief Sets the field's string value.
+			 * @param value String value to set.
+			 */
 			void setStringValue(const std::string& value);
+			/** @brief Sets the field's Object value.
+			 * @param value Shared pointer to the Object value.
+			 */
 			void setObjectValue(std::shared_ptr<Object> value);
+
+			/** @brief Gets the Class that owns this field.
+			 * @return Reference to the Class.
+			 */
 			Class& getClass() const;
+			/** @brief Gets the name of the field.
+			 * @return Name of the field.
+			 */
 			std::string getName() const;
+			/** @brief Gets the type of the field.
+			 * @return Type of the field.
+			 */
 			std::string getType() const;
+			/** @brief Checks if the field is static.
+			 * @return true if the field is static, false otherwise.
+			 */
 			bool isStatic() const;
 
 		private:

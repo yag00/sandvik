@@ -25,6 +25,7 @@
 #include <string>
 
 namespace sandvik {
+	/** @brief Class for reading zip archives */
 	class ZipReader {
 		public:
 			ZipReader();
@@ -46,11 +47,13 @@ namespace sandvik {
 			 * @throw std::exception */
 			void close();
 			/** extract file into the given path
+			 * @param file_ file to extract
 			 * @param path_ path for zip extraction
 			 * @throw std::exception */
 			void extract(const std::string& file_, const std::string& path_);
 			/** extract file into memory
-			 * @param path_ path for zip extraction
+			 * @param file_ file to extract
+			 * @param size_ size of extracted data
 			 * @return extracted data. Ptr must be deleted with free()
 			 * @throw std::exception */
 			char* extractToMemory(const std::string& file_, uint64_t& size_);
@@ -74,6 +77,7 @@ namespace sandvik {
 			void* _zip;
 	};
 
+	/** @brief Class for writing zip archives */
 	class ZipWriter {
 		public:
 			ZipWriter();

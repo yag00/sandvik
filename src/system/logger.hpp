@@ -48,7 +48,6 @@ namespace sandvik {
 			void addThread(std::thread::id tid_, const std::string &name_);
 			/** remove thread from logger : log messages from this thread won't be prefixed with thread name
 			 * @param tid_ thread id
-			 * @param name_ thread name
 			 */
 			void removeThread(std::thread::id tid_);
 
@@ -66,38 +65,38 @@ namespace sandvik {
 			 */
 			LogLevel getLevel() const;
 			/** set log level
-			 * @param level log level
+			 * @param level_ log level
 			 */
-			void setLevel(LogLevel level);
+			void setLevel(LogLevel level_);
 			/** return true if log message is prefixed with time
 			 * @return if log message is prefixed with time
 			 */
 			bool isDisplayingTime() const;
 			/** prefix log message with time
-			 * @param enable
+			 * @param enable_ enable/disable time prefix
 			 */
-			void displayTime(bool enable);
+			void displayTime(bool enable_);
 
 			/** log info message
-			 * @param msg message
+			 * @param msg_ message
 			 */
-			void info(const std::string &msg);
+			void info(const std::string &msg_);
 			/** log debug message
-			 * @param msg message
+			 * @param msg_ message
 			 */
-			void debug(const std::string &msg);
+			void debug(const std::string &msg_);
 			/** log warning message
-			 * @param msg message
+			 * @param msg_ message
 			 */
-			void warning(const std::string &msg);
+			void warning(const std::string &msg_);
 			/** log error message
-			 * @param msg message
+			 * @param msg_ message
 			 */
-			void error(const std::string &msg);
+			void error(const std::string &msg_);
 			/** log ok message
-			 * @param msg message
+			 * @param msg_ message
 			 */
-			void ok(const std::string &msg);
+			void ok(const std::string &msg_);
 
 			/** printf like log info message
 			 * @param msg_ message
@@ -199,6 +198,10 @@ namespace sandvik {
 			/** thread safe logging */
 			std::mutex _mutex;
 	};
+
+	/** @brief Get the global logger instance
+	 * @return Reference to the global Logger instance
+	 */
 	inline Logger &getLogger() {
 		return Logger::getInstance();
 	}

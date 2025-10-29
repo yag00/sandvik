@@ -25,23 +25,44 @@
 #include <vector>
 
 namespace sandvik {
+	/** @class IStringStream
+	 *  @brief Input string stream class
+	 * performing the write operation on string stream */
 	class IStringStream : public Stream {
 		public:
-			explicit IStringStream(const std::string& data);
-			explicit IStringStream(const std::vector<uint8_t>& data);
-
+			/** Constructor from string data
+			 * @param data_ string data */
+			explicit IStringStream(const std::string& data_);
+			/** Constructor from byte data
+			 * @param data_ byte data */
+			explicit IStringStream(const std::vector<uint8_t>& data_);
 			virtual ~IStringStream();
 
+			/** write method
+			 * @param buf_ Buffer to write data from
+			 * @param count_ Number of bytes to write
+			 * @return number of byte written (should be equal to count)
+			 * @throw std::exception */
 			virtual long write(const char* buf_, long count_) override;
+			/** close the stream */
 			virtual void close() override;
 	};
 
+	/** @class OStringStream
+	 *  @brief Output string stream class
+	 * performing the read operation on string stream */
 	class OStringStream : public Stream {
 		public:
 			explicit OStringStream();
 			virtual ~OStringStream();
 
+			/** read method
+			 * @param buf_ Buffer to read data into
+			 * @param count_ Number of bytes to read
+			 * @return number of bytes read (should be equal to count)
+			 * @throw std::exception */
 			virtual long read(char* buf_, long count_) override;
+			/** close the stream */
 			virtual void close() override;
 
 			/** @return buffer */

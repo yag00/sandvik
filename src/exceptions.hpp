@@ -31,13 +31,17 @@ namespace sandvik {
 	 */
 	class VmException : public std::exception {
 		public:
-			/** constructor */
+			/** exception constructor
+			 * @param message_ Exception message. */
 			explicit VmException(const std::string& message_ = "");
+			/** formatted exception constructor
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
 			template <typename... Args>
 			explicit VmException(fmt::format_string<Args...> fmt_str, Args&&... args) {
 				_message = fmt::format(fmt_str, std::forward<Args>(args)...);
 			}
-			/** destructor */
 			~VmException() noexcept override = default;
 			/** get exception message
 			 * @return exception message
@@ -53,9 +57,10 @@ namespace sandvik {
 	 */
 	class JavaException : public std::exception {
 		public:
-			/** constructor */
+			/** exception constructor
+			 * @param type_ exception class type
+			 * @param message_ Exception message. */
 			explicit JavaException(const std::string& type_, const std::string& message_ = "");
-			/** destructor */
 			~JavaException() noexcept override = default;
 			/** get exception message
 			 * @return exception message
@@ -77,16 +82,17 @@ namespace sandvik {
 	/** @brief ArithmeticException exception class */
 	class ArithmeticException : public JavaException {
 		public:
-			/** constructor */
+			/** constructor
+			 * @param message Exception message. */
 			explicit ArithmeticException(const std::string& message = "") : JavaException("java.lang.ArithmeticException", message) {
 			}
-			/** destructor */
 			~ArithmeticException() noexcept override = default;
 	};
 	/** @brief NullPointerException exception class */
 	class NullPointerException : public JavaException {
 		public:
-			/** constructor */
+			/** constructor
+			 * @param message Exception message. */
 			explicit NullPointerException(const std::string& message = "") : JavaException("java.lang.NullPointerException", message) {
 			}
 			/** destructor */
@@ -95,7 +101,8 @@ namespace sandvik {
 	/** @brief ClassCastException exception class */
 	class ClassCastException : public JavaException {
 		public:
-			/** constructor */
+			/** constructor
+			 * @param message Exception message. */
 			explicit ClassCastException(const std::string& message = "") : JavaException("java.lang.ClassCastException", message) {
 			}
 			/** destructor */
@@ -104,6 +111,8 @@ namespace sandvik {
 	/** @brief NoClassDefFoundError exception class */
 	class NoClassDefFoundError : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit NoClassDefFoundError(const std::string& message = "") : JavaException("java.lang.NoClassDefFoundError", message) {
 			}
 			~NoClassDefFoundError() noexcept override = default;
@@ -112,6 +121,8 @@ namespace sandvik {
 	/** @brief InstantiationException exception class */
 	class InstantiationException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit InstantiationException(const std::string& message = "") : JavaException("java.lang.InstantiationException", message) {
 			}
 			~InstantiationException() noexcept override = default;
@@ -120,6 +131,8 @@ namespace sandvik {
 	/** @brief IllegalAccessError exception class */
 	class IllegalAccessError : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit IllegalAccessError(const std::string& message = "") : JavaException("java.lang.IllegalAccessError", message) {
 			}
 			~IllegalAccessError() noexcept override = default;
@@ -128,6 +141,8 @@ namespace sandvik {
 	/** @brief IndexOutOfBoundsException exception class */
 	class IndexOutOfBoundsException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit IndexOutOfBoundsException(const std::string& message = "") : JavaException("java.lang.IndexOutOfBoundsException", message) {
 			}
 			~IndexOutOfBoundsException() noexcept override = default;
@@ -136,6 +151,8 @@ namespace sandvik {
 	/** @brief IllegalAccessException exception class */
 	class IllegalAccessException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit IllegalAccessException(const std::string& message = "") : JavaException("java.lang.IllegalAccessException", message) {
 			}
 			~IllegalAccessException() noexcept override = default;
@@ -143,6 +160,8 @@ namespace sandvik {
 	/** @brief IllegalArgumentException exception class */
 	class IllegalArgumentException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit IllegalArgumentException(const std::string& message = "") : JavaException("java.lang.IllegalArgumentException", message) {
 			}
 			~IllegalArgumentException() noexcept override = default;
@@ -151,6 +170,8 @@ namespace sandvik {
 	/** @brief ExceptionInInitializerError exception class */
 	class ExceptionInInitializerError : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit ExceptionInInitializerError(const std::string& message = "") : JavaException("java.lang.ExceptionInInitializerError", message) {
 			}
 			~ExceptionInInitializerError() noexcept override = default;
@@ -158,6 +179,8 @@ namespace sandvik {
 	/** @brief ArrayIndexOutOfBoundsException exception class */
 	class ArrayIndexOutOfBoundsException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit ArrayIndexOutOfBoundsException(const std::string& message = "") : JavaException("java.lang.ArrayIndexOutOfBoundsException", message) {
 			}
 			~ArrayIndexOutOfBoundsException() noexcept override = default;
@@ -165,6 +188,8 @@ namespace sandvik {
 	/** @brief ArrayStoreException exception class */
 	class ArrayStoreException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit ArrayStoreException(const std::string& message = "") : JavaException("java.lang.ArrayStoreException", message) {
 			}
 			~ArrayStoreException() noexcept override = default;
@@ -172,6 +197,8 @@ namespace sandvik {
 	/** @brief NegativeArraySizeException exception class */
 	class NegativeArraySizeException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit NegativeArraySizeException(const std::string& message = "") : JavaException("java.lang.NegativeArraySizeException", message) {
 			}
 			~NegativeArraySizeException() noexcept override = default;
@@ -179,6 +206,8 @@ namespace sandvik {
 	/** @brief VerifyError exception class */
 	class VerifyError : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit VerifyError(const std::string& message = "") : JavaException("java.lang.VerifyError", message) {
 			}
 			~VerifyError() noexcept override = default;
@@ -186,6 +215,8 @@ namespace sandvik {
 	/** @brief NumberFormatException exception class */
 	class NumberFormatException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit NumberFormatException(const std::string& message = "") : JavaException("java.lang.NumberFormatException", message) {
 			}
 			~NumberFormatException() noexcept override = default;
@@ -193,6 +224,8 @@ namespace sandvik {
 	/** @brief StringIndexOutOfBoundsException exception class */
 	class StringIndexOutOfBoundsException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit StringIndexOutOfBoundsException(const std::string& message = "") : JavaException("java.lang.StringIndexOutOfBoundsException", message) {
 			}
 			~StringIndexOutOfBoundsException() noexcept override = default;
@@ -200,6 +233,8 @@ namespace sandvik {
 	/** @brief NoSuchMethodError exception class */
 	class NoSuchMethodError : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit NoSuchMethodError(const std::string& message = "") : JavaException("java.lang.NoSuchMethodError", message) {
 			}
 			~NoSuchMethodError() noexcept override = default;
@@ -207,6 +242,8 @@ namespace sandvik {
 	/** @brief NoSuchFieldException exception class */
 	class NoSuchFieldException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit NoSuchFieldException(const std::string& message = "") : JavaException("java.lang.NoSuchFieldException", message) {
 			}
 			~NoSuchFieldException() noexcept override = default;
@@ -214,6 +251,8 @@ namespace sandvik {
 	/** @brief NoSuchMethodException exception class */
 	class NoSuchMethodException : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit NoSuchMethodException(const std::string& message = "") : JavaException("java.lang.NoSuchMethodException", message) {
 			}
 			~NoSuchMethodException() noexcept override = default;
@@ -221,6 +260,8 @@ namespace sandvik {
 	/** @brief OutOfMemoryError exception class */
 	class OutOfMemoryError : public JavaException {
 		public:
+			/** constructor
+			 * @param message Exception message. */
 			explicit OutOfMemoryError(const std::string& message = "") : JavaException("java.lang.OutOfMemoryError", message) {
 			}
 			~OutOfMemoryError() noexcept override = default;

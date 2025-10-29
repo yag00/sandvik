@@ -22,9 +22,11 @@
 #include <string>
 
 namespace sandvik {
+	/** @brief JNI helper namespace */
 	namespace JNIHelper {
+		/** @brief Mangles a method signature into a JNI-compatible format. */
 		std::string mangleMethodSignature(const std::string& sig);
-	}
+	}  // namespace JNIHelper
 }  // namespace sandvik
 
 #endif  // __JNIHELPER_HPP__

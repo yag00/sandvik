@@ -27,11 +27,17 @@ namespace sandvik {
 	class Object;
 	class Array;
 	class NativeInterface;
+	/** @brief Native function utilities */
 	namespace native {
+		/** @brief Retrieves a native Object from a Java jobject. */
 		Object* getObject(jobject jobj);
+		/** @brief Retrieves a native Object from a Java jstring. */
 		Object* getString(jobject jstr);
+		/** @brief Retrieves a native Object from a Java jstring. */
 		Object* getString(jstring jstr);
+		/** @brief Retrieves a native Array from a Java jobject. */
 		Array* getArray(jobject jarray);
+		/** @brief Retrieves the native interface from the Java environment. */
 		NativeInterface* getNativeInterface(JNIEnv* env);
 	};  // namespace native
 };  // namespace sandvik

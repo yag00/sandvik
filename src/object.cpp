@@ -32,75 +32,186 @@
 #include "system/logger.hpp"
 
 namespace sandvik {
+	/** @brief Number object representing integer values. */
 	class NumberObject : public Object {
 		public:
+			/** Constructor for NumberObject.
+			 * @param value_ The integer value to be stored in the NumberObject.
+			 */
 			explicit NumberObject(uint64_t value_);
 			~NumberObject() override = default;
 
+			/**
+			 * @brief Checks if the object represents a number.
+			 * @return True if the object is a number, false otherwise.
+			 */
 			bool isNumberObject() const override;
+
+			/**
+			 * @brief Gets the integer value of the object.
+			 * @return Integer value.
+			 * @throw std::bad_cast if the object is not a number.
+			 */
 			int32_t getValue() const override;
+			/**
+			 * @brief Gets the long integer value of the object.
+			 * @return Long integer value.
+			 * @throw std::bad_cast if the object is not a number.
+			 */
 			int64_t getLongValue() const override;
+
+			/**
+			 * @brief Returns a debug string representation of the object.
+			 * @return Debug string.
+			 */
 			std::string debug() const override;
 
+			/**
+			 * @brief Equality operator for comparing with another Object.
+			 * @param other Reference to the other Object.
+			 * @return True if objects are equal, false otherwise.
+			 */
 			bool operator==(const Object& other) const override;
 
 		private:
 			uint64_t _value;
 	};
+	/** @brief Object class representing Java Class objects. */
 	class ObjectClass : public Object {
 		public:
+			/** Constructor for ObjectClass.
+			 * @param class_ Reference to the Class object.
+			 */
 			explicit ObjectClass(Class& class_);
 			~ObjectClass() override = default;
 
+			/**
+			 * @brief Checks if the object is an instance of the specified type.
+			 * @param instance_ Name of the type to check.
+			 * @return True if the object is an instance of the specified type, false otherwise.
+			 */
 			bool isInstanceOf(const std::string& instance_) const override;
-
+			/**
+			 * @brief Checks if the object is a class object (instance of java.lang.Class).
+			 * @return True if the object is a class object, false otherwise.
+			 * @throw std::bad_cast if object is not a class.
+			 */
 			bool isClass() const override;
+			/**
+			 * @brief Gets the Class of the object.
+			 * @return Reference to the Class object.
+			 * @throw std::bad_cast if the object does not have a class.
+			 */
 			Class& getClass() const override;
+			/**
+			 * @brief Returns a debug string representation of the object.
+			 * @return Debug string.
+			 */
 			std::string debug() const override;
 
 		private:
 			Class& _class;
 	};
+	/** @brief Constant class object representing Java Class<?> objects. */
 	class ConstClassObject : public ObjectClass {
 		public:
+			/** Constructor for ConstClassObject.
+			 * @param class_ Reference to the Class object.
+			 * @param classtype_ Reference to the Class type.
+			 */
 			ConstClassObject(Class& class_, Class& classtype_);
 			~ConstClassObject() override = default;
 
 			const Class& getClassType() const override;
+			/**
+			 * @brief Returns a debug string representation of the object.
+			 * @return Debug string.
+			 */
 			std::string debug() const override;
-
+			/**
+			 * @brief Equality operator for comparing with another Object.
+			 * @param other Reference to the other Object.
+			 * @return True if objects are equal, false otherwise.
+			 */
 			bool operator==(const Object& other) const override;
 
-			// need to override monitor methods to lock the class object
-			// for static fields access
+			/** @brief Enter monitor
+			 *
+			 * need to override monitor methods to lock the class object for static fields access
+			 */
 			void monitorEnter() override;
+			/** @brief Exit monitor
+			 *
+			 * need to override monitor methods to lock the class object for static fields access
+			 */
 			void monitorExit() override;
 
 		private:
 			Class& _type;
 	};
+	/** @brief String object representing Java String objects. */
 	class StringObject : public ObjectClass {
 		public:
+			/** Constructor for StringObject.
+			 * @param class_ Reference to the Class object.
+			 * @param value_ String value to initialize the object.
+			 */
 			StringObject(Class& class_, const std::string& value_);
 			~StringObject() override = default;
 
+			/**
+			 * @brief  Checks if the object is a string.
+			 * @return True if the object is a string, false otherwise.
+			 */
 			bool isString() const override;
+			/**
+			 * @brief Gets the string value of the object.
+			 * @return String value.
+			 * @throw std::bad_cast if the object is not a string.
+			 */
 			std::string str() const override;
+			/**
+			 * @brief Set the string value of the object.
+			 * @param str_ String value.
+			 * @throw std::bad_cast if the object is not a string.
+			 */
 			void setString(const std::string& str_) override;
-			std::string debug() const override;
 
+			/**
+			 * @brief Returns a debug string representation of the object.
+			 * @return Debug string.
+			 */
+			std::string debug() const override;
+			/**
+			 * @brief Equality operator for comparing with another Object.
+			 * @param other Reference to the other Object.
+			 * @return True if objects are equal, false otherwise.
+			 */
 			bool operator==(const Object& other) const override;
 
 		private:
 			std::string _value;
 	};
+	/** @brief Null object representing Java null references. */
 	class NullObject : public Object {
 		public:
 			NullObject() = default;
 			~NullObject() override = default;
-
+			/**
+			 * @brief Equality operator for comparing with nullptr.
+			 * @return True if the object is null, false otherwise.
+			 */
 			bool operator==(std::nullptr_t) const override;
+			/**
+			 * @brief Checks if the object is null.
+			 * @return True if the object is null, false otherwise.
+			 */
 			bool isNull() const override;
+
+			/**
+			 * @brief Returns a debug string representation of the object.
+			 * @return Debug string.
+			 */
 			std::string debug() const override;
 	};
 }  // namespace sandvik

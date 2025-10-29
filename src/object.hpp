@@ -34,6 +34,7 @@ namespace sandvik {
 	class Array;
 	class Monitor;
 
+	/** @brief Object reference type */
 	using ObjectRef = std::shared_ptr<Object>;
 	/**
 	 * @class Object
@@ -77,7 +78,6 @@ namespace sandvik {
 
 			/**
 			 * @brief Equality operator for comparing with nullptr.
-			 * @param Unused parameter for nullptr comparison.
 			 * @return True if the object is null, false otherwise.
 			 */
 			virtual bool operator==(std::nullptr_t) const;
@@ -151,6 +151,11 @@ namespace sandvik {
 			virtual bool isInstanceOf(const std::string& instance_) const;
 
 			/**
+			 * @name Number object methods.
+			 */
+			///@{
+
+			/**
 			 * @brief Checks if the object represents a number.
 			 * @return True if the object is a number, false otherwise.
 			 */
@@ -170,6 +175,13 @@ namespace sandvik {
 			 */
 			virtual int64_t getLongValue() const;
 
+			///@}
+
+			/**
+			 * @name Array object methods.
+			 */
+			///@{
+
 			/**
 			 * @brief Checks if the object is an array.
 			 * @return True if the object is an array, false otherwise.
@@ -182,12 +194,18 @@ namespace sandvik {
 			 */
 			virtual uint32_t getArrayLength() const;
 
+			///@}
+
 			/**
 			 * @brief Checks if the object is null.
 			 * @return True if the object is null, false otherwise.
 			 */
 			virtual bool isNull() const;
 
+			/**
+			 * @name Class/Class<?> object methods.
+			 */
+			///@{
 			/**
 			 * @brief Checks if the object is a class object (instance of java.lang.Class).
 			 * @return True if the object is a class object, false otherwise.
@@ -200,25 +218,6 @@ namespace sandvik {
 			 * @throw std::bad_cast if the object does not have a class.
 			 */
 			virtual Class& getClass() const;
-
-			/**
-			 * @brief  Checks if the object is a string.
-			 * @return True if the object is a string, false otherwise.
-			 */
-			virtual bool isString() const;
-			/**
-			 * @brief Gets the string value of the object.
-			 * @return String value.
-			 * @throw std::bad_cast if the object is not a string.
-			 */
-			virtual std::string str() const;
-			/**
-			 * @brief Set the string value of the object.
-			 * @param str_ String value.
-			 * @throw std::bad_cast if the object is not a string.
-			 */
-			virtual void setString(const std::string& str_);
-
 			/**
 			 * @brief Gets the Class type of the object (used by Array or Class<?>).
 			 * @return Reference to the Class type.
@@ -240,32 +239,63 @@ namespace sandvik {
 			 */
 			ObjectRef getField(const std::string& name_) const;
 
-			// Monitor enter/exit methods
+			///@}
+
+			/**
+			 * @name String object methods.
+			 */
+			///@{
+			/**
+			 * @brief  Checks if the object is a string.
+			 * @return True if the object is a string, false otherwise.
+			 */
+			virtual bool isString() const;
+			/**
+			 * @brief Gets the string value of the object.
+			 * @return String value.
+			 * @throw std::bad_cast if the object is not a string.
+			 */
+			virtual std::string str() const;
+			/**
+			 * @brief Set the string value of the object.
+			 * @param str_ String value.
+			 * @throw std::bad_cast if the object is not a string.
+			 */
+			virtual void setString(const std::string& str_);
+			///@}
+
+			/**
+			 * @name Thread synchronization methods.
+			 */
+			///@{
+			/** @brief Enter monitor */
 			virtual void monitorEnter();
+			/** @brief Exit monitor */
 			virtual void monitorExit();
 
-			/** Causes the current thread to wait until either another thread invokes the notify methods
+			/** @brief Causes the current thread to wait until either another thread invokes the notify methods
 			 * @param timeout_ the maximum time to wait in milliseconds.
 			 */
 			void wait(uint64_t timeout_ = 0);
-			/**
+			/** @brief Wakes up a single thread that is waiting on this object's monitor.
 			 * Wakes up a single thread that is waiting on this object's
 			 * monitor. If any threads are waiting on this object, one of them
 			 * is chosen to be awakened. The choice is arbitrary and occurs at
 			 * the discretion of the implementation. */
 			void notify();
-			/**
+			/** @brief Wakes up all threads that are waiting on this object's monitor.
 			 * Wakes up all threads that are waiting on this object's monitor. A
 			 * thread waits on an object's monitor by calling one of the
 			 * wait method. */
 			void notifyAll();
+			///@}
 
 		protected:
+			/** Check monitor ownership */
 			void monitorCheck() const;
-			/**
-			 * @brief Map storing field names and their corresponding ObjectRef values.
-			 */
+			/** Map storing field names and their corresponding values. */
 			std::map<std::string, ObjectRef> _fields;
+			/** Monitor for thread synchronization */
 			std::unique_ptr<Monitor> _monitor;
 	};
 }  // namespace sandvik

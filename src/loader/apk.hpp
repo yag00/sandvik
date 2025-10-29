@@ -30,8 +30,13 @@ namespace sandvik {
 	class Class;
 	class Dex;
 	class ZipReader;
+	/** @brief Android APK file loader. */
 	class Apk {
 		public:
+			/** @brief Load an APK file from a path.
+			 * @param path_ Path to the APK file
+			 * @param dexs_ Reference to the vector that will hold the loaded Dex files
+			 */
 			Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_);
 			~Apk();
 
@@ -39,18 +44,27 @@ namespace sandvik {
 			Apk(const Apk&) = delete;
 			Apk& operator=(const Apk&) = delete;
 
-			// Allow moving
-			Apk(Apk&&) noexcept;
-			Apk& operator=(Apk&&) noexcept;
-
+			/** @brief Gets the path to the APK file.
+			 * @return Path to the APK file
+			 */
 			std::string getPath() const;
-
+			/** @brief Loads the APK file from the specified path.
+			 * @param path Path to the APK file
+			 */
 			void load(const std::string& path);
-
+			/** @brief Retrieves all class names defined in the APK file.
+			 * @return class names
+			 */
 			std::vector<std::string> getClassNames() const;
+			/** @brief Gets the main activity defined in the APK file.
+			 * @return Name of the main activity
+			 */
 			std::string getMainActivity() const;
 
 		protected:
+			/** @brief Finds the main activity defined in the APK file.
+			 * @return Name of the main activity
+			 */
 			std::string findMainActivity() const;
 
 		private:

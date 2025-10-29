@@ -37,11 +37,13 @@ namespace sandvik {
 	 */
 	class Interpreter {
 		public:
-			/** constructor */
+			/** Create opcode interpreter for the given thread
+			 * @param rt_ reference to the current thread
+			 */
 			explicit Interpreter(JThread& rt_);
-			/** destructor */
 			~Interpreter();
 
+			/** @brief executes current thread opcode. */
 			void execute();
 
 		private:
