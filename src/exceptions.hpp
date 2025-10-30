@@ -266,6 +266,15 @@ namespace sandvik {
 			}
 			~OutOfMemoryError() noexcept override = default;
 	};
+	/** @brief CloneNotSupportedException exception class */
+	class CloneNotSupportedException : public JavaException {
+		public:
+			/** constructor
+			 * @param message Exception message. */
+			explicit CloneNotSupportedException(const std::string& message = "") : JavaException("java.lang.CloneNotSupportedException", message) {
+			}
+			~CloneNotSupportedException() noexcept override = default;
+	};
 }  // namespace sandvik
 
 #endif

@@ -43,6 +43,21 @@ extern "C" {
 		(void)clazz;
 	}
 
+	JNIEXPORT jobject JNICALL Java_java_lang_Object_clone(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto this_ptr = sandvik::native::getObject(obj);
+
+		// Per java.lang.Object#clone contract, only objects implementing
+		// java.lang.Cloneable may be cloned; otherwise throw.
+		// @todo check for Cloneable interface implementation
+		// throw sandvik::CloneNotSupportedException("Object does not implement java.lang.Cloneable");
+
+		// Perform a shallow clone of the object and convert to a JNI handle.
+		auto cloned_ptr = this_ptr->clone();
+		jobject jcloned = jenv->getHandles().toJObject(cloned_ptr);
+		return jcloned;
+	}
+
 	JNIEXPORT jobject JNICALL Java_java_lang_Object_getClass(JNIEnv* env, jobject obj) {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto ptr = sandvik::native::getObject(obj);

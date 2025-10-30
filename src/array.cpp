@@ -23,6 +23,7 @@
 #include <algorithm>
 
 #include "class.hpp"
+#include "exceptions.hpp"
 #include "monitor.hpp"
 #include "object.hpp"
 
@@ -61,6 +62,20 @@ Array::Array(std::shared_ptr<ObjectRefVector> data_, const Class& classtype_, co
 
 bool Array::isArray() const {
 	return true;
+}
+
+bool Array::isClass() const {
+	return true;
+}
+Class& Array::getClass() const {
+	Class* c = const_cast<Class*>(&_classtype);
+	while (c->hasSuperClass()) {
+		c = &c->getSuperClass();
+		if (c->getFullname() == "java.lang.Object") {
+			return *c;
+		}
+	}
+	throw VmException("Array does not have java.lang.Object as superclass");
 }
 
 const Class& Array::getClassType() const {
@@ -159,4 +174,12 @@ std::shared_ptr<Array> Array::getArray(uint32_t idx_) const {
 	uint32_t startIdx = idx_ * subArraySize;
 	// Create a sub-array that references the original data
 	return std::make_shared<Array>(_data, _classtype, std::vector<uint32_t>(_dimensions.begin() + 1, _dimensions.end()), _offset + startIdx);
+}
+
+ObjectRef Array::clone() const {
+	auto newArray = std::make_shared<Array>(_classtype, _dimensions);
+	for (uint32_t i = 0; i < _length; ++i) {
+		(*newArray->_data)[i] = (*_data)[_offset + i];
+	}
+	return newArray;
 }

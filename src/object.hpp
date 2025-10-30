@@ -150,6 +150,11 @@ namespace sandvik {
 			 */
 			virtual bool isInstanceOf(const std::string& instance_) const;
 
+			/** @brief Clones the object.
+			 * @return Shared pointer to the cloned Object.
+			 */
+			virtual ObjectRef clone() const;
+
 			/**
 			 * @name Number object methods.
 			 */

@@ -245,9 +245,9 @@ TEST(VM, StringOps) {
 TEST(VM, StaticInit) {
 	run_common_test("TestStaticInit");
 }
-//TEST(VM, Enums) {
-//	run_common_test("TestEnums");
-//}
+TEST(VM, Enums) {
+	run_common_test("TestEnums");
+}
 //TEST(VM, Reflection) {
 //	run_common_test("TestReflection");
 //}

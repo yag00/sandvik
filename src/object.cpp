@@ -28,6 +28,7 @@
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
+#include "exceptions.hpp"
 #include "field.hpp"
 #include "monitor.hpp"
 #include "system/logger.hpp"
@@ -348,6 +349,10 @@ bool Object::operator==(const Object& other) const {
 
 bool Object::operator==(std::nullptr_t) const {
 	return false;
+}
+
+ObjectRef Object::clone() const {
+	throw CloneNotSupportedException();
 }
 
 void Object::monitorEnter() {

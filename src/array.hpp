@@ -83,6 +83,16 @@ namespace sandvik {
 			 * @return Shared pointer to the Array at the specified index.
 			 */
 			ArrayRef getArray(uint32_t idx_) const;
+			/**
+			 * @brief An array is considered a class object. All methods of java.lang.Object are available.
+			 * @return True
+			 */
+			bool isClass() const override;
+			/**
+			 * @brief Gets the Class of the object.
+			 * @return Reference a java.lang.Class object.
+			 */
+			Class& getClass() const override;
 
 			/** @brief Gets the number of dimensions of the array.
 			 * @return Number of dimensions.
@@ -119,6 +129,11 @@ namespace sandvik {
 			 * @return ObjectRef at the specified indices.
 			 */
 			ObjectRef getElement(const std::vector<uint32_t>& indices_) const;
+
+			/** @brief Clones the array.
+			 * @return Shared pointer to the cloned Array.
+			 */
+			ObjectRef clone() const override;
 
 		private:
 			uint32_t flattenIndex(const std::vector<uint32_t>& indices_) const;

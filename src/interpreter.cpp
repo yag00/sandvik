@@ -318,7 +318,7 @@ void Interpreter::execute() {
 	}
 }
 
-void Interpreter::executeClinit(Class& class_) {
+void Interpreter::executeClinit(Class& class_) const {
 	auto hasInitializeMethod = class_.hasMethod("initializeSystemClass", "()V");
 	auto hasClinitMethod = class_.hasMethod("<clinit>", "()V");
 	if (!hasInitializeMethod && !hasClinitMethod) {

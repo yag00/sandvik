@@ -37,8 +37,6 @@ package java.util.concurrent.atomic;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
 
-import sun.misc.Unsafe;
-
 /**
  * @@ sandvik modified
  * An {@code int} value that may be updated atomically.  See the
