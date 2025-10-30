@@ -319,28 +319,32 @@ void Interpreter::execute() {
 }
 
 void Interpreter::executeClinit(Class& class_) {
-	// push new frame with initializeSystemClass method (should be executed after <clinit>)
-	try {
-		auto& initializeSystemClass = class_.getMethod("initializeSystemClass", "()V");
-		_rt.newFrame(initializeSystemClass);
-	} catch (std::exception& e) {
-		// logger.fdebug("No initializeSystemClass method for class {}: {}", class_.getFullname(), e.what());
+	auto hasInitializeMethod = class_.hasMethod("initializeSystemClass", "()V");
+	auto hasClinitMethod = class_.hasMethod("<clinit>", "()V");
+	if (!hasInitializeMethod && !hasClinitMethod) {
+		// Nothing to do
+		return;
 	}
-	// push new frame with <clinit> method
-	try {
+	// Create a new thread to execute the <clinit> method
+	auto& thread = _rt.vm().newThread(fmt::format("{}.{}", class_.getFullname(), "<clinit>"));
+	if (hasInitializeMethod) {
+		// push new frame with initializeSystemClass method (should be executed after <clinit>)
+		auto& initializeSystemClass = class_.getMethod("initializeSystemClass", "()V");
+		thread.newFrame(initializeSystemClass);
+	}
+	if (hasClinitMethod) {
+		// push new frame with <clinit> method
 		auto& clinitMethod = class_.getMethod("<clinit>", "()V");
 		if (clinitMethod.isNative()) {
 			throw VmException("Native <clinit> method for class {} is not supported!", class_.getFullname());
 		}
-		if (clinitMethod.hasBytecode()) {
-			_rt.newFrame(clinitMethod);
-		} else {
-			std::vector<std::shared_ptr<Object>> args;
-			clinitMethod.execute(_rt.currentFrame(), args);
+		if (!clinitMethod.hasBytecode()) {
+			throw VmException("<clinit> method for class {} has no bytecode!", class_.getFullname());
 		}
-	} catch (std::exception& e) {
-		logger.fdebug("No <clinit> method for class {}: {}", class_.getFullname(), e.what());
+		thread.newFrame(clinitMethod);
 	}
+	thread.run(true);
+	thread.join();
 }
 
 void Interpreter::executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_) {
@@ -785,11 +789,8 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 	if (cls.isAbstract() || cls.isInterface()) {
 		throw InstantiationException(fmt::format("Cannot instantiate abstract class or interface: {}", cls.getName()));
 	}
-
 	if (!cls.isStaticInitialized()) {
-		frame.pc()--;
 		executeClinit(cls);
-		return;
 	}
 
 	logger.fdebug("new {}", cls.getFullname());
@@ -1953,10 +1954,7 @@ void Interpreter::sget(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	int32_t value = field.getIntValue();
 	frame.setIntRegister(dest, value);
@@ -1979,10 +1977,7 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	int64_t value = field.getLongValue();
 	frame.setLongRegister(dest, value);
@@ -2006,10 +2001,7 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	// set result of the sget-object to the destination register
 	frame.setObjRegister(dest, field.getObjectValue());
@@ -2032,10 +2024,7 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	bool value = field.getIntValue() != 0;
 	frame.setIntRegister(dest, value);
@@ -2058,10 +2047,7 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	int8_t value = static_cast<int8_t>(field.getIntValue());
 	frame.setIntRegister(dest, value);
@@ -2084,10 +2070,7 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	uint16_t value = static_cast<uint16_t>(field.getIntValue());
 	frame.setIntRegister(dest, value);
@@ -2110,10 +2093,7 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	int16_t value = static_cast<int16_t>(field.getIntValue());
 	frame.setIntRegister(dest, value);
@@ -2177,10 +2157,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 	// static field access, class instance may not be instantiated yet
 	auto& clazz = field.getClass();
 	if (!clazz.isStaticInitialized()) {
-		// cancel the current instruction
-		frame.pc()--;
 		executeClinit(clazz);
-		return;
 	}
 	// set result of the sput-object
 	auto value = frame.getObjRegister(src);
@@ -2331,9 +2308,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 				// If the method is not found in the current class, try the superclass
 				instance = &classloader.getOrLoad(instance->getSuperClassname());
 				if (!instance->isStaticInitialized()) {
-					frame.pc()--;
 					executeClinit(*instance);
-					return;
 				}
 			} else {
 				// If no superclass, break the loop
@@ -2395,9 +2370,7 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 				// If the method is not found in the current class, try the superclass
 				instance = &classloader.getOrLoad(instance->getSuperClassname());
 				if (!instance->isStaticInitialized()) {
-					frame.pc()--;
 					executeClinit(*instance);
-					return;
 				}
 			} else {
 				// If no superclass, break the loop
@@ -2456,9 +2429,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
 	auto& cls = method.getClass();
 	if (!cls.isStaticInitialized()) {
-		frame.pc()--;
 		executeClinit(cls);
-		return;
 	}
 	auto method_str = fmt::format("{}.{}{}(", method.getClass().getFullname(), method.getName(), method.getSignature());
 	std::vector<std::shared_ptr<Object>> args{};
@@ -2554,9 +2525,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 			if (current->hasSuperClass()) {
 				current = &classloader.getOrLoad(current->getSuperClassname());
 				if (!current->isStaticInitialized()) {
-					frame.pc()--;
 					executeClinit(*current);
-					return;
 				}
 			} else {
 				current = nullptr;
@@ -2604,9 +2573,7 @@ void Interpreter::invoke_direct_range(const uint8_t* operand_) {
 	auto& cls = method.getClass();
 
 	if (!cls.isStaticInitialized()) {
-		frame.pc()--;
 		executeClinit(cls);
-		return;
 	}
 
 	std::vector<std::shared_ptr<Object>> args;
