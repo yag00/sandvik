@@ -120,6 +120,9 @@ public class RunAllTests {
         System.out.println("== Running TestAtomicInteger ==");
         TestAtomicInteger.main(new String[]{});
 
+        System.out.println("== Running TestAtomicLong ==");
+        TestAtomicLong.main(new String[]{});
+
         System.out.println("== Running TestEnums ==");
         TestEnums.main(new String[]{});
     }

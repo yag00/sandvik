@@ -281,3 +281,6 @@ TEST(VM, InvokeSuper) {
 TEST(VM, AtomicInteger) {
 	run_common_test("TestAtomicInteger");
 }
+TEST(VM, AtomicLong) {
+	run_common_test("TestAtomicLong");
+}
