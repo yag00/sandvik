@@ -116,7 +116,7 @@ extern "C" {
 		auto array = sandvik::native::getArray(chars);
 		auto arrLen = array->getArrayLength();
 
-		if (offset < 0 || count < 0 || static_cast<jsize>(offset) + static_cast<jsize>(count) > arrLen) {
+		if (offset < 0 || count < 0 || (offset + count) > arrLen) {
 			throw sandvik::StringIndexOutOfBoundsException("offset/count out of range");
 		}
 
@@ -171,19 +171,19 @@ extern "C" {
 	JNIEXPORT jint JNICALL Java_java_lang_String_codePointAt(JNIEnv* env, jobject obj, jint index) {
 		auto this_ptr = sandvik::native::getString(obj);
 		const auto& str = this_ptr->str();
-		jsize len = static_cast<jsize>(str.size());
+		auto len = static_cast<jsize>(str.size());
 
 		if (index < 0 || index >= len) {
 			throw sandvik::StringIndexOutOfBoundsException("index out of range");
 		}
 
 		// Retrieve jchar value stored in the native string (stored as low byte)
-		jchar ch = static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(index)]));
+		auto ch = static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(index)]));
 
 		// If high surrogate and next char is low surrogate, compose supplementary code point
 		if (ch >= 0xD800 && ch <= 0xDBFF) {
 			if (index + 1 < len) {
-				jchar ch2 = static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(index + 1)]));
+				auto ch2 = static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(index + 1)]));
 				if (ch2 >= 0xDC00 && ch2 <= 0xDFFF) {
 					jint hi = static_cast<jint>(ch) - 0xD800;
 					jint lo = static_cast<jint>(ch2) - 0xDC00;
@@ -198,9 +198,7 @@ extern "C" {
 	JNIEXPORT jchar JNICALL Java_java_lang_String_charAt(JNIEnv* env, jobject obj, jint index) {
 		auto this_ptr = sandvik::native::getString(obj);
 		const auto& str = this_ptr->str();
-		jsize len = static_cast<jsize>(str.size());
-
-		if (index < 0 || index >= len) {
+		if (index < 0 || index >= static_cast<jsize>(str.size())) {
 			throw sandvik::StringIndexOutOfBoundsException("index out of range");
 		}
 
@@ -212,7 +210,7 @@ extern "C" {
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 		auto this_ptr = sandvik::native::getString(obj);
 		const auto& str = this_ptr->str();
-		jsize len = static_cast<jsize>(str.size());
+		auto len = static_cast<jsize>(str.size());
 
 		if (beginIndex < 0 || endIndex < 0 || beginIndex > endIndex || endIndex > len) {
 			throw sandvik::StringIndexOutOfBoundsException("beginIndex/endIndex out of range");

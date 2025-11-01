@@ -463,7 +463,7 @@ std::string Object::debug() const {
 }
 
 int32_t Object::identityHashCode() const {
-	uint64_t ptr = reinterpret_cast<uint64_t>(this);
+	auto ptr = reinterpret_cast<uint64_t>(this);
 	return static_cast<int32_t>(XXH32(&ptr, sizeof(ptr), 0));
 }
 

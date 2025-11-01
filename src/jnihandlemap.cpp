@@ -25,7 +25,7 @@
 using namespace sandvik;
 
 jobject JNIHandleMap::toJObject(const std::shared_ptr<Object>& obj) {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::scoped_lock lock(_mutex);
 	if (!obj) return nullptr;
 	// Store in a map: raw pointer (jobject) -> shared_ptr<Object>
 	jobject handle = reinterpret_cast<jobject>(obj.get());
@@ -35,12 +35,12 @@ jobject JNIHandleMap::toJObject(const std::shared_ptr<Object>& obj) {
 }
 
 std::shared_ptr<Object> JNIHandleMap::fromJObject(jobject handle) {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::scoped_lock lock(_mutex);
 	if (!handle) return nullptr;
 	return _table[handle];  // look up shared_ptr
 }
 
 void JNIHandleMap::release(jobject handle) {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::scoped_lock lock(_mutex);
 	_table.erase(handle);
 }

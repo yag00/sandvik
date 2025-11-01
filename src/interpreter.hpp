@@ -491,7 +491,6 @@ namespace sandvik {
 			void executeClinit(Class& class_) const;
 			void executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_);
 
-		private:
 			JThread& _rt;
 			std::unique_ptr<Disassembler> _disassembler;
 

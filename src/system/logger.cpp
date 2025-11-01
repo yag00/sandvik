@@ -220,12 +220,12 @@ void Logger::log(LogLevel level, const std::string &msg) {
 			default:
 				break;
 		}
-		std::lock_guard<std::mutex> lock(_mutex);
+		std::scoped_lock lock(_mutex);
 		_file << rawlog << std::endl;
 	}
 
 	if (_stdout) {
-		std::lock_guard<std::mutex> lock(_mutex);
+		std::scoped_lock lock(_mutex);
 		if (_time) {
 			fmt::print(fmt::fg(fmt::color::white), "[{}] ", getTime());
 		}

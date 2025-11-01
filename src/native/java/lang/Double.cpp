@@ -32,14 +32,10 @@ extern "C" {
 	}
 	JNIEXPORT jlong JNICALL Java_java_lang_Double_doubleToRawLongBits(JNIEnv *, jclass, jdouble value) {
 		// Convert the double value to its raw long bit representation
-		jlong longBits;
-		std::memcpy(&longBits, &value, sizeof(jdouble));
-		return longBits;
+		return std::bit_cast<jlong>(value);
 	}
 	JNIEXPORT jdouble JNICALL Java_java_lang_Double_longBitsToDouble(JNIEnv *, jclass, jlong value) {
 		// Convert the raw long bit representation to a double value
-		jdouble doubleValue;
-		std::memcpy(&doubleValue, &value, sizeof(jlong));
-		return doubleValue;
+		return std::bit_cast<jdouble>(value);
 	}
 }

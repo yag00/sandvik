@@ -49,7 +49,7 @@ Apk::Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) : _
 	// load all *.dex files
 	std::vector<std::string> dexFiles;
 	for (const auto& entry : _zipReader->getList()) {
-		if (entry.size() >= 4 && entry.substr(entry.size() - 4) == ".dex") {
+		if (entry.ends_with(".dex")) {
 			dexFiles.push_back(entry);
 		}
 	}

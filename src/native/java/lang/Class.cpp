@@ -89,7 +89,6 @@ extern "C" {
 		} catch (const std::exception& e) {
 			logger.debug(fmt::format("{} Class.getField: Created missing field '{}' in class {}", e.what(), fieldName, ptr->debug()));
 			ptr->setField(fieldName, sandvik::Object::make(0));
-			// throw sandvik::NoSuchFieldException(fmt::format("Field '{}' not found in class {}", fieldName, ptr->getClassType().getFullname()));
 		}
 
 		// Create a java.lang.reflect.Field object

@@ -21,14 +21,14 @@
 using namespace sandvik;
 
 void Monitor::enter() {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	// Wait until the monitor is free
 	_condition.wait(lock, [this]() { return _owner == std::thread::id(); });
 	_owner = std::this_thread::get_id();
 }
 
 void Monitor::exit() {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	if (_owner != std::this_thread::get_id()) {
 		throw std::runtime_error("Cannot unlock an object not owned by the current thread.");
 	}
@@ -41,7 +41,7 @@ void Monitor::check() const {
 	// We don't take ownership here; we only wait until it's safe for the caller to proceed.
 	while (true) {
 		{
-			std::unique_lock<std::mutex> lock(_mutex);
+			std::unique_lock lock(_mutex);
 			if (_owner == std::thread::id() || _owner == std::this_thread::get_id()) {
 				return;
 			}
@@ -52,7 +52,7 @@ void Monitor::check() const {
 }
 
 bool Monitor::wait(uint64_t timeout_) {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	bool timed_out = false;
 	// Release ownership temporarily
 	_owner = std::thread::id();
@@ -70,11 +70,11 @@ bool Monitor::wait(uint64_t timeout_) {
 }
 
 void Monitor::notify() {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	_wait_condition.notify_one();
 }
 
 void Monitor::notifyAll() {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	_wait_condition.notify_all();
 }

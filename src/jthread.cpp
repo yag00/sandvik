@@ -139,10 +139,8 @@ void JThread::run(bool wait_) {
 		logger.removeThread(id);
 		_isRunning.store(false);
 	});
-	if (wait_) {
-		if (_thread.joinable()) {
-			_thread.join();
-		}
+	if (wait_ && _thread.joinable()) {
+		_thread.join();
 	}
 }
 

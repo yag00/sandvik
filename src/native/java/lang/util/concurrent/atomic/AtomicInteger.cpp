@@ -34,53 +34,53 @@ extern "C" {
 	JNIEXPORT void JNICALL Java_java_util_concurrent_atomic_AtomicInteger_lazySet(JNIEnv* env, jobject obj, jint newValue) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		value->setField("value", sandvik::Object::make(static_cast<uint64_t>(static_cast<int64_t>((static_cast<int32_t>(newValue))))));
+		value->setField("value", sandvik::Object::make(static_cast<uint64_t>(static_cast<int64_t>(newValue))));
 	}
 
 	JNIEXPORT jint JNICALL Java_java_util_concurrent_atomic_AtomicInteger_getAndSet(JNIEnv* env, jobject obj, jint newValue) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jint>(value->getAndSet(static_cast<int32_t>(newValue)));
+		return value->getAndSet(newValue);
 	}
 	JNIEXPORT jboolean JNICALL Java_java_util_concurrent_atomic_AtomicInteger_compareAndSet(JNIEnv* env, jobject obj, jint expect, jint update) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jboolean>(value->compareAndSet(static_cast<int32_t>(expect), static_cast<int32_t>(update)));
+		return static_cast<jboolean>(value->compareAndSet(expect, update));
 	}
 
 	JNIEXPORT jboolean JNICALL Java_java_util_concurrent_atomic_AtomicInteger_weakCompareAndSet(JNIEnv* env, jobject obj, jint expect, jint update) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jboolean>(value->weakCompareAndSet(static_cast<int32_t>(expect), static_cast<int32_t>(update)));
+		return static_cast<jboolean>(value->weakCompareAndSet(expect, update));
 	}
 	JNIEXPORT jint JNICALL Java_java_util_concurrent_atomic_AtomicInteger_getAndIncrement(JNIEnv* env, jobject obj) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jint>(value->getAndAdd((int32_t)1));
+		return value->getAndAdd((int32_t)1);
 	}
 	JNIEXPORT jint JNICALL Java_java_util_concurrent_atomic_AtomicInteger_getAndDecrement(JNIEnv* env, jobject obj) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jint>(value->getAndAdd((int32_t)-1));
+		return value->getAndAdd((int32_t)-1);
 	}
 	JNIEXPORT jint JNICALL Java_java_util_concurrent_atomic_AtomicInteger_getAndAdd(JNIEnv* env, jobject obj, jint delta) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jint>(value->getAndAdd(static_cast<int32_t>(delta)));
+		return value->getAndAdd(delta);
 	}
 	JNIEXPORT jint JNICALL Java_java_util_concurrent_atomic_AtomicInteger_incrementAndGet(JNIEnv* env, jobject obj) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jint>(value->addAndGet((int32_t)1));
+		return value->addAndGet((int32_t)1);
 	}
 	JNIEXPORT jint JNICALL Java_java_util_concurrent_atomic_AtomicInteger_decrementAndGet(JNIEnv* env, jobject obj) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jint>(value->addAndGet((int32_t)-1));
+		return value->addAndGet((int32_t)-1);
 	}
 	JNIEXPORT jint JNICALL Java_java_util_concurrent_atomic_AtomicInteger_addAndGet(JNIEnv* env, jobject obj, jint delta) {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
-		return static_cast<jint>(value->addAndGet(static_cast<int32_t>(delta)));
+		return value->addAndGet(static_cast<int32_t>(delta));
 	}
 }

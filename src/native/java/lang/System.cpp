@@ -56,8 +56,8 @@ extern "C" {
 		if (!obj) {
 			throw sandvik::NullPointerException("java.lang.System.identityHashCode: obj is null");
 		}
-		auto* object = sandvik::native::getObject(obj);
-		return static_cast<jint>(object->identityHashCode());
+		const auto* object = sandvik::native::getObject(obj);
+		return object->identityHashCode();
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_System_getProperty(JNIEnv* env, jobject, jstring key) {
@@ -71,7 +71,7 @@ extern "C" {
 			auto value = jenv->getVm().getProperty(prop->str());
 			auto strObj = sandvik::Object::make(classloader, value);
 			return jenv->getHandles().toJObject(strObj);
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			return nullptr;
 		}
 	}

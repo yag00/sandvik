@@ -83,14 +83,10 @@ extern "C" {
 		if (value == nullptr) {
 			s = "null";
 		} else {
-			auto obj = sandvik::native::getObject(value);
-			// jclass objClass = env->GetObjectClass(value);
-			// jmethodID toStringMethod = env->GetMethodID(objClass, "toString", "()Ljava/lang/String;");
-			// jstring strObj = (jstring)env->CallObjectMethod(value, toStringMethod);
-			// auto strobj = sandvik::native::getString(strObj);
-			// s = strobj->str();
-			s = fmt::format("<{}>->toString() not implemented", obj->debug());
-			logger.fwarning("PrintStream.println(Object) toString() not implemented --> {}", obj->debug());
+			auto o = sandvik::native::getObject(value);
+			// @todo call toString() method of the object
+			s = fmt::format("<{}>->toString() not implemented", o->debug());
+			logger.fwarning("PrintStream.println(Object) toString() not implemented --> {}", o->debug());
 		}
 		__PrintStream__write(fd, s + "\n");
 	}

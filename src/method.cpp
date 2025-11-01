@@ -96,7 +96,7 @@ std::string Method::getName() const {
 }
 
 uint32_t Method::getNbArguments() const {
-	return _argsType.size();
+	return static_cast<uint32_t>(_argsType.size());
 }
 
 std::string Method::getSignature() const {

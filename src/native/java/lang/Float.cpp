@@ -29,8 +29,6 @@
 extern "C" {
 	JNIEXPORT jint JNICALL Java_java_lang_Float_floatToRawIntBits(JNIEnv*, jclass, jfloat value) {
 		// Convert the float value to its raw integer bit representation
-		jint intBits;
-		std::memcpy(&intBits, &value, sizeof(jfloat));
-		return intBits;
+		return std::bit_cast<jint>(value);
 	}
 }

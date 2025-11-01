@@ -206,19 +206,19 @@ void Vm::stop() {
 }
 
 JThread& Vm::newThread(const std::string& name_) {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, name_));
 	return *(_threads.back());
 }
 
 JThread& Vm::newThread(std::shared_ptr<Object> thread_) {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, thread_));
 	return *(_threads.back());
 }
 
 JThread& Vm::getThread(const std::string& name_) {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	for (const auto& thread : _threads) {
 		if (thread->getName() == name_) {
 			return *thread;
@@ -228,7 +228,7 @@ JThread& Vm::getThread(const std::string& name_) {
 }
 
 JThread& Vm::currentThread() const {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	auto currentId = std::this_thread::get_id();
 	for (const auto& thread : _threads) {
 		if (thread->getId() == currentId) {
@@ -239,7 +239,7 @@ JThread& Vm::currentThread() const {
 }
 
 void Vm::deleteThread(const std::string& name_) {
-	std::unique_lock<std::mutex> lock(_mutex);
+	std::unique_lock lock(_mutex);
 	for (auto it = _threads.begin(); it != _threads.end(); ++it) {
 		if ((*it)->getName() == name_) {
 			_threads.erase(it);
