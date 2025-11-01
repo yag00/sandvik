@@ -284,3 +284,6 @@ TEST(VM, AtomicInteger) {
 TEST(VM, AtomicLong) {
 	run_common_test("TestAtomicLong");
 }
+TEST(VM, Regex) {
+	run_common_test("TestRegex");
+}

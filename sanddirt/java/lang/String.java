@@ -658,6 +658,18 @@ public class String
      */
     public native final java.lang.String toLowerCase();
     /**
+     * Return a copy of string with lower case character.
+     * @return a lower cased string
+     */
+    public final java.lang.String toLowerCase(Locale locale) {
+        // For now, we only support the default locale
+        if (locale.equals(Locale.getDefault())) {
+            return toLowerCase();
+        } else {
+            throw new UnsupportedOperationException("Locale-specific toLowerCase is not supported");
+        }
+    }
+    /**
      * Return the string.
      * @return the same string
      */

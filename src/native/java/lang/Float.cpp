@@ -27,19 +27,10 @@
 #include "system/logger.hpp"
 
 extern "C" {
-	JNIEXPORT jboolean JNICALL Java_java_lang_Double_isNaN__D(JNIEnv *, jclass, jdouble value) {
-		return std::isnan(value) ? JNI_TRUE : JNI_FALSE;
-	}
-	JNIEXPORT jlong JNICALL Java_java_lang_Double_doubleToRawLongBits(JNIEnv *, jclass, jdouble value) {
-		// Convert the double value to its raw long bit representation
-		jlong longBits;
-		std::memcpy(&longBits, &value, sizeof(jdouble));
-		return longBits;
-	}
-	JNIEXPORT jdouble JNICALL Java_java_lang_Double_longBitsToDouble(JNIEnv *, jclass, jlong value) {
-		// Convert the raw long bit representation to a double value
-		jdouble doubleValue;
-		std::memcpy(&doubleValue, &value, sizeof(jlong));
-		return doubleValue;
+	JNIEXPORT jint JNICALL Java_java_lang_Float_floatToRawIntBits(JNIEnv*, jclass, jfloat value) {
+		// Convert the float value to its raw integer bit representation
+		jint intBits;
+		std::memcpy(&intBits, &value, sizeof(jfloat));
+		return intBits;
 	}
 }

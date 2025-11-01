@@ -167,4 +167,65 @@ extern "C" {
 			env->SetCharArrayRegion(dst, dstBegin, copyLen, buf.data());
 		}
 	}
+
+	JNIEXPORT jint JNICALL Java_java_lang_String_codePointAt(JNIEnv* env, jobject obj, jint index) {
+		auto this_ptr = sandvik::native::getString(obj);
+		const auto& str = this_ptr->str();
+		jsize len = static_cast<jsize>(str.size());
+
+		if (index < 0 || index >= len) {
+			throw sandvik::StringIndexOutOfBoundsException("index out of range");
+		}
+
+		// Retrieve jchar value stored in the native string (stored as low byte)
+		jchar ch = static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(index)]));
+
+		// If high surrogate and next char is low surrogate, compose supplementary code point
+		if (ch >= 0xD800 && ch <= 0xDBFF) {
+			if (index + 1 < len) {
+				jchar ch2 = static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(index + 1)]));
+				if (ch2 >= 0xDC00 && ch2 <= 0xDFFF) {
+					jint hi = static_cast<jint>(ch) - 0xD800;
+					jint lo = static_cast<jint>(ch2) - 0xDC00;
+					return ((hi << 10) | lo) + 0x10000;
+				}
+			}
+		}
+
+		return static_cast<jint>(ch);
+	}
+
+	JNIEXPORT jchar JNICALL Java_java_lang_String_charAt(JNIEnv* env, jobject obj, jint index) {
+		auto this_ptr = sandvik::native::getString(obj);
+		const auto& str = this_ptr->str();
+		jsize len = static_cast<jsize>(str.size());
+
+		if (index < 0 || index >= len) {
+			throw sandvik::StringIndexOutOfBoundsException("index out of range");
+		}
+
+		return static_cast<jchar>(static_cast<unsigned char>(str[static_cast<size_t>(index)]));
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_String_subSequence(JNIEnv* env, jobject obj, jint beginIndex, jint endIndex) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		sandvik::ClassLoader& classloader = jenv->getClassLoader();
+		auto this_ptr = sandvik::native::getString(obj);
+		const auto& str = this_ptr->str();
+		jsize len = static_cast<jsize>(str.size());
+
+		if (beginIndex < 0 || endIndex < 0 || beginIndex > endIndex || endIndex > len) {
+			throw sandvik::StringIndexOutOfBoundsException("beginIndex/endIndex out of range");
+		}
+
+		auto substr = str.substr(static_cast<size_t>(beginIndex), static_cast<size_t>(endIndex - beginIndex));
+		auto strObj = sandvik::Object::make(classloader, substr);
+		jobject jstr = jenv->getHandles().toJObject(strObj);
+		return jstr;
+	}
+
+	JNIEXPORT jstring JNICALL Java_java_lang_String_toString(JNIEnv* env, jobject obj) {
+		// java.lang.String.toString() simply returns this
+		return static_cast<jstring>(obj);
+	}
 }
