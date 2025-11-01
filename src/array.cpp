@@ -67,13 +67,20 @@ bool Array::isArray() const {
 bool Array::isClass() const {
 	return true;
 }
+
 Class& Array::getClass() const {
-	Class* c = const_cast<Class*>(&_classtype);
-	while (c->hasSuperClass()) {
-		c = &c->getSuperClass();
-		if (c->getFullname() == "java.lang.Object") {
-			return *c;
+	// If the array's class is already java.lang.Object, return it.
+	if (_classtype.getFullname() == "java.lang.Object") {
+		return const_cast<Class&>(_classtype);
+	}
+	// Walk the superclass chain (inspect as const) and return the java.lang.Object entry if found.
+	const Class* cur = &_classtype;
+	while (cur->hasSuperClass()) {
+		auto& super = cur->getSuperClass();
+		if (super.getFullname() == "java.lang.Object") {
+			return super;
 		}
+		cur = &super;
 	}
 	throw VmException("Array does not have java.lang.Object as superclass");
 }
