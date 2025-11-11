@@ -9,6 +9,9 @@ class rc(Task.Task):
 	color   = 'PINK'
 	run_str = '${LD} -r -b binary ${SRC} -o ${TGT}'
 
+	def keyword(self):
+		return 'Embedding'
+
 @feature('resources')
 @before('process_source')
 def create_resources(self):

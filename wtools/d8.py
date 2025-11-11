@@ -5,9 +5,25 @@ from waflib import Options
 from waflib import Task
 from waflib.TaskGen import feature, after_method
 from waflib.Configure import conf
+from waflib.Tools.javaw import javac, jar_create
 import os
 import zipfile
 import requests
+
+# cosmetic changes to javac and jar_create __str__ methods for better logging
+def _javac_str(self):
+	return 'java classes'
+
+def _jar_create(self):
+	df = 'unknown.jar'
+	outs = getattr(self, 'outputs', None)
+	if outs and len(outs) > 0:
+		df = getattr(outs[0], 'name', str(outs[0]))
+	return '%s: %s' % ('jar', df)
+
+javac.__str__ = _javac_str
+jar_create.__str__ = _jar_create
+
 
 def configure(conf):
 	d8_path = os.path.abspath('ext/android/build-tools/36.0.0')
@@ -51,6 +67,9 @@ class d8(Task.Task):
 	color   = 'BLUE'
 	run_str = '${D8} --file-per-class-file --output ${TGT} ${SRC}'
 	shell = False
+
+	def __str__(self):
+		return '%s: %s' % (self.__class__.__name__, self.outputs[0].name)
 
 @feature('d8')
 @after_method('apply_java', 'use_javac_files', 'jar_files')
