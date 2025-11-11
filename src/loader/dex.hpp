@@ -54,8 +54,9 @@ namespace sandvik {
 			explicit Dex(const std::string& path_);
 			/** @brief Load a Dex file from a memory buffer.
 			 * @param buffer Reference to the vector containing the DEX file data
+			 * @param path_ Path to the DEX file (for debugging purposes)
 			 */
-			explicit Dex(std::vector<uint8_t>& buffer);
+			explicit Dex(std::vector<uint8_t>& buffer, const std::string& path_);
 			Dex();
 			~Dex();
 

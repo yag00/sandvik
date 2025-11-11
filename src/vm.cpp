@@ -123,9 +123,7 @@ void Vm::loadLibrary(const std::string& libName_) {
 		}
 		// Call JNI_OnLoad if it exists
 		void* JNI_onLoad = lib->getAddressOfSymbol("JNI_OnLoad");
-		if (!JNI_onLoad) {
-			logger.fdebug("JNI_OnLoad not found in {}", lib->getFullPath());
-		} else {
+		if (JNI_onLoad) {
 			// jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 			auto jniOnLoad = reinterpret_cast<void (*)(JavaVM*, void*)>(JNI_onLoad);
 			logger.fdebug("Executing native function JNI_OnLoad@{:#x} ", (uintptr_t)jniOnLoad);

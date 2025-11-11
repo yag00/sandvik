@@ -209,8 +209,8 @@ namespace sandvik {
 			bool _hasSuperClass;
 			std::string _superClassname;
 
-			std::map<std::string, std::unique_ptr<Method>> _methods;
-			std::map<std::string, std::unique_ptr<Field>> _fields;
+			std::map<std::string, std::unique_ptr<Method>, std::less<>> _methods;
+			std::map<std::string, std::unique_ptr<Field>, std::less<>> _fields;
 			std::vector<std::string> _interfaces;
 			friend class ClassBuilder;
 

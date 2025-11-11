@@ -45,7 +45,7 @@ Dex::Dex(const std::string& path_) : _path(path_) {
 Dex::Dex() {
 }
 
-Dex::Dex(std::vector<uint8_t>& buffer) {
+Dex::Dex(std::vector<uint8_t>& buffer, const std::string& path_) : _path(path_) {
 	load(buffer);
 }
 

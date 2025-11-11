@@ -194,7 +194,7 @@ namespace sandvik {
 			/** map thread id, thread name */
 			std::map<std::thread::id, std::string> _threads;
 			/** map thread name, output properties <log to console, log to file> */
-			std::map<std::string, std::pair<bool, bool>> _threadLogOutputs;
+			std::map<std::string, std::pair<bool, bool>, std::less<>> _threadLogOutputs;
 			/** thread safe logging */
 			std::mutex _mutex;
 	};

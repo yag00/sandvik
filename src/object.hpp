@@ -386,7 +386,7 @@ namespace sandvik {
 			/** Check monitor ownership */
 			void monitorCheck() const;
 			/** Map storing field names and their corresponding values. */
-			std::map<std::string, ObjectRef> _fields;
+			std::map<std::string, ObjectRef, std::less<>> _fields;
 			/** Monitor for thread synchronization */
 			std::unique_ptr<Monitor> _monitor;
 	};

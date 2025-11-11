@@ -63,7 +63,7 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 			}
 			std::vector<uint8_t> dexBuffer(buffer, buffer + size);
 			free(buffer);
-			dexs_.push_back(std::make_unique<Dex>(dexBuffer));
+			dexs_.push_back(std::make_unique<Dex>(dexBuffer, path_.empty() ? "<sandvik>" : path_));
 		}
 	}
 	zip->close();

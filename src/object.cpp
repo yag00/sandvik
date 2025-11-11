@@ -525,19 +525,19 @@ int64_t NumberObject::addAndGet(int64_t delta) {
 	return static_cast<int64_t>(_value.fetch_add(static_cast<uint64_t>(delta)) + static_cast<uint64_t>(delta));
 }
 bool NumberObject::compareAndSet(int32_t expect, int32_t update) {
-	uint64_t expected = static_cast<uint64_t>(static_cast<int64_t>(expect));
+	auto expected = static_cast<uint64_t>(static_cast<int64_t>(expect));
 	return _value.compare_exchange_strong(expected, static_cast<uint64_t>(static_cast<int64_t>(update)));
 }
 bool NumberObject::compareAndSet(int64_t expect, int64_t update) {
-	uint64_t expected = static_cast<uint64_t>(expect);
+	auto expected = static_cast<uint64_t>(expect);
 	return _value.compare_exchange_strong(expected, static_cast<uint64_t>(update));
 }
 bool NumberObject::weakCompareAndSet(int32_t expect, int32_t update) {
-	uint64_t expected = static_cast<uint64_t>(static_cast<int64_t>(expect));
+	auto expected = static_cast<uint64_t>(static_cast<int64_t>(expect));
 	return _value.compare_exchange_weak(expected, static_cast<uint64_t>(static_cast<int64_t>(update)));
 }
 bool NumberObject::weakCompareAndSet(int64_t expect, int64_t update) {
-	uint64_t expected = static_cast<uint64_t>(expect);
+	auto expected = static_cast<uint64_t>(expect);
 	return _value.compare_exchange_weak(expected, static_cast<uint64_t>(update));
 }
 bool NumberObject::isNumberObject() const {
