@@ -108,7 +108,7 @@ int32_t Frame::getIntRegister(uint32_t reg) const {
 		return 0;
 	}
 	if (!obj->isNumberObject()) {
-		throw VmException("Register does not contain an NumberObject {}", obj->debug());
+		throw VmException("Register does not contain an NumberObject {}", obj->toString());
 	}
 	auto number = obj->getValue();
 	logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
@@ -142,7 +142,7 @@ float Frame::getFloatRegister(uint32_t reg) const {
 	}
 	const Object& obj = *_registers[reg];
 	if (!obj.isNumberObject()) {
-		throw VmException("Register does not contain an NumberObject {}", obj.debug());
+		throw VmException("Register does not contain an NumberObject {}", obj.toString());
 	}
 	auto intValue = static_cast<uint32_t>(obj.getValue());
 	return std::bit_cast<float>(intValue);
@@ -152,7 +152,7 @@ void Frame::setDoubleRegister(uint32_t reg, double value) {
 	logger.fdebug("setDoubleRegister: reg={}, value={}", reg, value);
 	uint64_t temp = std::bit_cast<uint64_t>(value);
 	setRawLongRegister(reg, temp);
-	logger.fdebug("setDoubleRegister: reg={} value={} {}", reg, _registers[reg]->debug(), _registers[reg + 1]->debug());
+	logger.fdebug("setDoubleRegister: reg={} value={} {}", reg, _registers[reg]->toString(), _registers[reg + 1]->toString());
 }
 
 double Frame::getDoubleRegister(uint32_t reg) const {
@@ -162,7 +162,7 @@ double Frame::getDoubleRegister(uint32_t reg) const {
 }
 
 void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
-	logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->debug());
+	logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->toString());
 	if (reg >= _registers.size()) {
 		throw VmException("setObjRegister: reg={} out of bounds", reg);
 	}
@@ -173,7 +173,7 @@ std::shared_ptr<Object> Frame::getObjRegister(uint32_t reg) {
 	if (reg >= _registers.size()) {
 		throw VmException("getObjRegister: reg={} out of bounds", reg);
 	}
-	logger.fdebug("getObjRegister: reg={} => obj=<{}>", reg, _registers[reg]->debug());
+	logger.fdebug("getObjRegister: reg={} => obj=<{}>", reg, _registers[reg]->toString());
 	return _registers[reg];
 }
 
@@ -209,12 +209,12 @@ void Frame::setReturnValue(int32_t ret_) {
 }
 void Frame::setReturnDoubleValue(int64_t ret_) {
 	_objectReturn = Object::make(ret_);
-	logger.fdebug("setReturnDoubleValue: {:x} -> obj=<{}>", ret_, _objectReturn->debug());
+	logger.fdebug("setReturnDoubleValue: {:x} -> obj=<{}>", ret_, _objectReturn->toString());
 }
 
 void Frame::debug() const {
 	logger.fdebug("method={} pc={}", _method.getName(), _pc);
 	for (size_t i = 0; i < _registers.size(); ++i) {
-		logger.fdebug("register[{}] = {}", i, _registers[i]->debug());
+		logger.fdebug("register[{}] = {}", i, _registers[i]->toString());
 	}
 }

@@ -48,7 +48,7 @@ JThread::JThread(Vm& vm_, ClassLoader& classloader_, std::shared_ptr<Object> thr
 	if (target == nullptr || target == Object::makeNull()) {
 		throw VmException("Thread object has no target Runnable");
 	}
-	logger.fdebug("Runnable '{}' ", target->debug());
+	logger.fdebug("Runnable '{}' ", target->toString());
 	auto& clazz = target->getClass();
 	auto& method = clazz.getMethod("run", "()V");
 	Frame& frame = newFrame(method);

@@ -152,22 +152,22 @@ TEST(object, array) {
 
 	auto obj = Object::makeArray(classloader, classloader.getOrLoad("int"), {3, 3});
 	auto array = std::dynamic_pointer_cast<Array>(obj);
-	logger.fdebug("{}", array->debug());
+	logger.fdebug("{}", array->toString());
 
 	for (uint32_t i = 0; i < 3; ++i) {
 		for (uint32_t j = 0; j < 3; ++j) {
 			auto elem = array->getElement({i, j});
-			logger.fdebug("Element [{}][{}]: {}", i, j, elem->debug());
+			logger.fdebug("Element [{}][{}]: {}", i, j, elem->toString());
 			EXPECT_TRUE(elem->isNull());
 			array->setElement({i, j}, Object::make(i * 3 + j + 1));
 		}
 	}
 	for (uint32_t i = 0; i < 3; ++i) {
 		auto subarray = array->getArray(i);
-		logger.fdebug("Sub-array [{}]: {}", i, subarray->debug());
+		logger.fdebug("Sub-array [{}]: {}", i, subarray->toString());
 		for (uint32_t j = 0; j < 3; ++j) {
 			auto elem = subarray->getElement(j);
-			logger.fdebug("Element [{}][{}]: {}", i, j, elem->debug());
+			logger.fdebug("Element [{}][{}]: {}", i, j, elem->toString());
 			ASSERT_NE(elem, nullptr);
 			EXPECT_EQ(elem->getValue(), static_cast<int32_t>(i * 3 + j + 1));
 			subarray->setElement(j, Object::make(elem->getValue() + 0x10));
@@ -176,7 +176,7 @@ TEST(object, array) {
 	for (uint32_t i = 0; i < 3; ++i) {
 		for (uint32_t j = 0; j < 3; ++j) {
 			auto elem = array->getElement({i, j});
-			logger.fdebug("Element [{}][{}]: {}", i, j, elem->debug());
+			logger.fdebug("Element [{}][{}]: {}", i, j, elem->toString());
 			ASSERT_NE(elem, nullptr);
 			EXPECT_EQ(elem->getValue(), static_cast<int32_t>(i * 3 + j + 0x11));
 		}

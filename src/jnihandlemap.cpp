@@ -30,7 +30,7 @@ jobject JNIHandleMap::toJObject(const std::shared_ptr<Object>& obj) {
 	// Store in a map: raw pointer (jobject) -> shared_ptr<Object>
 	jobject handle = reinterpret_cast<jobject>(obj.get());
 	_table[handle] = obj;
-	logger.fdebug("JNIHandleMap: Created handle {:#x} for object {}", (uintptr_t)handle, obj->debug());
+	logger.fdebug("JNIHandleMap: Created handle {:#x} for object {}", (uintptr_t)handle, obj->toString());
 	return handle;
 }
 

@@ -85,8 +85,8 @@ extern "C" {
 		} else {
 			auto o = sandvik::native::getObject(value);
 			// @todo call toString() method of the object
-			s = fmt::format("<{}>->toString() not implemented", o->debug());
-			logger.fwarning("PrintStream.println(Object) toString() not implemented --> {}", o->debug());
+			s = fmt::format("<{}>->toString() not implemented", o->toString());
+			logger.fwarning("PrintStream.println(Object) toString() not implemented --> {}", o->toString());
 		}
 		__PrintStream__write(fd, s + "\n");
 	}

@@ -60,7 +60,7 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 
 		auto internalClass = classObj->getField("internal");
-		logger.debug(fmt::format("Class.getDeclaredConstructor: Getting constructor for class {}", internalClass->debug()));
+		logger.debug(fmt::format("Class.getDeclaredConstructor: Getting constructor for class {}", internalClass->toString()));
 
 		// Create a java.lang.reflect.Constructor object
 		auto& ctorClass = classloader.getOrLoad("java/lang/reflect/Constructor");
@@ -82,12 +82,12 @@ extern "C" {
 		std::string fieldName = fieldNameObj->str();
 
 		auto& classloader = jenv->getClassLoader();
-		logger.debug(fmt::format("Class.getField: Getting field '{}' for class {}", fieldName, ptr->debug()));
+		logger.debug(fmt::format("Class.getField: Getting field '{}' for class {}", fieldName, ptr->toString()));
 
 		try {
 			auto field = ptr->getField(fieldName);
 		} catch (const std::exception& e) {
-			logger.debug(fmt::format("{} Class.getField: Created missing field '{}' in class {}", e.what(), fieldName, ptr->debug()));
+			logger.debug(fmt::format("{} Class.getField: Created missing field '{}' in class {}", e.what(), fieldName, ptr->toString()));
 			ptr->setField(fieldName, sandvik::Object::make(0));
 		}
 

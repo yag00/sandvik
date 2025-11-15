@@ -89,13 +89,13 @@ const Class& Array::getClassType() const {
 	return _classtype;
 }
 
-std::string Array::debug() const {
+std::string Array::toString() const {
 	std::string dims;
 	for (size_t i = 0; i < _dimensions.size(); ++i) {
 		dims += std::to_string(_dimensions[i]);
 		if (i + 1 < _dimensions.size()) dims += "x";
 	}
-	return fmt::format("Array type={}, dimensions={}", _classtype.getFullname(), dims);
+	return fmt::format("{}[{}]", _classtype.getFullname(), dims);
 }
 
 size_t Array::getDimensions() const {

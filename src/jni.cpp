@@ -1092,7 +1092,7 @@ const char *NativeInterface::GetStringUTFChars(JNIEnv *env, jstring str, jboolea
 	if (!obj->isString()) {
 		throw ClassCastException("Not a string");
 	}
-	logger.fdebug("env->GetStringUTFChars {}", obj->debug());
+	logger.fdebug("env->GetStringUTFChars {}", obj->toString());
 	char *utf = new char[obj->str().length() + 1];
 	std::strncpy(utf, obj->str().c_str(), obj->str().length());
 	utf[obj->str().length()] = '\0';  // Null-terminate the string
@@ -1106,7 +1106,7 @@ void NativeInterface::ReleaseStringUTFChars(JNIEnv *env, jstring str, const char
 	if (obj == nullptr) {
 		throw NullPointerException("ReleaseStringUTFChars on null object");
 	}
-	logger.fdebug("env->ReleaseStringUTFChars {}", obj->debug());
+	logger.fdebug("env->ReleaseStringUTFChars {}", obj->toString());
 	if (chars) {
 		// If we allocated memory for chars, we should delete it
 		delete[] chars;

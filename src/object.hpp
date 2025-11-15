@@ -128,10 +128,10 @@ namespace sandvik {
 			static ObjectRef makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 
 			/**
-			 * @brief Returns a debug string representation of the object.
-			 * @return Debug string.
+			 * @brief Returns a string representation of the object.
+			 * @return string.
 			 */
-			virtual std::string debug() const;
+			virtual std::string toString() const;
 
 			/**
 			 * @brief Returns the identity hash code for this object.

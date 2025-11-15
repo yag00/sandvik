@@ -68,7 +68,7 @@ namespace sandvik {
 			~Array() override = default;
 
 			/** @brief Returns a string representation of the array. */
-			std::string debug() const override;
+			std::string toString() const override;
 
 			/** @brief Gets the class type of the array.
 			 * @return Reference to the Class type of the array.

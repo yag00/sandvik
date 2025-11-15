@@ -63,10 +63,10 @@ namespace sandvik {
 			int64_t getLongValue() const override;
 
 			/**
-			 * @brief Returns a debug string representation of the object.
+			 * @brief Returns a toString string representation of the object.
 			 * @return Debug string.
 			 */
-			std::string debug() const override;
+			std::string toString() const override;
 
 			/**
 			 * @brief Atomically sets to the given value and returns the old value.
@@ -193,10 +193,10 @@ namespace sandvik {
 			 */
 			Class& getClass() const override;
 			/**
-			 * @brief Returns a debug string representation of the object.
+			 * @brief Returns a toString string representation of the object.
 			 * @return Debug string.
 			 */
-			std::string debug() const override;
+			std::string toString() const override;
 
 		private:
 			Class& _class;
@@ -213,10 +213,10 @@ namespace sandvik {
 
 			const Class& getClassType() const override;
 			/**
-			 * @brief Returns a debug string representation of the object.
+			 * @brief Returns a toString string representation of the object.
 			 * @return Debug string.
 			 */
-			std::string debug() const override;
+			std::string toString() const override;
 			/**
 			 * @brief Equality operator for comparing with another Object.
 			 * @param other Reference to the other Object.
@@ -267,10 +267,10 @@ namespace sandvik {
 			void setString(const std::string& str_) override;
 
 			/**
-			 * @brief Returns a debug string representation of the object.
+			 * @brief Returns a toString string representation of the object.
 			 * @return Debug string.
 			 */
-			std::string debug() const override;
+			std::string toString() const override;
 			/**
 			 * @brief Equality operator for comparing with another Object.
 			 * @param other Reference to the other Object.
@@ -298,10 +298,10 @@ namespace sandvik {
 			bool isNull() const override;
 
 			/**
-			 * @brief Returns a debug string representation of the object.
+			 * @brief Returns a toString string representation of the object.
 			 * @return Debug string.
 			 */
-			std::string debug() const override;
+			std::string toString() const override;
 	};
 }  // namespace sandvik
 
@@ -456,7 +456,7 @@ const Class& Object::getClassType() const {
 	throw std::bad_cast();
 }
 
-std::string Object::debug() const {
+std::string Object::toString() const {
 	std::string typeName = typeid(*this).name();
 	std::string className = typeid(Class).name();
 	return fmt::format("Object: {} Class: {}", typeName, className);
@@ -477,7 +477,7 @@ ObjectRef Object::getField(const std::string& name_) const {
 	if (it != _fields.end()) {
 		return it->second;
 	}
-	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->debug()));
+	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->toString()));
 }
 
 void Object::setField(const std::string& name_, ObjectRef value_) {
@@ -543,8 +543,8 @@ bool NumberObject::weakCompareAndSet(int64_t expect, int64_t update) {
 bool NumberObject::isNumberObject() const {
 	return true;
 }
-std::string NumberObject::debug() const {
-	return fmt::format("NumberObject: {:#x}", _value.load());
+std::string NumberObject::toString() const {
+	return fmt::format("{}", _value.load());
 }
 ///////////////////////////////////////////////////////////////////////////////
 StringObject::StringObject(Class& class_, const std::string& value_) : ObjectClass(class_), _value(value_) {
@@ -567,8 +567,8 @@ bool StringObject::isString() const {
 std::string StringObject::str() const {
 	return _value;
 }
-std::string StringObject::debug() const {
-	return "String=" + _value;
+std::string StringObject::toString() const {
+	return "\"" + _value + "\"";
 }
 void StringObject::setString(const std::string& str_) {
 	_value = str_;
@@ -632,8 +632,8 @@ bool ObjectClass::isClass() const {
 Class& ObjectClass::getClass() const {
 	return _class;
 }
-std::string ObjectClass::debug() const {
-	return "Instance of " + _class.getFullname();
+std::string ObjectClass::toString() const {
+	return _class.getFullname();
 }
 bool ObjectClass::isInstanceOf(const std::string& instance_) const {
 	return _class.getFullname() == instance_;
@@ -657,7 +657,7 @@ const Class& ConstClassObject::getClassType() const {
 	return _type;
 }
 
-std::string ConstClassObject::debug() const {
+std::string ConstClassObject::toString() const {
 	return fmt::format("Class<? {}>", _type.getFullname());
 }
 void ConstClassObject::monitorEnter() {
@@ -673,6 +673,6 @@ bool NullObject::operator==(std::nullptr_t) const {
 bool NullObject::isNull() const {
 	return true;
 }
-std::string NullObject::debug() const {
+std::string NullObject::toString() const {
 	return "Null";
 }

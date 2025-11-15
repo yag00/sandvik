@@ -64,7 +64,7 @@ void Trace::logCall(const std::string& type_, const std::string& class_, const s
 		if (i > 0) {
 			args_str += ", ";
 		}
-		args_str += (arg ? arg->debug() : std::string("null"));
+		args_str += (arg ? arg->toString() : std::string("null"));
 	}
 	args_str += ")";
 

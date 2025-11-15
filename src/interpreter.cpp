@@ -695,7 +695,7 @@ void Interpreter::monitor_enter(const uint8_t* operand_) {
 		throw NullPointerException("monitor_enter on null object");
 	}
 	obj->monitorEnter();
-	logger.fdebug("monitor enter on object {}", obj->debug());
+	logger.fdebug("monitor enter on object {}", obj->toString());
 	frame.pc()++;
 }
 // monitor-exit vAA
@@ -706,7 +706,7 @@ void Interpreter::monitor_exit(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("monitor_exit on null object");
 	}
-	logger.fdebug("monitor exit on object {}", obj->debug());
+	logger.fdebug("monitor exit on object {}", obj->toString());
 	obj->monitorExit();
 	frame.pc()++;
 }
@@ -1674,7 +1674,7 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 	}
 
 	auto fieldObj = obj->getField(field.getName());
-	logger.fdebug("iget_object {}.{}={}", field.getClass().getFullname(), field.getName(), fieldObj ? fieldObj->debug() : "null");
+	logger.fdebug("iget_object {}.{}={}", field.getClass().getFullname(), field.getName(), fieldObj ? fieldObj->toString() : "null");
 	frame.setObjRegister(dest, fieldObj);
 	frame.pc() += 3;
 }
@@ -1859,7 +1859,7 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 	}
 
 	auto value = frame.getObjRegister(src);
-	logger.fdebug("iput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->debug());
+	logger.fdebug("iput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->toString());
 	obj->setField(field.getName(), value);
 	frame.pc() += 3;
 }
@@ -2282,7 +2282,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 		throw NullPointerException("invoke-virtual on null object");
 	}
 	if (!this_ptr->isClass()) {
-		throw VmException("invoke-virtual: this pointer is not an ObjectClass, got {}", this_ptr->debug());
+		throw VmException("invoke-virtual: this pointer is not an ObjectClass, got {}", this_ptr->toString());
 	}
 	Class* instance = &this_ptr->getClass();
 	if (!instance->isStaticInitialized()) {
@@ -2433,7 +2433,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		throw NullPointerException("invoke_interface on null object");
 	}
 	if (!this_ptr->isClass()) {
-		throw VmException("invoke-interface: this pointer is not an ObjectClass, got {}", this_ptr->debug());
+		throw VmException("invoke-interface: this pointer is not an ObjectClass, got {}", this_ptr->toString());
 	}
 	Class* instance = &this_ptr->getClass();
 	if (!instance->isStaticInitialized()) {
