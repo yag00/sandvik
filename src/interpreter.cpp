@@ -38,12 +38,13 @@
 #include "native_call.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "trace.hpp"
 #include "types.hpp"
 #include "vm.hpp"
 
 using namespace sandvik;
 
-Interpreter::Interpreter(JThread& rt_) : _rt(rt_), _disassembler(std::make_unique<Disassembler>()) {
+Interpreter::Interpreter(JThread& rt_) : _rt(rt_) {
 	_dispatch.resize(256, [](const uint8_t*) { throw VmException("Invalid instruction!"); });
 
 	_dispatch[0x00] = std::bind_front(&Interpreter::nop, this);
@@ -303,8 +304,7 @@ void Interpreter::execute() {
 		throw VmException("Current frame {} has invalid pc: {}", func, frame.pc());
 	}
 	auto bytecode = code + frame.pc();
-	auto inst = _disassembler->disassemble(bytecode);
-	logger.finfo("{:04x}: {:<80} {:<20} ", frame.pc() / 2, inst, func);
+	trace.logInstruction(frame.pc(), func, bytecode);
 	frame.pc()++;
 	_instcoverage[*bytecode]++;
 	try {
@@ -418,6 +418,24 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 		}
 		_rt.currentFrame().setException(exception_);
 	}
+}
+
+std::vector<std::shared_ptr<Object>> Interpreter::getInvokeMethodArgs(const uint8_t* operand_) const {
+	auto& frame = _rt.currentFrame();
+	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
+	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
+	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
+	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;
+	uint8_t vF = (vA > 1) ? (operand_[4] >> 4) & 0x0F : 0;
+	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
+
+	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
+	std::vector<std::shared_ptr<Object>> args{};
+	for (uint8_t i = 0; i < vA; ++i) {
+		auto obj = frame.getObjRegister(regs[i]);
+		args.push_back(obj);
+	}
+	return args;
 }
 
 // nop
@@ -2254,35 +2272,12 @@ void Interpreter::sput_short(const uint8_t* operand_) {
 }
 // invoke-virtual {vD, vE, vF, vG, vA}, meth@CCCC
 void Interpreter::invoke_virtual(const uint8_t* operand_) {
-	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
 	auto& classloader = _rt.getClassLoader();
 	auto& frame = _rt.currentFrame();
-
 	uint16_t methodRef = *(const uint16_t*)&operand_[1];
-	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
-	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
-	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;
-	uint8_t vF = (vA > 1) ? (operand_[4] >> 4) & 0x0F : 0;
-	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
-	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-
-	std::string args_str = "(";
-	std::vector<std::shared_ptr<Object>> args{};
-	for (uint8_t i = 0; i < vA; ++i) {
-		auto obj = frame.getObjRegister(regs[i]);
-		if (i == 0) {
-			args_str += "this=";
-		}
-		args_str += obj->debug();
-		if (i < vA - 1) {
-			args_str += ", ";
-		}
-		args.push_back(obj);
-	}
-	args_str += ")";
-
-	auto this_ptr = frame.getObjRegister(regs[0]);
+	auto args = getInvokeMethodArgs(operand_);
+	auto this_ptr = args[0];
 	if (this_ptr->isNull()) {
 		throw NullPointerException("invoke-virtual on null object");
 	}
@@ -2320,16 +2315,15 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 		if (!vmethod->isVirtual()) {
 			logger.ferror("invoke-virtual: method {}->{}{} is not virtual", this_ptr->getClass().getFullname(), methodname, signature);
 		}
-		logger.fok("invoke-virtual call method {}->{}{}{} on instance {}", instance->getFullname(), methodname, signature, args_str,
-		           this_ptr->getClass().getFullname());
+		trace.logCall("invoke-virtual", instance->getFullname(), methodname, signature, args, vmethod->isStatic());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
 		} else {
 			if (vmethod->hasBytecode()) {
 				auto& newframe = _rt.newFrame(*vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (uint32_t i = 0; i < vA; i++) {
-					newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+				for (uint32_t i = 0; i < args.size(); i++) {
+					newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
 				}
 			} else {
 				vmethod->execute(frame, args);
@@ -2337,23 +2331,16 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 		}
 	} else {
 		// If no method found, throw an error
-		throw VmException(fmt::format("invoke-virtual: call method {}->{}{}{} not found", this_ptr->getClass().getFullname(), methodname, signature, args_str));
+		throw VmException(fmt::format("invoke-virtual: call method {}->{}{} not found", this_ptr->getClass().getFullname(), methodname, signature));
 	}
 
 	frame.pc() += 5;
 }
 // invoke-super {vD, vE, vF, vG, vA}, meth@CCCC
 void Interpreter::invoke_super(const uint8_t* operand_) {
-	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
 	auto& classloader = _rt.getClassLoader();
 	auto& frame = _rt.currentFrame();
-
 	uint16_t methodRef = *(const uint16_t*)&operand_[1];
-	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
-	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
-	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;
-	uint8_t vF = (vA > 1) ? (operand_[4] >> 4) & 0x0F : 0;
-	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::string classname, methodname, signature;
 	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
@@ -2379,34 +2366,19 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 		}
 	}
 
-	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	auto method_str = fmt::format("{}.{}{}(", vmethod->getClass().getFullname(), vmethod->getName(), vmethod->getSignature());
-	std::vector<std::shared_ptr<Object>> args{};
-	for (uint8_t i = 0; i < vA; ++i) {
-		auto obj = frame.getObjRegister(regs[i]);
-		if (i == 0 && !vmethod->isStatic()) {
-			method_str += "this=";
-		}
-		method_str += obj->debug();
-		if (i < vA - 1) {
-			method_str += ", ";
-		}
-		args.push_back(obj);
-	}
-	method_str += ")";
-
+	auto args = getInvokeMethodArgs(operand_);
+	trace.logCall("invoke-super", instance->getFullname(), methodname, signature, args, vmethod->isStatic());
 	if (vmethod->isNative()) {
 		executeNativeMethod(*vmethod, args);
 	} else {
 		if (vmethod->getBytecode() == nullptr) {
 			vmethod->execute(frame, args);
 		} else {
-			logger.fok("invoke-super call method {} static={}", method_str, vmethod->isStatic());
 			auto& newframe = _rt.newFrame(*vmethod);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < vA; i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			for (uint32_t i = 0; i < args.size(); i++) {
+				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
 			}
 		}
 	}
@@ -2414,50 +2386,32 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 }
 // invoke-direct {vD, vE, vF, vG, vA}, meth@CCCC
 void Interpreter::invoke_direct(const uint8_t* operand_) {
-	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
 	auto& classloader = _rt.getClassLoader();
 	auto& frame = _rt.currentFrame();
-
 	uint16_t methodRef = *(const uint16_t*)&operand_[1];
-	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
-	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
-	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;
-	uint8_t vF = (vA > 1) ? (operand_[4] >> 4) & 0x0F : 0;
-	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
-
-	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
 	auto& method = classloader.resolveMethod(frame.getDexIdx(), methodRef);
 	auto& cls = method.getClass();
 	if (!cls.isStaticInitialized()) {
 		executeClinit(cls);
 	}
-	auto method_str = fmt::format("{}.{}{}(", method.getClass().getFullname(), method.getName(), method.getSignature());
-	std::vector<std::shared_ptr<Object>> args{};
-	for (uint8_t i = 0; i < vA; ++i) {
-		auto obj = frame.getObjRegister(regs[i]);
-		if (i == 0 && !method.isStatic()) {
-			method_str += "this=";
-		}
-		method_str += obj->debug();
-		if (i < vA - 1) {
-			method_str += ", ";
-		}
-		args.push_back(obj);
-	}
-	method_str += ")";
 
+	auto args = getInvokeMethodArgs(operand_);
+	if (method.isStatic()) {
+		trace.logCall("invoke-static", method.getClass().getFullname(), method.getName(), method.getSignature(), args, method.isStatic());
+	} else {
+		trace.logCall("invoke-direct", method.getClass().getFullname(), method.getName(), method.getSignature(), args, method.isStatic());
+	}
 	if (method.isNative()) {
 		executeNativeMethod(method, args);
 	} else {
 		if (method.getBytecode() == nullptr) {
 			method.execute(frame, args);
 		} else {
-			logger.fok("invoke-direct call method {} static={}", method_str, method.isStatic());
 			auto& newframe = _rt.newFrame(method);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < vA; i++) {
-				newframe.setObjRegister(method.getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			for (uint32_t i = 0; i < args.size(); i++) {
+				newframe.setObjRegister(method.getNbRegisters() - args.size() + i, args[i]);
 			}
 		}
 	}
@@ -2469,35 +2423,12 @@ void Interpreter::invoke_static(const uint8_t* operand_) {
 }
 // invoke-interface {vD, vE, vF, vG, vA}, meth@CCCC
 void Interpreter::invoke_interface(const uint8_t* operand_) {
-	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
 	auto& classloader = _rt.getClassLoader();
 	auto& frame = _rt.currentFrame();
 
 	uint16_t methodRef = *(const uint16_t*)&operand_[1];
-	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
-	uint8_t vD = (vA > 0) ? (operand_[3] >> 4) & 0x0F : 0;
-	uint8_t vE = (vA > 1) ? operand_[4] & 0x0F : 0;
-	uint8_t vF = (vA > 1) ? (operand_[4] >> 4) & 0x0F : 0;
-	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
-
-	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-
-	std::string interface_str = "(";
-	std::vector<std::shared_ptr<Object>> args{};
-	for (uint8_t i = 0; i < vA; ++i) {
-		auto obj = frame.getObjRegister(regs[i]);
-		if (i == 0) {
-			interface_str += "this=";
-		}
-		interface_str += obj->debug();
-		if (i < vA - 1) {
-			interface_str += ", ";
-		}
-		args.push_back(obj);
-	}
-	interface_str += ")";
-
-	auto this_ptr = frame.getObjRegister(regs[0]);
+	auto args = getInvokeMethodArgs(operand_);
+	auto this_ptr = args[0];
 	if (this_ptr->isNull()) {
 		throw NullPointerException("invoke_interface on null object");
 	}
@@ -2536,14 +2467,14 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		if (!vmethod->isVirtual()) {
 			logger.ferror("invoke-interface: {}->{}{} not virtual", ifclassname, methodname, signature);
 		}
+		trace.logCall("invoke-interface", ifclassname, methodname, signature, args, vmethod->isStatic());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
 		} else {
-			logger.fok("invoke-interface call method {}->{}{}{} on instance {}", ifclassname, methodname, signature, interface_str, instance->getFullname());
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < vA; i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - vA + i, frame.getObjRegister(regs[i]));
+			for (uint32_t i = 0; i < args.size(); i++) {
+				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
 			}
 		}
 	} else {
@@ -2581,14 +2512,17 @@ void Interpreter::invoke_direct_range(const uint8_t* operand_) {
 		args.push_back(frame.getObjRegister(startReg + i));
 	}
 
+	if (method.isStatic()) {
+		trace.logCall("invoke-static/range", cls.getFullname(), method.getName(), method.getSignature(), args, method.isStatic());
+	} else {
+		trace.logCall("invoke-direct/range", cls.getFullname(), method.getName(), method.getSignature(), args, method.isStatic());
+	}
 	if (method.isNative()) {
 		executeNativeMethod(method, args);
 	} else {
 		if (method.getBytecode() == nullptr) {
 			method.execute(frame, args);
 		} else {
-			logger.fok("invoke-static-range call method {}.{}{} with {} arguments", method.getClass().getFullname(), method.getName(), method.getSignature(),
-			           regCount);
 			auto& newframe = _rt.newFrame(method);
 			for (uint8_t i = 0; i < regCount; ++i) {
 				newframe.setObjRegister(method.getNbRegisters() - regCount + i, frame.getObjRegister(startReg + i));

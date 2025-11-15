@@ -28,7 +28,6 @@
 #include <vector>
 
 namespace sandvik {
-	class Disassembler;
 	class Method;
 	class Object;
 	class Class;
@@ -491,9 +490,9 @@ namespace sandvik {
 			void executeClinit(Class& class_) const;
 			void executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_);
 
-			JThread& _rt;
-			std::unique_ptr<Disassembler> _disassembler;
+			std::vector<std::shared_ptr<Object>> getInvokeMethodArgs(const uint8_t* operand_) const;
 
+			JThread& _rt;
 			std::map<uint8_t, uint64_t> _instcoverage;
 	};
 }  // namespace sandvik

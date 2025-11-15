@@ -64,6 +64,12 @@ Sandvik can be used to run Dalvik bytecode files (`.dex`) or Android application
 - `--no-console`
 	Disable console output.
 
+- `-i, --instructions`
+	Enable instruction trace (prints per-instruction VM execution details).
+
+- `-c, --calltrace`
+	Enable call trace (prints method entry/exit and call details).
+
 - `--dex=[file]`
 	Specify the DEX file to load.
 
@@ -103,17 +109,25 @@ To run the `HelloWorld` Java program:
 
 This will execute the `HelloWorld` class from the specified DEX file, showcasing the VM's ability to interpret and run Dalvik bytecode. The output should display the expected behavior of the test program, such as printing "Hello, World!" to the console:
 ```bash
-./wbuild/sandvik --dex tests/java/hello/classes.dex --main HelloWorld
+./wbuild/sandvik -i -c --log=INFO --dex tests/java/hello/classes.dex --main=HelloWorld
+[+]  === sandvik 1.0.0-983807d ===
 [*] VM instance created.
-[+]  === sandvik ===
-[*] Running main class: HelloWorld
 [*] Running class: HelloWorld
-[*] .0000: sget-object v1, string@0           : 62 01 00 00       HelloWorld::main([Ljava/lang/String;)V
-[*] .0002: const-string v0, string@1          : 1a 00 01 00       HelloWorld::main([Ljava/lang/String;)V
-[*] .0004: invoke-virtual {v1, v0}, method@2  : 6e 20 02 00 01 00 HelloWorld::main([Ljava/lang/String;)V
-[+] invoke-virtual call method java.io.PrintStream->println(Ljava/lang/String;)V(this=Instance of java.io.PrintStream, String=Hello, World!) on instance java.io.PrintStream
+[*] 0000: sget-object v1, string@0                : 62 01 00 00                            HelloWorld::main([Ljava/lang/String;)V
+[java.lang.System.<clinit>] [*] 0000: const/4 v0, #0                          : 12 00                                  java.lang.System::<clinit>()V
+[java.lang.System.<clinit>] [*] 0001: sput-object v0, string@1                : 69 00 01 00                            java.lang.System::<clinit>()V
+[java.lang.System.<clinit>] [*] 0003: sput-object v0, string@2                : 69 00 02 00                            java.lang.System::<clinit>()V
+[java.lang.System.<clinit>] [*] 0005: sput-object v0, string@0                : 69 00 00 00                            java.lang.System::<clinit>()V
+[java.lang.System.<clinit>] [*] 0007: return-void                             : 0e                                     java.lang.System::<clinit>()V
+[java.lang.System.<clinit>] [*] 0000: invoke-static method@9                  : 71 00 09 00 00 00                      java.lang.System::initializeSystemClass()V
+[java.lang.System.<clinit>] [*] invoke-static java.lang.System.initializeStream()V ()
+[java.lang.System.<clinit>] [*] 0003: return-void                             : 0e                                     java.lang.System::initializeSystemClass()V
+[*] 0002: const-string v0, string@1               : 1a 00 01 00                            HelloWorld::main([Ljava/lang/String;)V
+[*] 0004: invoke-virtual {v1, v0}, method@2       : 6e 20 02 00 01 00                      HelloWorld::main([Ljava/lang/String;)V
+[*] invoke-virtual java.io.PrintStream.println(Ljava/lang/String;)V (this=Instance of java.io.PrintStream, String=Hello, World!)
 Hello, World!
-[*] .0007: return-void                        : 0e                 HelloWorld::main([Ljava/lang/String;)V
+[*] 0007: return-void                             : 0e                                     HelloWorld::main([Ljava/lang/String;)V
+[*]  === end ===
 ```
 
 ## Contributing

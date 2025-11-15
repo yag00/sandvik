@@ -22,11 +22,13 @@
 
 #include "class.hpp"
 #include "classloader.hpp"
+#include "disassembler.hpp"
 #include "jni.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
+#include "trace.hpp"
 #include "version.hpp"
 #include "vm.hpp"
 
@@ -42,6 +44,8 @@ int main(int argc, char** argv) {
 	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
 	args::ValueFlag<std::string> logFile(parser, "logfile", "Set the log output file", {"logfile"}, "");
 	args::Flag noConsole(parser, "no-console", "Disable console output", {"no-console"});
+	args::Flag instructiontrace(parser, "instruction", "Instruction trace", {'i', "instructions"});
+	args::Flag calltrace(parser, "calltrace", "Call trace", {'c', "calltrace"});
 	args::ValueFlag<std::string> dexFile(parser, "file", "Specify the DEX file to load", {"dex"}, "");
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
 	args::ValueFlag<std::string> jarFile(parser, "file", "Specify the Jar files to load", {"jar"}, "");
@@ -101,6 +105,9 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 	}
+
+	trace.enableInstructionTrace(args::get(instructiontrace));
+	trace.enableCallTrace(args::get(calltrace));
 
 	if (args::get(dexFile).empty() && args::get(apkFile).empty() && args::get(jarFile).empty()) {
 		std::cerr << "Either --dex, --jar or --apk must be specified" << std::endl << std::endl;

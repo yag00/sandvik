@@ -151,7 +151,7 @@ void Logger::color(uint32_t color_, char marker_, const char *msg_, ...) {
 }
 
 void Logger::color(uint32_t color_, char marker_, const std::string &msg_) {
-	if (LogLevel::INFO > _level) {
+	if (LogLevel::INFO < _level) {
 		return;
 	}
 
@@ -184,9 +184,11 @@ std::string Logger::getTime() const {
 }
 
 void Logger::log(LogLevel level, const std::string &msg) {
-	if (level > _level) {
+	if (level < _level) {
 		return;
 	}
+	// Mask out ALWAYS bit
+	level &= 0xF;
 
 	std::string threadname = "";
 	auto thread = _threads.find(std::this_thread::get_id());

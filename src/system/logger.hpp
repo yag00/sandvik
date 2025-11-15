@@ -39,7 +39,7 @@ namespace sandvik {
 	class Logger : public Singleton<Logger> {
 		public:
 			/** enum for log level */
-			enum class LogLevel { NONE, ERROR, OK, WARNING, INFO, DEBUG };
+			enum class LogLevel { DEBUG = 0, INFO, WARNING, OK, ERROR, NONE, ALWAYS = 0x10 };
 
 			/** add thread to logger : log messages from this thread will be prefixed with thread name
 			 * @param tid_ thread id
@@ -177,6 +177,11 @@ namespace sandvik {
 				auto formatted = fmt::format(fmt_str, std::forward<Args>(args)...);
 				ok(formatted);
 			}
+			/** log message
+			 * @param level log level
+			 * @param msg message
+			 */
+			void log(LogLevel level, const std::string &msg);
 
 		private:
 			friend class Singleton<Logger>;
@@ -184,7 +189,6 @@ namespace sandvik {
 			~Logger() override;
 
 			std::string getTime() const;
-			void log(LogLevel level, const std::string &msg);
 
 			bool _stdout = true;
 			bool _time = false;
@@ -204,6 +208,51 @@ namespace sandvik {
 	 */
 	inline Logger &getLogger() {
 		return Logger::getInstance();
+	}
+
+	/** LogLevel logical and operator
+	 * @param a LogLevel a
+	 * @param mask integer mask
+	 * @return Result of the and operation
+	 */
+	constexpr Logger::LogLevel operator&(Logger::LogLevel a, int mask) {
+		return static_cast<Logger::LogLevel>(static_cast<std::underlying_type_t<Logger::LogLevel>>(a) & mask);
+	}
+	/** LogLevel logical and= operator
+	 * @param a LogLevel a
+	 * @param mask integer mask
+	 * @return Result of the and operation
+	 */
+	constexpr Logger::LogLevel &operator&=(Logger::LogLevel &a, int mask) {
+		a = a & mask;
+		return a;
+	}
+	/** LogLevel logical or operator
+	 * @param a LogLevel a
+	 * @param b LogLevel b
+	 * @return Result of the and operation
+	 */
+	constexpr Logger::LogLevel operator|(Logger::LogLevel a, Logger::LogLevel b) {
+		return static_cast<Logger::LogLevel>(static_cast<std::underlying_type_t<Logger::LogLevel>>(a) |
+		                                     static_cast<std::underlying_type_t<Logger::LogLevel>>(b));
+	}
+	/** LogLevel logical and operator
+	 * @param a LogLevel a
+	 * @param b LogLevel b
+	 * @return Result of the and operation
+	 */
+	constexpr Logger::LogLevel operator&(Logger::LogLevel a, Logger::LogLevel b) {
+		return static_cast<Logger::LogLevel>(static_cast<std::underlying_type_t<Logger::LogLevel>>(a) &
+		                                     static_cast<std::underlying_type_t<Logger::LogLevel>>(b));
+	}
+	/** LogLevel logical or operator
+	 * @param a LogLevel a
+	 * @param b LogLevel b
+	 * @return Result of the and operation
+	 */
+	constexpr Logger::LogLevel &operator|=(Logger::LogLevel &a, Logger::LogLevel b) {
+		a = a | b;
+		return a;
 	}
 }  // namespace sandvik
 
