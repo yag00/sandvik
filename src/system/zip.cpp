@@ -180,7 +180,7 @@ void ZipWriter::open(const std::string& zipfile_) {
 }
 
 void ZipWriter::add(const std::string& archivename_, const std::string& filename_) {
-	if (!mz_zip_writer_add_file(static_cast<mz_zip_archive*>(_zip), archivename_.c_str(), filename_.c_str(), 0, 0, MZ_BEST_COMPRESSION))
+	if (!mz_zip_writer_add_file(static_cast<mz_zip_archive*>(_zip), archivename_.c_str(), filename_.c_str(), nullptr, 0, MZ_BEST_COMPRESSION))
 		throw std::runtime_error(fmt::format("zip can't add {}!", filename_));
 }
 

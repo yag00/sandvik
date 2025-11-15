@@ -149,7 +149,7 @@ namespace sandvik {
 			std::vector<std::unique_ptr<JThread>> _threads;
 
 			std::unique_ptr<NativeInterface> _jnienv;
-			std::map<std::string, std::string> _properties;
+			std::map<std::string, std::string, std::less<>> _properties;
 			bool _isPrimitiveClassInitialized = false;
 			std::atomic<bool> _isRunning{false};
 

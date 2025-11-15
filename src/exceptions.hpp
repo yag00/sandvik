@@ -39,8 +39,7 @@ namespace sandvik {
 			 * @param args arguments
 			 */
 			template <typename... Args>
-			explicit VmException(fmt::format_string<Args...> fmt_str, Args&&... args) {
-				_message = fmt::format(fmt_str, std::forward<Args>(args)...);
+			explicit VmException(fmt::format_string<Args...> fmt_str, Args&&... args) : _message(fmt::format(fmt_str, std::forward<Args>(args)...)) {
 			}
 			~VmException() noexcept override = default;
 			/** get exception message

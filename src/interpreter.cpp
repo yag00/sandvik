@@ -1613,7 +1613,7 @@ void Interpreter::iget(const uint8_t* operand_) {
 		throw NullPointerException("iget on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I" && field.getType() != "F") {
 		throw VmException("iget: Field {} type mismatch, expected int but got {}", field.getName(), field.getType());
 	}
@@ -1622,7 +1622,7 @@ void Interpreter::iget(const uint8_t* operand_) {
 	if (!fieldObj || !fieldObj->isNumberObject()) {
 		throw VmException("iget: Field {} is not a number object", field.getName());
 	}
-	int32_t value = static_cast<int32_t>(fieldObj->getValue());
+	int32_t value = fieldObj->getValue();
 	logger.fdebug("iget {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -1640,7 +1640,7 @@ void Interpreter::iget_wide(const uint8_t* operand_) {
 		throw NullPointerException("iget_wide on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "J" && field.getType() != "D") {
 		throw VmException("iget_wide: Field {} type mismatch, expected long or double but got {}", field.getName(), field.getType());
 	}
@@ -1668,7 +1668,7 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 	}
 
 	// class should have been loaded if trying to access an instance field. resolveField should not fail.
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
 		throw VmException("iget_object: Field {} type mismatch, expected object or array but got {}", field.getName(), field.getType());
 	}
@@ -1691,7 +1691,7 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 		throw NullPointerException("iget_boolean on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
 		throw VmException("iget_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType());
 	}
@@ -1718,7 +1718,7 @@ void Interpreter::iget_byte(const uint8_t* operand_) {
 		throw NullPointerException("iget_byte on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
 		throw VmException("iget_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType());
 	}
@@ -1745,7 +1745,7 @@ void Interpreter::iget_char(const uint8_t* operand_) {
 		throw NullPointerException("iget_char on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
 		throw VmException("iget_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType());
 	}
@@ -1772,7 +1772,7 @@ void Interpreter::iget_short(const uint8_t* operand_) {
 		throw NullPointerException("iget_short on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
 		throw VmException("iget_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType());
 	}
@@ -1799,7 +1799,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 		throw NullPointerException("iput on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "I" && field.getType() != "F") {
 		throw VmException("iput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType());
 	}
@@ -1821,7 +1821,7 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 		throw NullPointerException("iput_wide on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.isStatic()) {
 		throw VmException("iput_wide: Cannot use iput_wide on a static field");
 	}
@@ -1849,7 +1849,7 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 	}
 
 	// class should have been loaded if trying to access an instance field. resolveField should not fail.
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.isStatic()) {
 		throw VmException("iput_object: Cannot use iput_object on a static field");
 	}
@@ -1876,7 +1876,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 		throw NullPointerException("iput_boolean on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "Z") {
 		throw VmException("iput_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType());
 	}
@@ -1899,7 +1899,7 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 		throw NullPointerException("iput_byte on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "B") {
 		throw VmException("iput_byte: Field {} type mismatch, expected byte but got {}", field.getName(), field.getType());
 	}
@@ -1922,7 +1922,7 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 		throw NullPointerException("iput_char on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "C") {
 		throw VmException("iput_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType());
 	}
@@ -1945,7 +1945,7 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 		throw NullPointerException("iput_short on null object");
 	}
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (field.getType() != "S") {
 		throw VmException("iput_short: Field {} type mismatch, expected short but got {}", field.getName(), field.getType());
 	}
@@ -1962,7 +1962,7 @@ void Interpreter::sget(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw VmException("sget: Cannot use sget on a non-static field");
 	}
@@ -1985,7 +1985,7 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw VmException("sget_wide: Cannot use sget on a non-static field");
 	}
@@ -2008,7 +2008,7 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	logger.fdebug("sget_object: Resolving field {}", field.str());
 	if (!field.isStatic()) {
 		throw VmException("sget_object: Cannot use sget_object on a non-static field");
@@ -2032,7 +2032,7 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw VmException("sget_boolean: Cannot use sget_boolean on a non-static field");
 	}
@@ -2055,7 +2055,7 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw VmException("sget_byte: Cannot use sget_byte on a non-static field");
 	}
@@ -2101,7 +2101,7 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
 	if (!field.isStatic()) {
 		throw VmException("sget_short: Cannot use sget on a non-static field");
 	}
@@ -2322,7 +2322,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			if (vmethod->hasBytecode()) {
 				auto& newframe = _rt.newFrame(*vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (uint32_t i = 0; i < args.size(); i++) {
+				for (auto i = 0; i < args.size(); i++) {
 					newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
 				}
 			} else {
@@ -2377,7 +2377,7 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < args.size(); i++) {
+			for (auto i = 0; i < args.size(); i++) {
 				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
 			}
 		}
@@ -2410,7 +2410,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 			auto& newframe = _rt.newFrame(method);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < args.size(); i++) {
+			for (auto i = 0; i < args.size(); i++) {
 				newframe.setObjRegister(method.getNbRegisters() - args.size() + i, args[i]);
 			}
 		}
@@ -2473,7 +2473,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (uint32_t i = 0; i < args.size(); i++) {
+			for (auto i = 0; i < args.size(); i++) {
 				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
 			}
 		}

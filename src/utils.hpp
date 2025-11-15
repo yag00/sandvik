@@ -21,12 +21,10 @@
 
 #include <string>
 
-namespace LIEF {
-	namespace DEX {
-		class Type;
-		class Method;
-	}  // namespace DEX
-}  // namespace LIEF
+namespace LIEF::DEX {
+	class Type;
+	class Method;
+}  // namespace LIEF::DEX
 
 namespace sandvik {
 	/** @brief Get the type descriptor for a given type.

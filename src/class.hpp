@@ -24,11 +24,9 @@
 #include <string>
 #include <vector>
 
-namespace LIEF {
-	namespace DEX {
-		class Class;
-	}
-}  // namespace LIEF
+namespace LIEF::DEX {
+	class Class;
+}  // namespace LIEF::DEX
 
 namespace sandvik {
 	class ClassLoader;

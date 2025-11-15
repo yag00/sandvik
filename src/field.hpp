@@ -23,11 +23,9 @@
 #include <string>
 #include <vector>
 
-namespace LIEF {
-	namespace DEX {
-		class Field;
-	}
-}  // namespace LIEF
+namespace LIEF::DEX {
+	class Field;
+}  // namespace LIEF::DEX
 
 namespace sandvik {
 	class Class;

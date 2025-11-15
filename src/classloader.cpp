@@ -151,7 +151,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 				logger.fok("class {} loaded", dotclassname);
 				return *(_classes[dotclassname]);
 			}
-		} catch (std::exception& e) {
+		} catch (std::exception&) {
 			// pass
 		}
 	}
