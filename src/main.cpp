@@ -46,9 +46,9 @@ int main(int argc, char** argv) {
 	args::Flag noConsole(parser, "no-console", "Disable console output", {"no-console"});
 	args::Flag instructiontrace(parser, "instruction", "Instruction trace", {'i', "instructions"});
 	args::Flag calltrace(parser, "calltrace", "Call trace", {'c', "calltrace"});
-	args::ValueFlag<std::string> dexFile(parser, "file", "Specify the DEX file to load", {"dex"}, "");
+	args::ValueFlagList<std::string> dexFiles(parser, "file", "Specify the DEX files to load", {"dex"});
+	args::ValueFlagList<std::string> jarFiles(parser, "file", "Specify the Jar files to load", {"jar"});
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
-	args::ValueFlag<std::string> jarFile(parser, "file", "Specify the Jar files to load", {"jar"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
 	args::ValueFlag<std::string> runTime(parser, "runtime", "Specify path to override the default java runtime", {"runtime"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
@@ -109,12 +109,6 @@ int main(int argc, char** argv) {
 	trace.enableInstructionTrace(args::get(instructiontrace));
 	trace.enableCallTrace(args::get(calltrace));
 
-	if (args::get(dexFile).empty() && args::get(apkFile).empty() && args::get(jarFile).empty()) {
-		std::cerr << "Either --dex, --jar or --apk must be specified" << std::endl << std::endl;
-		std::cerr << parser;
-		return 1;
-	}
-
 	if (args::get(mainClass).empty() && args::get(apkFile).empty()) {
 		std::cerr << "Main class not specified" << std::endl << std::endl;
 		std::cerr << parser;
@@ -122,17 +116,21 @@ int main(int argc, char** argv) {
 	}
 
 	Vm vm;
+	// load runtime
 	vm.loadRt(args::get(runTime));
-	if (!args::get(dexFile).empty()) {
-		vm.loadDex(args::get(dexFile));
-	} else if (!args::get(jarFile).empty()) {
-		vm.loadRt(args::get(jarFile));
-	} else if (!args::get(apkFile).empty()) {
-		vm.loadApk(args::get(apkFile));
-	} else {
-		logger.error("No valid file specified");
-		return 1;
+	// load dex files
+	for (const auto& dexFile : args::get(dexFiles)) {
+		vm.loadDex(dexFile);
 	}
+	// load jar (containing dex) files
+	for (const auto& jarFile : args::get(jarFiles)) {
+		vm.loadRt(jarFile);
+	}
+	// load apk file
+	if (!args::get(apkFile).empty()) {
+		vm.loadApk(args::get(apkFile));
+	}
+	// run the VM
 	try {
 		if (!args::get(apkFile).empty()) {
 			// running APK file, main class is extracted from the APK manifest
@@ -142,7 +140,6 @@ int main(int argc, char** argv) {
 			std::vector<std::string> args = args::get(positionalArgs);
 			vm.run(args::get(mainClass), args);
 		}
-
 	} catch (const std::exception& e) {
 		logger.setLevel(Logger::LogLevel::INFO);
 		logger.error(e.what());

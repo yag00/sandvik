@@ -50,6 +50,10 @@ namespace sandvik {
 			 * @param tid_ thread id
 			 */
 			void removeThread(std::thread::id tid_);
+			/** prefix log message with thread name
+			 * @param enable_ enable/disable thread name prefix
+			 */
+			void displayThreadName(bool enable_);
 
 			/** log to file
 			 * @param filename_ filename for log
@@ -192,6 +196,7 @@ namespace sandvik {
 
 			bool _stdout = true;
 			bool _time = false;
+			bool _threadname = false;
 			LogLevel _level = LogLevel::INFO;
 			std::ofstream _file;
 

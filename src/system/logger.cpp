@@ -61,6 +61,10 @@ void Logger::removeThread(std::thread::id tid_) {
 	_threads.erase(tid_);
 }
 
+void Logger::displayThreadName(bool enable_) {
+	_threadname = enable_;
+}
+
 Logger::LogLevel Logger::getLevel() const {
 	return _level;
 }
@@ -191,10 +195,12 @@ void Logger::log(LogLevel level, const std::string &msg) {
 	level &= 0xF;
 
 	std::string threadname = "";
-	auto thread = _threads.find(std::this_thread::get_id());
-	if (thread != _threads.end()) {
-		// Prefix message with thread name
-		threadname = fmt::format("[{}] ", thread->second);
+	if (_threadname) {
+		auto thread = _threads.find(std::this_thread::get_id());
+		if (thread != _threads.end()) {
+			// Prefix message with thread name
+			threadname = fmt::format("[{}] ", thread->second);
+		}
 	}
 
 	if (_file.is_open()) {
