@@ -81,7 +81,9 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 	_superClassname = class_.has_parent() ? class_.parent()->pretty_name() : "";
 	// Initialize interfaces
 	for (const auto& interface : class_.interfaces()) {
-		_interfaces.push_back(interface);
+		auto iface = interface;
+		std::replace(iface.begin(), iface.end(), '/', '.');
+		_interfaces.push_back(iface);
 	}
 }
 
