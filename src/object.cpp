@@ -50,6 +50,12 @@ namespace sandvik {
 			bool isNumberObject() const override;
 
 			/**
+			 * @brief Checks if the object is null.
+			 * @return True if the object is null, false otherwise.
+			 */
+			bool isNull() const override;
+
+			/**
 			 * @brief Gets the integer value of the object.
 			 * @return Integer value.
 			 * @throw std::bad_cast if the object is not a number.
@@ -542,6 +548,9 @@ bool NumberObject::weakCompareAndSet(int64_t expect, int64_t update) {
 }
 bool NumberObject::isNumberObject() const {
 	return true;
+}
+bool NumberObject::isNull() const {
+	return _value.load() == 0;
 }
 std::string NumberObject::toString() const {
 	return fmt::format("{}", _value.load());
