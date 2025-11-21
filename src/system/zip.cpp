@@ -103,11 +103,17 @@ void ZipReader::extract(const std::string& file_, const std::string& path_) {
 	}
 }
 
-char* ZipReader::extractToMemory(const std::string& file_, uint64_t& size_) {
+std::unique_ptr<char[]> ZipReader::extractToMemory(const std::string& file_, uint64_t& size_) {
 	size_t pSize = 0;
 	void* ptr = mz_zip_reader_extract_file_to_heap(static_cast<mz_zip_archive*>(_zip), file_.c_str(), &pSize, 0);
+	if (!ptr) {
+		throw std::runtime_error(fmt::format("zip can't extract file {} to memory!", file_));
+	}
 	size_ = pSize;
-	return static_cast<char*>(ptr);
+	std::unique_ptr<char[]> result(new char[size_]);
+	memcpy(result.get(), ptr, size_);
+	mz_free(ptr);
+	return result;
 }
 
 void ZipReader::extractAll(const std::string& path_) {

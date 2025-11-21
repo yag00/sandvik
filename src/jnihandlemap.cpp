@@ -24,6 +24,15 @@
 
 using namespace sandvik;
 
+JNIHandleMap::~JNIHandleMap() {
+	if (!_table.empty()) {
+		for (const auto& [handle, obj] : _table) {
+			logger.ferror("JNIHandleMap: Leaked handle {:#x} for object {}", (uintptr_t)handle, obj ? obj->toString() : "<null>");
+		}
+	}
+	_table.clear();
+}
+
 jobject JNIHandleMap::toJObject(const std::shared_ptr<Object>& obj) {
 	std::scoped_lock lock(_mutex);
 	if (!obj) return nullptr;

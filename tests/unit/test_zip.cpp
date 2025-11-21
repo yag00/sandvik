@@ -37,13 +37,11 @@ TEST(compression, zip) {
 	zipr.open("ziptest.zip");
 
 	uint64_t size = 0;
-	char* ptr = zipr.extractToMemory("test.txt", size);
-	std::string rdata(ptr, size);
-	free(ptr);
+	auto ptr = zipr.extractToMemory("test.txt", size);
+	std::string rdata(ptr.get(), size);
 
 	ptr = zipr.extractToMemory("test2.txt", size);
-	std::string rdata2(ptr, size);
-	free(ptr);
+	std::string rdata2(ptr.get(), size);
 
 	zipr.close();
 

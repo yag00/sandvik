@@ -57,12 +57,11 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 	for (const auto& file : zip->getList()) {
 		if (file.size() >= 4 && file.ends_with(".dex")) {
 			uint64_t size = 0;
-			char* buffer = zip->extractToMemory(file, size);
-			if (buffer == nullptr) {
+			auto buffer = zip->extractToMemory(file, size);
+			if (!buffer) {
 				throw VmException("Failed to extract {}", file);
 			}
-			std::vector<uint8_t> dexBuffer(buffer, buffer + size);
-			free(buffer);
+			std::vector<uint8_t> dexBuffer(buffer.get(), buffer.get() + size);
 			dexs_.push_back(std::make_unique<Dex>(dexBuffer, path_.empty() ? "<sandvik>" : path_));
 		}
 	}

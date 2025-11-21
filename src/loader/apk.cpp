@@ -60,13 +60,12 @@ Apk::Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) : _
 		logger.fdebug("Loading DEX file from APK: {}", file);
 		uint64_t size = 0;
 		auto buffer = _zipReader->extractToMemory(file, size);
-		if (buffer == nullptr) {
+		if (!buffer) {
 			throw VmException("Failed to extract {}", file);
 		}
-		std::vector<uint8_t> dexBuffer(buffer, buffer + size);
+		std::vector<uint8_t> dexBuffer(buffer.get(), buffer.get() + size);
 		auto dex = std::make_unique<Dex>();
 		dex->load(dexBuffer);
-		free(buffer);
 		_dexs.push_back(std::move(dex));
 	}
 
@@ -74,12 +73,11 @@ Apk::Apk(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) : _
 	std::string file = "AndroidManifest.xml";
 	uint64_t size = 0;
 	auto buffer = _zipReader->extractToMemory(file, size);
-	if (buffer == nullptr) {
+	if (!buffer) {
 		throw VmException("Failed to extract {}", file);
 	}
 	// Convert to string and search for launcher activity
-	_manifest = std::string(buffer, size);
-	free(buffer);
+	_manifest = std::string(buffer.get(), size);
 	_mainActivity = findMainActivity();
 }
 

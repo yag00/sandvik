@@ -33,6 +33,8 @@ namespace sandvik {
 	 * A mapping between JNI jobject references and C++ Object instances */
 	class JNIHandleMap {
 		public:
+			/** destructor */
+			~JNIHandleMap();
 			/** @brief Converts a C++ Object instance to a JNI jobject reference.
 			 * @param obj Shared pointer to the C++ Object instance
 			 * @return Corresponding JNI jobject reference

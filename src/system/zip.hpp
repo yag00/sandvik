@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include <list>
+#include <memory>
 #include <string>
 
 namespace sandvik {
@@ -54,9 +55,9 @@ namespace sandvik {
 			/** extract file into memory
 			 * @param file_ file to extract
 			 * @param size_ size of extracted data
-			 * @return extracted data. Ptr must be deleted with free()
+			 * @return extracted data as std::unique_ptr<char[]>
 			 * @throw std::exception */
-			char* extractToMemory(const std::string& file_, uint64_t& size_);
+			std::unique_ptr<char[]> extractToMemory(const std::string& file_, uint64_t& size_);
 			/** extract all into the given path
 			 * @param path_ path for zip extraction
 			 * @throw std::exception */
