@@ -35,7 +35,8 @@ extern "C" {
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 
 		auto this_ptr = sandvik::native::getObject(obj);
-		auto objstr = sandvik::native::getString(str);
+		auto nullstring = sandvik::Object::make(classloader, "null");
+		auto objstr = sandvik::native::getObject(str)->isNull() ? nullstring.get() : sandvik::native::getString(str);
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, objstr->str()));
 		} else {
