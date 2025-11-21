@@ -2485,7 +2485,79 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 }
 // invoke-virtual/range {vCCCC .. vNNNN}, meth@BBBB
 void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
-	throw VmException("invoke_virtual_range not implemented");
+	const uint16_t methodRef = *reinterpret_cast<const uint16_t*>(&operand_[1]);
+	const uint16_t startReg = *reinterpret_cast<const uint16_t*>(&operand_[3]);
+	const uint8_t regCount = operand_[0];
+
+	auto& frame = _rt.currentFrame();
+	auto& classloader = _rt.getClassLoader();
+
+	std::vector<std::shared_ptr<Object>> args;
+	for (uint8_t i = 0; i < regCount; ++i) {
+		args.push_back(frame.getObjRegister(startReg + i));
+	}
+
+	auto this_ptr = args[0];
+	if (this_ptr->isNull()) {
+		throw NullPointerException("invoke-virtual/range on null object");
+	}
+	if (!this_ptr->isClass()) {
+		throw VmException("invoke-virtual/range: this pointer is not an ObjectClass, got {}", this_ptr->toString());
+	}
+	Class* instance = &this_ptr->getClass();
+	if (!instance->isStaticInitialized()) {
+		executeClinit(*instance);
+	}
+
+	std::string classname, methodname, signature;
+	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
+
+	Method* vmethod = nullptr;
+	while (true) {
+		try {
+			vmethod = &instance->getMethod(methodname, signature);
+			break;  // Method found, exit loop
+		} catch (std::exception& e) {
+			logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
+			if (instance->hasSuperClass()) {
+				// If the method is not found in the current class, try the superclass
+				instance = &classloader.getOrLoad(instance->getSuperClassname());
+				if (!instance->isStaticInitialized()) {
+					executeClinit(*instance);
+				}
+			} else {
+				// If no superclass, break the loop
+				break;
+			}
+		}
+	}
+	if (vmethod) {
+		if (vmethod->isStatic()) {
+			throw VmException("invoke-virtual/range: method {}->{}{} is static", this_ptr->getClass().getFullname(), methodname, signature);
+		}
+		if (!vmethod->isVirtual()) {
+			logger.ferror("invoke-virtual/range: method {}->{}{} is not virtual", this_ptr->getClass().getFullname(), methodname, signature);
+		}
+		trace.logCall("invoke-virtual/range", instance->getFullname(), methodname, signature, args, vmethod->isStatic());
+		if (vmethod->isNative()) {
+			executeNativeMethod(*vmethod, args);
+		} else {
+			if (vmethod->hasBytecode()) {
+				auto& newframe = _rt.newFrame(*vmethod);
+				// When a method is invoked, the parameters to the method are placed into the last n registers.
+				for (auto i = 0; i < args.size(); i++) {
+					newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+				}
+			} else {
+				vmethod->execute(frame, args);
+			}
+		}
+	} else {
+		// If no method found, throw an error
+		throw VmException(fmt::format("invoke-virtual/range: call method {}->{}{} not found", this_ptr->getClass().getFullname(), methodname, signature));
+	}
+
+	frame.pc() += 5;
 }
 // invoke-super/range {vCCCC .. vNNNN}, meth@BBBB
 void Interpreter::invoke_super_range(const uint8_t* operand_) {

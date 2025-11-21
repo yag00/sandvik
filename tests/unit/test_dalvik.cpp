@@ -287,3 +287,6 @@ TEST(VM, AtomicLong) {
 TEST(VM, Regex) {
 	run_common_test("TestRegex");
 }
+TEST(VM, InvokeVirtualRange) {
+	run_common_test("TestInvokeVirtualRange");
+}
