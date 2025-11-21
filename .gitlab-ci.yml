@@ -49,9 +49,7 @@ package:
     paths:
       - "${INSTALL_DIR}/"
   only:
-    - merge_requests
     - main
-    - develop
 
 tests:
   stage: build
