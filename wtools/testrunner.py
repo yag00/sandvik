@@ -94,7 +94,7 @@ def process_test(self):
         inputNode = self.path.find_or_declare(self.program)
 
     report = self.path.find_or_declare('report_{}.json'.format(self.program))
-    tsk = self.create_task("gtest", [inputNode], [])
+    tsk = self.create_task("gtest", [inputNode], [report])
     tsk.name = "run_gtest_" + self.program
     tsk.program = self.program
 
