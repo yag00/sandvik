@@ -128,5 +128,8 @@ public class RunAllTests {
 
         System.out.println("== Running TestRegex ==");
         TestRegex.main(new String[]{});
+
+        System.out.println("== Running TestInvokeVirtualRange ==");
+        TestInvokeVirtualRange.main(new String[]{});
     }
 }
