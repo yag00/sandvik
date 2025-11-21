@@ -44,6 +44,7 @@ int main(int argc, char** argv) {
 	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
 	args::ValueFlag<std::string> logFile(parser, "logfile", "Set the log output file", {"logfile"}, "");
 	args::Flag noConsole(parser, "no-console", "Disable console output", {"no-console"});
+	args::Flag displayThread(parser, "thread", "Display thread name in logs", {'t', "display-thread"});
 	args::Flag instructiontrace(parser, "instruction", "Instruction trace", {'i', "instructions"});
 	args::Flag calltrace(parser, "calltrace", "Call trace", {'c', "calltrace"});
 	args::ValueFlagList<std::string> dexFiles(parser, "file", "Specify the DEX files to load", {"dex"});
@@ -85,6 +86,8 @@ int main(int argc, char** argv) {
 	if (noConsole) {
 		logger.logToConsole(false);
 	}
+	logger.displayThreadName(args::get(displayThread));
+
 	logger.fok(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit());
 	if (logLevel) {
 		std::string level = args::get(logLevel);
