@@ -23,13 +23,12 @@
 
 #include "exceptions.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
 using namespace sandvik;
 
-NativeCallHelper::NativeCallHelper(NativeInterface& nif) : _nif(nif) {
+NativeCallHelper::NativeCallHelper() {
 }
 
 NativeCallHelper::~NativeCallHelper() {
@@ -149,9 +148,7 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<ObjectRef>::iterator& it, co
 		{
 			auto obj = *it;
 			++it;
-			jobject o = _nif.getHandles().toJObject(obj);
-			_handles.push_back((uintptr_t)o);
-			return (uintptr_t)o;
+			return (uintptr_t)obj;
 		}
 		default:
 			throw VmException("Unsupported JNI type character: {}", jniType);
@@ -173,11 +170,10 @@ ObjectRef NativeCallHelper::getReturnObject(uintptr_t result, const char jniType
 			return Object::make((uint64_t)result);
 		case 'L':
 		case '[': {  // Objects and arrays
-			auto ret = _nif.getHandles().fromJObject((jobject)result);
+			auto ret = (ObjectRef)result;
 			if (ret == nullptr) {
 				return Object::makeNull();
 			}
-			_handles.push_back(result);
 			return ret;
 		}
 		default:
@@ -208,8 +204,7 @@ ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::ve
 		// static method
 		this_ref = nullptr;  // todo handle this case, should be a class object reference
 	} else {
-		this_ref = _nif.getHandles().toJObject(args[0]);
-		_handles.push_back((uintptr_t)this_ref);
+		this_ref = (jobject)(uintptr_t)args[0];
 	}
 	arg_values.push_back(&this_ref);
 	// Prepare argument values
@@ -232,10 +227,5 @@ ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::ve
 	if (param_storage) {
 		delete[] param_storage;
 	}
-	auto ret = getReturnObject(result_storage, returnType[0]);
-	for (auto handle : _handles) {
-		_nif.getHandles().release((jobject)handle);
-	}
-	_handles.clear();
-	return ret;
+	return getReturnObject(result_storage, returnType[0]);
 }

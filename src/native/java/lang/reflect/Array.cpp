@@ -25,7 +25,6 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -55,6 +54,6 @@ extern "C" {
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 		auto arrObj = sandvik::Object::makeArray(classloader, obj->getClassType(), dimensions);
 		// Return as jobject
-		return jenv->getHandles().toJObject(arrObj);
+		return (jobject)arrObj;
 	}
 }

@@ -37,9 +37,8 @@ namespace sandvik {
 	/** @brief Helper class to invoke native functions */
 	class NativeCallHelper {
 		public:
-			/** Constructor for NativeCallHelper.
-			 * @param nif Reference to the NativeInterface. */
-			explicit NativeCallHelper(NativeInterface& nif);
+			/** Constructor for NativeCallHelper. */
+			NativeCallHelper();
 			~NativeCallHelper();
 
 			/** @brief method to invoke native functions
@@ -53,7 +52,6 @@ namespace sandvik {
 			                 bool isStatic = false);
 
 		private:
-			NativeInterface& _nif;
 			// Internal call context
 			struct CallContext {
 					ffi_cif cif;

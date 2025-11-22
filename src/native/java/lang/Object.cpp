@@ -29,7 +29,6 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "jthread.hpp"
 #include "native/native_utils.hpp"
 #include "system/logger.hpp"
@@ -44,7 +43,6 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Object_clone(JNIEnv* env, jobject obj) {
-		auto jenv = sandvik::native::getNativeInterface(env);
 		auto this_ptr = sandvik::native::getObject(obj);
 
 		// Per java.lang.Object#clone contract, only objects implementing
@@ -54,17 +52,14 @@ extern "C" {
 
 		// Perform a shallow clone of the object and convert to a JNI handle.
 		auto cloned_ptr = this_ptr->clone();
-		jobject jcloned = jenv->getHandles().toJObject(cloned_ptr);
-		return jcloned;
+		return (jobject)cloned_ptr;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Object_getClass(JNIEnv* env, jobject obj) {
-		auto jenv = sandvik::native::getNativeInterface(env);
 		auto ptr = sandvik::native::getObject(obj);
 		if (ptr->isClass()) {
 			auto clazz = sandvik::Object::make(ptr->getClass());
-			jobject jclassObj = jenv->getHandles().toJObject(clazz);
-			return jclassObj;
+			return (jobject)clazz;
 		} else {
 			throw sandvik::ClassCastException("Object is not a java.lang.Class");
 		}

@@ -83,12 +83,12 @@ TEST(object, number) {
 	auto obj_c = Object::make(5678);
 	auto obj_s = Object::make(classloader, "1234");
 
-	auto& ref_null = *obj_null.get();
-	auto& ref_zero = *obj_zero.get();
-	auto& ref_a = *obj_a.get();
-	auto& ref_b = *obj_b.get();
-	auto& ref_c = *obj_c.get();
-	auto& ref_s = *obj_s.get();
+	auto& ref_null = *obj_null;
+	auto& ref_zero = *obj_zero;
+	auto& ref_a = *obj_a;
+	auto& ref_b = *obj_b;
+	auto& ref_c = *obj_c;
+	auto& ref_s = *obj_s;
 
 	EXPECT_TRUE(ref_a == ref_b);
 	EXPECT_TRUE(ref_b == ref_a);
@@ -122,11 +122,11 @@ TEST(object, string) {
 	auto obj_c = Object::make(classloader, "Hello2");
 	auto obj_i = Object::make(1);
 
-	auto& ref_null = *obj_null.get();
-	auto& ref_a = *obj_a.get();
-	auto& ref_b = *obj_b.get();
-	auto& ref_c = *obj_c.get();
-	auto& ref_i = *obj_i.get();
+	auto& ref_null = *obj_null;
+	auto& ref_a = *obj_a;
+	auto& ref_b = *obj_b;
+	auto& ref_c = *obj_c;
+	auto& ref_i = *obj_i;
 
 	EXPECT_FALSE(ref_a == ref_null);
 	EXPECT_TRUE(ref_a != ref_null);
@@ -148,10 +148,8 @@ TEST(object, array) {
 	ClassLoader classloader;
 	ClassBuilder(classloader, "", "int").finalize();
 
-	auto obj_null = Object::makeNull();
-
 	auto obj = Object::makeArray(classloader, classloader.getOrLoad("int"), {3, 3});
-	auto array = std::dynamic_pointer_cast<Array>(obj);
+	auto array = static_cast<ArrayRef>(obj);
 	logger.fdebug("{}", array->toString());
 
 	for (uint32_t i = 0; i < 3; ++i) {
@@ -190,7 +188,7 @@ TEST(object, lock) {
 	obj->monitorEnter();
 
 	std::thread writer([obj]() {
-		auto val = obj->getField("value");
+		obj->getField("value");
 		obj->setField("value", Object::make(43));
 	});
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));

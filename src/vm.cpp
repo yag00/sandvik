@@ -185,7 +185,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	auto args = Array::make(stringClass, (uint32_t)args_.size());
 	for (size_t i = 0; i < args_.size(); ++i) {
 		auto strObj = Object::make(*_classloader, args_[i]);
-		std::static_pointer_cast<Array>(args)->setElement((uint32_t)i, strObj);
+		static_cast<ArrayRef>(args)->setElement((uint32_t)i, strObj);
 	}
 	mainThread.currentFrame().setObjRegister(nbRegisters, args);
 	try {

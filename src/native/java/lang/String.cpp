@@ -25,7 +25,6 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -59,8 +58,7 @@ extern "C" {
 
 		auto substr = str.substr(beginIndex);
 		auto strObj = sandvik::Object::make(classloader, substr);
-		jobject jstr = jenv->getHandles().toJObject(strObj);
-		return jstr;
+		return (jobject)strObj;
 	}
 
 	JNIEXPORT jint JNICALL Java_java_lang_String_hashCode(JNIEnv* env, jobject obj) {
@@ -79,8 +77,7 @@ extern "C" {
 		auto this_ptr = sandvik::native::getString(obj);
 
 		auto strObj = sandvik::Object::make(classloader, this_ptr->str());
-		jobject jstr = jenv->getHandles().toJObject(strObj);
-		return jstr;
+		return (jobject)strObj;
 	}
 
 	JNIEXPORT jcharArray JNICALL Java_java_lang_String_toCharArray(JNIEnv* env, jobject obj) {
@@ -218,8 +215,7 @@ extern "C" {
 
 		auto substr = str.substr(static_cast<size_t>(beginIndex), static_cast<size_t>(endIndex - beginIndex));
 		auto strObj = sandvik::Object::make(classloader, substr);
-		jobject jstr = jenv->getHandles().toJObject(strObj);
-		return jstr;
+		return (jobject)strObj;
 	}
 
 	JNIEXPORT jstring JNICALL Java_java_lang_String_toString(JNIEnv* env, jobject obj) {

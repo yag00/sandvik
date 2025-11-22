@@ -369,7 +369,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	std::string returnType = match[2];
 	logger.fdebug("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(), symbolName,
 	              (uintptr_t)symbol);
-	auto caller = std::make_unique<NativeCallHelper>(*_rt.vm().getJNIEnv());
+	auto caller = std::make_unique<NativeCallHelper>();
 	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
 	_rt.currentFrame().setReturnObject(ret);
 }
@@ -734,7 +734,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 			break;
 		}
 		case TYPES::ARRAY: {
-			auto array = std::dynamic_pointer_cast<Array>(obj);
+			auto array = static_cast<ArrayRef>(obj);
 			if (!array) {
 				throw ClassCastException("Object is not an array");
 			}
@@ -863,7 +863,7 @@ void Interpreter::fill_array_data(const uint8_t* operand_) {
 		throw NullPointerException("fill_array_data on null array object");
 	}
 
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("fill_array_data: Object is not an array");
 	}
@@ -1243,7 +1243,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget: Object is not an array");
 	}
@@ -1275,7 +1275,7 @@ void Interpreter::aget_wide(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-wide on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-wide: Object is not an array");
 	}
@@ -1303,7 +1303,7 @@ void Interpreter::aget_object(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-object on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-object: Object is not an array");
 	}
@@ -1327,7 +1327,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-boolean on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-boolean: Object is not an array");
 	}
@@ -1355,7 +1355,7 @@ void Interpreter::aget_byte(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-byte on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-byte: Object is not an array");
 	}
@@ -1383,7 +1383,7 @@ void Interpreter::aget_char(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-char on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-char: Object is not an array");
 	}
@@ -1411,7 +1411,7 @@ void Interpreter::aget_short(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-short on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-short: Object is not an array");
 	}
@@ -1441,7 +1441,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput: Object is not an array");
 	}
@@ -1465,7 +1465,7 @@ void Interpreter::aput_wide(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-wide on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-wide: Object is not an array");
 	}
@@ -1489,7 +1489,7 @@ void Interpreter::aput_object(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-object on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-object: Object is not an array");
 	}
@@ -1513,7 +1513,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-boolean on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-boolean: Object is not an array");
 	}
@@ -1537,7 +1537,7 @@ void Interpreter::aput_byte(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-byte on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-byte: Object is not an array");
 	}
@@ -1561,7 +1561,7 @@ void Interpreter::aput_char(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-char on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-char: Object is not an array");
 	}
@@ -1585,7 +1585,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-short on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-short: Object is not an array");
 	}
@@ -2620,7 +2620,7 @@ void Interpreter::invoke_interface_range(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	std::vector<std::shared_ptr<Object>> args;
+	std::vector<ObjectRef> args;
 	for (uint8_t i = 0; i < regCount; ++i) {
 		args.push_back(frame.getObjRegister(startReg + i));
 	}

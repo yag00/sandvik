@@ -35,7 +35,7 @@ namespace sandvik {
 	class Monitor;
 
 	/** @brief Object reference type */
-	using ObjectRef = std::shared_ptr<Object>;
+	using ObjectRef = Object*;
 	/**
 	 * @class Object
 	 * @brief Base class representing a generic java object.

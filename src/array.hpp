@@ -29,7 +29,7 @@ namespace sandvik {
 	/** @brief Vector of Object references */
 	using ObjectRefVector = std::vector<ObjectRef>;
 	/** @brief Array reference type */
-	using ArrayRef = std::shared_ptr<Array>;
+	using ArrayRef = Array*;
 	/**
 	 * @class Array
 	 * @brief Base class representing a generic java array.

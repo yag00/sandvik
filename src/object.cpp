@@ -315,27 +315,27 @@ using namespace sandvik;
 
 ObjectRef Object::make(Class& class_) {
 	if (class_.getFullname() == "java.lang.String") {
-		return std::make_shared<StringObject>(class_, "");
+		return new StringObject(class_, "");
 	}
-	return std::make_shared<ObjectClass>(class_);
+	return new ObjectClass(class_);
 }
 ObjectRef Object::make(uint64_t number_) {
-	return std::make_shared<NumberObject>(number_);
+	return new NumberObject(number_);
 }
 ObjectRef Object::make(ClassLoader& classloader_, const std::string& str_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.String");
-	return std::make_shared<StringObject>(clazz, str_);
+	return new StringObject(clazz, str_);
 }
 ObjectRef Object::makeNull() {
-	return std::make_shared<NullObject>();
+	return new NullObject();
 }
 ObjectRef Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
-	return std::make_shared<ConstClassObject>(clazz, classtype_);
+	return new ConstClassObject(clazz, classtype_);
 }
 
 ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
-	return std::make_shared<Array>(classtype_, dimensions_);
+	return new Array(classtype_, dimensions_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -599,10 +599,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 				case 'J':
 				case 'F':
 				case 'D':
-					_fields[fieldname] = std::make_shared<NumberObject>(0);
+					_fields[fieldname] = new NumberObject(0);
 					break;
 				default:
-					_fields[fieldname] = std::make_shared<NullObject>();
+					_fields[fieldname] = new NullObject();
 					break;
 			}
 		}
@@ -625,10 +625,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 					case 'J':
 					case 'F':
 					case 'D':
-						_fields[fieldname] = std::make_shared<NumberObject>(0);
+						_fields[fieldname] = new NumberObject(0);
 						break;
 					default:
-						_fields[fieldname] = std::make_shared<NullObject>();
+						_fields[fieldname] = new NullObject();
 						break;
 				}
 			}
