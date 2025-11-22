@@ -51,5 +51,8 @@ std::shared_ptr<Object> JNIHandleMap::fromJObject(jobject handle) {
 
 void JNIHandleMap::release(jobject handle) {
 	std::scoped_lock lock(_mutex);
+	if (_table.find(handle) == _table.end()) {
+		return;
+	}
 	_table.erase(handle);
 }

@@ -196,6 +196,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	_isRunning.store(true);
 	mainThread.run(true);
 	_isRunning.store(false);
+	mainThread.join();
 }
 
 void Vm::stop() {
