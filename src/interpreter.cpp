@@ -375,8 +375,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 }
 
 void Interpreter::handleException(std::shared_ptr<Object> exception_) {
-	auto exception = exception_;
-	if (!exception->isClass()) {
+	if (!exception_->isClass()) {
 		throw VmException("throw operand is not an object!");
 	}
 
@@ -411,12 +410,11 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 		}
 		if (_rt.stackDepth() == 0) {
 			// uncaught exception
-			auto detailMessage = exception->getField("detailMessage");
+			auto detailMessage = exception_->getField("detailMessage");
 			std::string msg = detailMessage->isString() ? detailMessage->str() : "";
-			logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
-			throw JavaException(exception->getClass().getFullname(), msg);
+			logger.ferror("Unhandled exception {} : {}", exception_->getClass().getFullname(), msg);
+			throw JavaException(exception_->getClass().getFullname(), msg);
 		}
-		_rt.currentFrame().setException(exception_);
 	}
 }
 
