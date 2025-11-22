@@ -29,11 +29,12 @@
 #include <system/singleton.hpp>
 #include <vector>
 
+#include "object.hpp"
+
 #define trace ::sandvik::getTrace()
 
 namespace sandvik {
 	class Frame;
-	class Object;
 	class Disassembler;
 	/** @brief Trace class
 	 */
@@ -63,7 +64,7 @@ namespace sandvik {
 			 * @param static_ method is static
 			 */
 			void logCall(const std::string& type_, const std::string& class_, const std::string& method_, const std::string& signature_,
-			             const std::vector<std::shared_ptr<Object>>& args_, bool static_);
+			             const std::vector<ObjectRef>& args_, bool static_);
 
 		private:
 			friend class Singleton<Trace>;

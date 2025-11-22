@@ -115,7 +115,7 @@ void NativeCallHelper::prepareCallContext(CallContext& context, const std::strin
 	context.prepared = true;
 }
 
-uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType) {
+uintptr_t NativeCallHelper::getArgValue(std::vector<ObjectRef>::iterator& it, const char jniType) {
 	switch (jniType) {
 		case 'I':
 		case 'Z':
@@ -158,7 +158,7 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<std::shared_ptr<Object>>::it
 	}
 }
 
-std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, const char jniType) {
+ObjectRef NativeCallHelper::getReturnObject(uintptr_t result, const char jniType) {
 	switch (jniType) {
 		case 'V':
 			return nullptr;  // void return type
@@ -185,8 +185,8 @@ std::shared_ptr<Object> NativeCallHelper::getReturnObject(uintptr_t result, cons
 	}
 }
 
-std::shared_ptr<Object> NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::vector<std::shared_ptr<Object>>& args,
-                                                 const std::string& returnType, const std::string& paramTypes, bool isStatic) {
+ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::vector<ObjectRef>& args, const std::string& returnType,
+                                   const std::string& paramTypes, bool isStatic) {
 	_handles.clear();
 	// Create a temporary call context
 	std::vector<std::string> argTypes;

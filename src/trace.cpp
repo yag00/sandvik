@@ -51,7 +51,7 @@ void Trace::logInstruction(const uint64_t pc_, const std::string& function_, con
 }
 
 void Trace::logCall(const std::string& type_, const std::string& class_, const std::string& method_, const std::string& signature_,
-                    const std::vector<std::shared_ptr<Object>>& args_, bool static_) {
+                    const std::vector<ObjectRef>& args_, bool static_) {
 	if (!_trace_calls) {
 		return;
 	}

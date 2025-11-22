@@ -347,7 +347,7 @@ void Interpreter::executeClinit(Class& class_) const {
 	thread.join();
 }
 
-void Interpreter::executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_) {
+void Interpreter::executeNativeMethod(const Method& method_, const std::vector<ObjectRef>& args_) {
 	// Construct the JNI symbol name
 	std::string symbolName = "Java_" + std::regex_replace(method_.getClass().getFullname(), std::regex("\\."), "_") + "_" + method_.getName();
 	if (method_.isOverload()) {
@@ -374,7 +374,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 	_rt.currentFrame().setReturnObject(ret);
 }
 
-void Interpreter::handleException(std::shared_ptr<Object> exception_) {
+void Interpreter::handleException(ObjectRef exception_) {
 	if (!exception_->isClass()) {
 		throw VmException("throw operand is not an object!");
 	}
@@ -418,7 +418,7 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 	}
 }
 
-std::vector<std::shared_ptr<Object>> Interpreter::getInvokeMethodArgs(const uint8_t* operand_) const {
+std::vector<ObjectRef> Interpreter::getInvokeMethodArgs(const uint8_t* operand_) const {
 	auto& frame = _rt.currentFrame();
 	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
 	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
@@ -428,7 +428,7 @@ std::vector<std::shared_ptr<Object>> Interpreter::getInvokeMethodArgs(const uint
 	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	std::vector<std::shared_ptr<Object>> args{};
+	std::vector<ObjectRef> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
 		auto obj = frame.getObjRegister(regs[i]);
 		args.push_back(obj);
@@ -2494,7 +2494,7 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	std::vector<std::shared_ptr<Object>> args;
+	std::vector<ObjectRef> args;
 	for (uint8_t i = 0; i < regCount; ++i) {
 		args.push_back(frame.getObjRegister(startReg + i));
 	}
@@ -2582,7 +2582,7 @@ void Interpreter::invoke_direct_range(const uint8_t* operand_) {
 		executeClinit(cls);
 	}
 
-	std::vector<std::shared_ptr<Object>> args;
+	std::vector<ObjectRef> args;
 	for (uint8_t i = 0; i < regCount; ++i) {
 		args.push_back(frame.getObjRegister(startReg + i));
 	}

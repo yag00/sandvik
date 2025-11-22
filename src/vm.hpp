@@ -27,6 +27,8 @@
 #include <thread>
 #include <vector>
 
+#include "object.hpp"
+
 /** @brief sandvik : project namespace */
 namespace sandvik {
 	class Class;
@@ -34,7 +36,6 @@ namespace sandvik {
 	class SharedLibrary;
 	class NativeInterface;
 	class JThread;
-	class Object;
 	/** @class Vm
 	 *  @brief Dalvik Java Virtual Machine implementation.
 	 *
@@ -101,7 +102,7 @@ namespace sandvik {
 			 * @param thread_ Java Thread Object
 			 * @return Reference to the created thread
 			 */
-			JThread& newThread(std::shared_ptr<Object> thread_);
+			JThread& newThread(ObjectRef thread_);
 			/** Get a thread by name
 			 * @param name_ Name of the thread
 			 * @return Reference to the thread

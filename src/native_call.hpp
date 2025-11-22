@@ -30,8 +30,9 @@
 
 #include "jni/jni.h"
 
+#include "object.hpp"
+
 namespace sandvik {
-	class Object;
 	class NativeInterface;
 	/** @brief Helper class to invoke native functions */
 	class NativeCallHelper {
@@ -48,8 +49,8 @@ namespace sandvik {
 			 * @param paramTypes String representing the parameter types in JNI format
 			 * @param isStatic Boolean indicating if the method is static
 			 * @param returnType String representing the return type in JNI format */
-			std::shared_ptr<Object> invoke(void* functionPtr, JNIEnv* env, const std::vector<std::shared_ptr<Object>>& args, const std::string& returnType,
-			                               const std::string& paramTypes, bool isStatic = false);
+			ObjectRef invoke(void* functionPtr, JNIEnv* env, const std::vector<ObjectRef>& args, const std::string& returnType, const std::string& paramTypes,
+			                 bool isStatic = false);
 
 		private:
 			NativeInterface& _nif;
@@ -65,8 +66,8 @@ namespace sandvik {
 			ffi_type* getFFITypeForJNIType(char jniType) const;
 			ffi_type* getFFITypeForReturn(const std::string& returnType) const;
 			void prepareCallContext(CallContext& context, const std::string& paramTypes, const std::string& returnType, std::vector<std::string>& argTypes);
-			uintptr_t getArgValue(std::vector<std::shared_ptr<Object>>::iterator& it, const char jniType);
-			std::shared_ptr<Object> getReturnObject(uintptr_t result, const char jniType);
+			uintptr_t getArgValue(std::vector<ObjectRef>::iterator& it, const char jniType);
+			ObjectRef getReturnObject(uintptr_t result, const char jniType);
 
 			std::vector<uintptr_t> _handles;
 	};

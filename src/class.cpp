@@ -151,7 +151,7 @@ bool Class::isInstanceOf(const Class& class_) const {
 	}
 	return false;
 }
-bool Class::isInstanceOf(const std::shared_ptr<Object>& class_) const {
+bool Class::isInstanceOf(const ObjectRef class_) const {
 	if (class_->isNull()) {
 		return false;
 	}

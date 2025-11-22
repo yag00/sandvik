@@ -37,7 +37,7 @@ using namespace sandvik;
 namespace {
 	class String {
 		public:
-			static void equals(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
+			static void equals(Frame& frame_, std::vector<ObjectRef>& args_) {
 				auto str0 = args_[0];
 				auto str1 = args_[1];
 				if (str0->isString() && str1->isString()) {
@@ -47,7 +47,7 @@ namespace {
 				}
 				frame_.setReturnValue(0);
 			}
-			static void length(Frame& frame_, std::vector<std::shared_ptr<Object>>& args_) {
+			static void length(Frame& frame_, std::vector<ObjectRef>& args_) {
 				if (args_.size() < 1) {
 					throw std::runtime_error("Not enough arguments");
 				}

@@ -24,9 +24,10 @@
 #include <thread>
 #include <vector>
 
+#include "object.hpp"
+
 namespace sandvik {
 	class Vm;
-	class Object;
 	class Frame;
 	class Method;
 	class Interpreter;
@@ -45,7 +46,7 @@ namespace sandvik {
 			 * @param classloader_ Reference to the class loader
 			 * @param thread_ Shared pointer to the Java Thread object
 			 */
-			explicit JThread(Vm& vm_, ClassLoader& classloader_, std::shared_ptr<Object> thread_);
+			explicit JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_);
 			~JThread();
 
 			/** @brief Gets the name of the thread.
@@ -100,11 +101,11 @@ namespace sandvik {
 			/** @brief Gets the thread object.
 			 * @return Shared pointer to the thread object
 			 */
-			std::shared_ptr<Object> getThreadObject() const;
+			ObjectRef getThreadObject() const;
 			/** @brief Gets the return object of the thread.
 			 * @return Shared pointer to the return object
 			 */
-			std::shared_ptr<Object> getReturnObject() const;
+			ObjectRef getReturnObject() const;
 			/** @brief Gets the integer (32-bit) return value of the thread.
 			 * @return Return value
 			 */
@@ -116,7 +117,7 @@ namespace sandvik {
 			/** @brief Sets the return object of the thread.
 			 * @param ret_ Shared pointer to the return object
 			 */
-			void setReturnObject(std::shared_ptr<Object> ret_);
+			void setReturnObject(ObjectRef ret_);
 			/** @brief Sets the integer (32-bit) return value of the thread.
 			 * @param ret_ Return value
 			 */
@@ -138,8 +139,8 @@ namespace sandvik {
 			std::unique_ptr<Interpreter> _interpreter;
 
 			std::vector<std::unique_ptr<Frame>> _stack;
-			std::shared_ptr<Object> _objectReturn;
-			std::shared_ptr<Object> _thisThread;
+			ObjectRef _objectReturn;
+			ObjectRef _thisThread;
 
 			std::thread _thread;
 			std::atomic<bool> _isRunning{false};

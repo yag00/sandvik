@@ -24,10 +24,11 @@
 #include <string>
 #include <vector>
 
+#include "object.hpp"
+
 namespace sandvik {
 	class ClassLoader;
 	class Frame;
-	class Object;
 	class Class;
 	/**
 	 * @class ClassBuilder
@@ -54,7 +55,7 @@ namespace sandvik {
 			 * @param function_ Function implementing the method
 			 */
 			void addVirtualMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
-			                      std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_);
+			                      std::function<void(Frame&, std::vector<ObjectRef>&)> function_);
 			/** @brief Adds a regular method to the class
 			 * @param name_ Name of the method
 			 * @param signature_ Signature of the method
@@ -62,7 +63,7 @@ namespace sandvik {
 			 * @param function_ Function implementing the method
 			 */
 			void addMethod(const std::string& name_, const std::string& signature_, uint64_t flags_,
-			               std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> function_);
+			               std::function<void(Frame&, std::vector<ObjectRef>&)> function_);
 
 			/** @brief Adds a field to the class
 			 * @param name_ Name of the field
@@ -70,7 +71,7 @@ namespace sandvik {
 			 * @param isStatic_ Whether the field is static
 			 * @param value_ Initial value of the field
 			 */
-			void addField(const std::string& name_, const std::string& type_, bool isStatic_, std::shared_ptr<Object> value_ = nullptr);
+			void addField(const std::string& name_, const std::string& type_, bool isStatic_, ObjectRef value_ = nullptr);
 
 			/** @brief Sets the superclass of the class
 			 * @param superClassName_ Name of the superclass

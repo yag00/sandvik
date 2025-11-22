@@ -23,13 +23,14 @@
 #include <string>
 #include <vector>
 
+#include "object.hpp"
+
 namespace LIEF::DEX {
 	class Field;
 }  // namespace LIEF::DEX
 
 namespace sandvik {
 	class Class;
-	class Object;
 	/** @brief Represents a field in a Java class. */
 	class Field {
 		public:
@@ -72,7 +73,7 @@ namespace sandvik {
 			/** @brief Gets the field's Object value.
 			 * @return Shared pointer to the Object value.
 			 */
-			std::shared_ptr<Object> getObjectValue() const;
+			ObjectRef getObjectValue() const;
 
 			/** @brief Sets the field's integer (32-bit) value.
 			 * @param value Integer value to set.
@@ -89,7 +90,7 @@ namespace sandvik {
 			/** @brief Sets the field's Object value.
 			 * @param value Shared pointer to the Object value.
 			 */
-			void setObjectValue(std::shared_ptr<Object> value);
+			void setObjectValue(ObjectRef value);
 
 			/** @brief Gets the Class that owns this field.
 			 * @return Reference to the Class.
@@ -116,7 +117,7 @@ namespace sandvik {
 
 			uint64_t _value;
 			std::string _strValue;
-			std::shared_ptr<Object> _obj;
+			ObjectRef _obj;
 	};
 }  // namespace sandvik
 

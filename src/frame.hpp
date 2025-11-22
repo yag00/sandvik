@@ -29,7 +29,6 @@
 
 namespace sandvik {
 	class Method;
-	class Object;
 	/** @class Frame
 	 *  @brief Represents a stack frame for method execution.
 	 *
@@ -94,21 +93,21 @@ namespace sandvik {
 			 *  @param reg Register index.
 			 *  @param value Value to set.
 			 */
-			void setObjRegister(uint32_t reg, std::shared_ptr<Object> value);
+			void setObjRegister(uint32_t reg, ObjectRef value);
 			/** @brief Gets the Object register value.
 			 *  @param reg Register index.
 			 *  @return Value of the register.
 			 */
-			std::shared_ptr<Object> getObjRegister(uint32_t reg);
+			ObjectRef getObjRegister(uint32_t reg);
 
 			/** @brief Gets the return Object value.
 			 *  @return Return Object.
 			 */
-			std::shared_ptr<Object> getReturnObject() const;
+			ObjectRef getReturnObject() const;
 			/** @brief Gets the exception Object.
 			 *  @return Exception Object.
 			 */
-			std::shared_ptr<Object> getException() const;
+			ObjectRef getException() const;
 			/** @brief Gets the integer (32-bit) return value.
 			 *  @return Return value.
 			 */
@@ -120,7 +119,7 @@ namespace sandvik {
 			/** @brief Sets the return Object value.
 			 *  @param ret_ Shared pointer to the return Object.
 			 */
-			void setReturnObject(std::shared_ptr<Object> ret_);
+			void setReturnObject(ObjectRef ret_);
 			/** @brief Sets the integer (32-bit) return value.
 			 *  @param ret_ Return value.
 			 */
@@ -132,7 +131,7 @@ namespace sandvik {
 			/** @brief Sets the exception Object.
 			 *  @param exception_ Shared pointer to the exception Object.
 			 */
-			void setException(std::shared_ptr<Object> exception_);
+			void setException(ObjectRef exception_);
 
 			/** @brief Gets the program counter.
 			 *  @return Program counter.
@@ -175,13 +174,13 @@ namespace sandvik {
 			Method& _method;
 			std::vector<std::string> _args;
 
-			std::vector<std::shared_ptr<Object>> _registers;
+			std::vector<ObjectRef> _registers;
 
 			uint16_t _pc = 0;
 
-			std::shared_ptr<Object> _null;
-			std::shared_ptr<Object> _objectReturn;
-			std::shared_ptr<Object> _exception;
+			ObjectRef _null;
+			ObjectRef _objectReturn;
+			ObjectRef _exception;
 	};
 }  // namespace sandvik
 

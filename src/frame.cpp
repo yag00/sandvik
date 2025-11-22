@@ -161,7 +161,7 @@ double Frame::getDoubleRegister(uint32_t reg) const {
 	return std::bit_cast<double>(value);
 }
 
-void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
+void Frame::setObjRegister(uint32_t reg, ObjectRef value) {
 	logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->toString());
 	if (reg >= _registers.size()) {
 		throw VmException("setObjRegister: reg={} out of bounds", reg);
@@ -169,7 +169,7 @@ void Frame::setObjRegister(uint32_t reg, std::shared_ptr<Object> value) {
 	_registers[reg] = value;
 }
 
-std::shared_ptr<Object> Frame::getObjRegister(uint32_t reg) {
+ObjectRef Frame::getObjRegister(uint32_t reg) {
 	if (reg >= _registers.size()) {
 		throw VmException("getObjRegister: reg={} out of bounds", reg);
 	}
@@ -177,11 +177,11 @@ std::shared_ptr<Object> Frame::getObjRegister(uint32_t reg) {
 	return _registers[reg];
 }
 
-std::shared_ptr<Object> Frame::getException() const {
+ObjectRef Frame::getException() const {
 	return _exception;
 }
 
-std::shared_ptr<Object> Frame::getReturnObject() const {
+ObjectRef Frame::getReturnObject() const {
 	return _objectReturn;
 }
 
@@ -198,10 +198,10 @@ int64_t Frame::getReturnDoubleValue() const {
 	}
 	return _objectReturn->getLongValue();
 }
-void Frame::setException(std::shared_ptr<Object> exception_) {
+void Frame::setException(ObjectRef exception_) {
 	_exception = exception_;
 }
-void Frame::setReturnObject(std::shared_ptr<Object> ret_) {
+void Frame::setReturnObject(ObjectRef ret_) {
 	_objectReturn = ret_;
 }
 void Frame::setReturnValue(int32_t ret_) {

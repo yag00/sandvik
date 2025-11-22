@@ -33,7 +33,7 @@ JNIHandleMap::~JNIHandleMap() {
 	_table.clear();
 }
 
-jobject JNIHandleMap::toJObject(const std::shared_ptr<Object>& obj) {
+jobject JNIHandleMap::toJObject(const ObjectRef& obj) {
 	std::scoped_lock lock(_mutex);
 	if (!obj) return nullptr;
 	// Store in a map: raw pointer (jobject) -> shared_ptr<Object>
@@ -43,7 +43,7 @@ jobject JNIHandleMap::toJObject(const std::shared_ptr<Object>& obj) {
 	return handle;
 }
 
-std::shared_ptr<Object> JNIHandleMap::fromJObject(jobject handle) {
+ObjectRef JNIHandleMap::fromJObject(jobject handle) {
 	std::scoped_lock lock(_mutex);
 	if (!handle) return nullptr;
 	return _table[handle];  // look up shared_ptr

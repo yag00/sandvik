@@ -40,7 +40,7 @@ JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
 	_thisThread->setField("priority", Object::make(5));  // normal priority
 }
 
-JThread::JThread(Vm& vm_, ClassLoader& classloader_, std::shared_ptr<Object> thread_)
+JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
     : _vm(vm_), _classloader(classloader_), _interpreter(std::make_unique<Interpreter>(*this)) {
 	_thisThread = thread_;
 	_name = _thisThread->getField("name")->str();
@@ -151,11 +151,11 @@ void JThread::join() {
 	_vm.deleteThread(_name);
 }
 
-std::shared_ptr<Object> JThread::getThreadObject() const {
+ObjectRef JThread::getThreadObject() const {
 	return _thisThread;
 }
 
-std::shared_ptr<Object> JThread::getReturnObject() const {
+ObjectRef JThread::getReturnObject() const {
 	return _objectReturn;
 }
 
@@ -173,7 +173,7 @@ int64_t JThread::getReturnDoubleValue() const {
 	return _objectReturn->getLongValue();
 }
 
-void JThread::setReturnObject(std::shared_ptr<Object> ret_) {
+void JThread::setReturnObject(ObjectRef ret_) {
 	_objectReturn = ret_;
 }
 

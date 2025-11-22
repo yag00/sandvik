@@ -210,7 +210,7 @@ JThread& Vm::newThread(const std::string& name_) {
 	return *(_threads.back());
 }
 
-JThread& Vm::newThread(std::shared_ptr<Object> thread_) {
+JThread& Vm::newThread(ObjectRef thread_) {
 	std::unique_lock lock(_mutex);
 	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, thread_));
 	return *(_threads.back());

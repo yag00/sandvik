@@ -27,9 +27,10 @@
 #include <string>
 #include <vector>
 
+#include "object.hpp"
+
 namespace sandvik {
 	class Method;
-	class Object;
 	class Class;
 	class JThread;
 	/** @brief Interpreter class
@@ -486,11 +487,11 @@ namespace sandvik {
 
 			std::vector<std::function<void(const uint8_t* operand_)>> _dispatch;
 
-			void handleException(std::shared_ptr<Object> exception_);
+			void handleException(ObjectRef exception_);
 			void executeClinit(Class& class_) const;
-			void executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_);
+			void executeNativeMethod(const Method& method_, const std::vector<ObjectRef>& args_);
 
-			std::vector<std::shared_ptr<Object>> getInvokeMethodArgs(const uint8_t* operand_) const;
+			std::vector<ObjectRef> getInvokeMethodArgs(const uint8_t* operand_) const;
 
 			JThread& _rt;
 			std::map<uint8_t, uint64_t> _instcoverage;
