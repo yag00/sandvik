@@ -2320,8 +2320,9 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			if (vmethod->hasBytecode()) {
 				auto& newframe = _rt.newFrame(*vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (auto i = 0; i < args.size(); i++) {
-					newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+				for (size_t i = 0; i < args.size(); ++i) {
+					uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+					newframe.setObjRegister(regIdx, args[i]);
 				}
 			} else {
 				vmethod->execute(frame, args);
@@ -2375,8 +2376,9 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (auto i = 0; i < args.size(); i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+			for (size_t i = 0; i < args.size(); ++i) {
+				uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+				newframe.setObjRegister(regIdx, args[i]);
 			}
 		}
 	}
@@ -2408,8 +2410,9 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 			auto& newframe = _rt.newFrame(method);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (auto i = 0; i < args.size(); i++) {
-				newframe.setObjRegister(method.getNbRegisters() - args.size() + i, args[i]);
+			for (size_t i = 0; i < args.size(); ++i) {
+				uint32_t regIdx = method.getNbRegisters() - args.size() + i;
+				newframe.setObjRegister(regIdx, args[i]);
 			}
 		}
 	}
@@ -2471,8 +2474,9 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (auto i = 0; i < args.size(); i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+			for (size_t i = 0; i < args.size(); ++i) {
+				uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+				newframe.setObjRegister(regIdx, args[i]);
 			}
 		}
 	} else {
@@ -2543,8 +2547,9 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 			if (vmethod->hasBytecode()) {
 				auto& newframe = _rt.newFrame(*vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (auto i = 0; i < args.size(); i++) {
-					newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+				for (size_t i = 0; i < args.size(); ++i) {
+					uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+					newframe.setObjRegister(regIdx, args[i]);
 				}
 			} else {
 				vmethod->execute(frame, args);

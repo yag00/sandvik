@@ -25,6 +25,7 @@ def options(opt):
 
 	opt.add_option('--debug', action='store_true', default=False, help = 'configure build in debug mode', dest = 'debug')
 	opt.add_option('--tests', action='store_true', default=False, help='Launch all tests for the target', dest='tests')
+	opt.add_option('--gcc', action='store_true', default=False, help = 'build with gcc instead of clang', dest = 'gcc')
 	opt.add_option('--test-name', action='store', default=None, help='Name of test to run', dest='test_name')
 
 def configure(conf):
@@ -42,8 +43,9 @@ def configure(conf):
 	conf.load('doxygen')
 
 	# set clang/clang++ as default compiler
-	c_compiler['linux'] = ['clang'] + c_compiler['linux']
-	cxx_compiler['linux'] = ['clang++'] + cxx_compiler['linux']
+	if not Options.options.gcc:
+		c_compiler['linux'] = ['clang'] + c_compiler['linux']
+		cxx_compiler['linux'] = ['clang++'] + cxx_compiler['linux']
 	conf.load('compiler_c compiler_cxx')
 	conf.msg('Checking for c/c++ compiler version', '.'.join(conf.env['CC_VERSION']))
 	if conf.env.CC_NAME == 'clang':

@@ -1246,7 +1246,7 @@ void NativeInterface::GetCharArrayRegion(JNIEnv *env, jcharArray array, jsize st
 		throw ClassCastException("GetCharArrayRegion: not an array");
 	}
 	Array &arr = static_cast<Array &>(*arrObj);
-	if (start < 0 || len < 0 || start + len > arr.getArrayLength()) {
+	if (start < 0 || len < 0 || (uint32_t)(start + len) > arr.getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("GetCharArrayRegion: invalid start/len");
 	}
 	if (!buf) {
@@ -1281,11 +1281,11 @@ void NativeInterface::SetByteArrayRegion(JNIEnv *env, jbyteArray array, jsize st
 void NativeInterface::SetCharArrayRegion(JNIEnv *env, jcharArray array, jsize start, jsize len, const jchar *buf) {
 	auto jenv = static_cast<NativeInterface *>(env);
 	auto arrObj = jenv->getHandles().fromJObject(array);
-	if (!arrObj && !arrObj->isArray()) {
+	if (!arrObj->isArray()) {
 		throw ClassCastException("SetCharArrayRegion: not an array");
 	}
 	Array &arr = static_cast<Array &>(*arrObj);
-	if (start < 0 || len < 0 || start + len > arr.getArrayLength()) {
+	if (start < 0 || len < 0 || (uint32_t)(start + len) > arr.getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("SetCharArrayRegion: invalid start/len");
 	}
 	if (!buf) {

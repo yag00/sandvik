@@ -115,8 +115,9 @@ extern "C" {
 		auto this_ptr = sandvik::native::getString(obj);
 		auto array = sandvik::native::getArray(chars);
 		auto arrLen = array->getArrayLength();
+		uint32_t maxlen = offset + count;
 
-		if (offset < 0 || count < 0 || (offset + count) > arrLen) {
+		if (offset < 0 || count < 0 || maxlen > arrLen) {
 			throw sandvik::StringIndexOutOfBoundsException("offset/count out of range");
 		}
 
@@ -141,10 +142,9 @@ extern "C" {
 		auto this_ptr = sandvik::native::getString(obj);
 		const auto& str = this_ptr->str();
 		logger.ferror("String value: '{}'", str);
-		const auto str_len = str.size();
 
 		// Validate source indices
-		if (srcBegin < 0 || srcEnd < 0 || srcBegin > srcEnd || srcEnd > str_len) {
+		if (srcBegin < 0 || srcEnd < 0 || srcBegin > srcEnd || srcEnd > (jint)str.size()) {
 			throw sandvik::StringIndexOutOfBoundsException("srcBegin/srcEnd out of range");
 		}
 		// Validate destination array
