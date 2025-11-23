@@ -314,6 +314,8 @@ namespace sandvik {
 
 using namespace sandvik;
 
+static std::unique_ptr<NullObject> NULL_OBJ = std::make_unique<NullObject>();
+
 ObjectRef Object::make(Class& class_) {
 	if (class_.getFullname() == "java.lang.String") {
 		auto u = std::make_unique<StringObject>(class_, "");
@@ -341,10 +343,7 @@ ObjectRef Object::make(ClassLoader& classloader_, const std::string& str_) {
 	return ptr;
 }
 ObjectRef Object::makeNull() {
-	auto u = std::make_unique<NullObject>();
-	auto ptr = u.get();
-	GC::getInstance().track(std::move(u));
-	return ptr;
+	return NULL_OBJ.get();
 }
 ObjectRef Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
