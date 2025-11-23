@@ -132,6 +132,16 @@ namespace sandvik {
 			 */
 			bool isRunning() const;
 
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
+
+			/** @brief Suspends the thread execution. */
+			void suspend();
+			/** @brief Resumes the thread execution. */
+			void resume();
+
 		private:
 			Vm& _vm;
 			ClassLoader& _classloader;

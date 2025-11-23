@@ -109,6 +109,11 @@ namespace sandvik {
 			 */
 			bool isStatic() const;
 
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
+
 		private:
 			Class& _class;
 			std::string _name;

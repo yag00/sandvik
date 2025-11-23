@@ -511,6 +511,21 @@ void Object::setField(const std::string& name_, ObjectRef value_) {
 	_fields[name_] = value_;
 }
 
+void Object::setMarked(bool v_) {
+	_marked.store(v_, std::memory_order_relaxed);
+}
+bool Object::isMarked() const {
+	return _marked.load(std::memory_order_relaxed);
+}
+void Object::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	for (const auto& kv : _fields) {
+		if (kv.second) {
+			visitor_(kv.second);
+			kv.second->visitReferences(visitor_);
+		}
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 NumberObject::NumberObject(uint64_t value_) : _value(value_) {
 }

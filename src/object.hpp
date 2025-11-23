@@ -19,7 +19,9 @@
 #ifndef __OBJECT_HPP__
 #define __OBJECT_HPP__
 
+#include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -382,6 +384,23 @@ namespace sandvik {
 			void notifyAll();
 			///@}
 
+			/**
+			 * @name GC support
+			 */
+			///@{
+			/** Mark bit used by mark-sweep collector
+			 * @param v_ true to mark the object, false to unmark
+			 */
+			void setMarked(bool v_);
+			/** check if object is marked
+			 * @return true if object is marked */
+			bool isMarked() const;
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			virtual void visitReferences(const std::function<void(Object*)>& visitor_) const;
+			///@}
+
 		protected:
 			/** Check monitor ownership */
 			void monitorCheck() const;
@@ -389,6 +408,8 @@ namespace sandvik {
 			std::map<std::string, ObjectRef, std::less<>> _fields;
 			/** Monitor for thread synchronization */
 			std::unique_ptr<Monitor> _monitor;
+			/** Mark bit for GC */
+			std::atomic<bool> _marked{false};
 	};
 }  // namespace sandvik
 

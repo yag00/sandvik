@@ -34,6 +34,7 @@ namespace sandvik {
 	class ClassLoader;
 	class Monitor;
 	class Method;
+	class Object;
 	class Field;
 	/** @brief Represents a Java class. */
 	class Class {
@@ -193,6 +194,11 @@ namespace sandvik {
 			 * used for synchronization of static fields
 			 */
 			void monitorCheck() const;
+
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
 		private:
 			ClassLoader& _classloader;

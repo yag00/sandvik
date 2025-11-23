@@ -218,3 +218,15 @@ void Frame::debug() const {
 		logger.fdebug("register[{}] = {}", i, _registers[i]->toString());
 	}
 }
+
+void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	visitor_(_null);
+	visitor_(_objectReturn);
+	visitor_(_exception);
+	for (const auto& reg : _registers) {
+		if (reg && !reg->isNull()) {
+			visitor_(reg);
+			reg->visitReferences(visitor_);
+		}
+	}
+}

@@ -318,3 +318,11 @@ void Class::monitorExit() {
 void Class::monitorCheck() const {
 	_monitor->check();
 }
+
+void Class::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	for (const auto& [name, field] : _fields) {
+		if (field->isStatic()) {
+			field->visitReferences(visitor_);
+		}
+	}
+}

@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include <functional>
 #include <memory>
 #include <stack>
 #include <vector>
@@ -153,6 +154,11 @@ namespace sandvik {
 
 			/** @brief Outputs a debug representation of the frame. */
 			void debug() const;
+
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
 		protected:
 			/** @brief Increases the size of the register array.

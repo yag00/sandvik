@@ -20,15 +20,47 @@
 
 #include "monitor.hpp"
 #include "object.hpp"
+#include "system/logger.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
+
+void GC::manageVm(Vm* vm_) {
+	_vms.push_back(vm_);
+}
 
 void GC::release() {
 	_objects.clear();
 }
 
 void GC::collect() {
-	// For now, do nothing.
+	// Stop-the-world: suspend all application threads
+	for (auto& vm : _vms) {
+		vm->suspend();
+	}
+	logger.fdebug("GC: Starting garbage collection cycle... ({} objects)", _objects.size());
+
+	// Mark reachable objects:
+	//  scan each thread's stacks/frames
+	//  scan static fields in loaded classes
+	//  @todo : scan thread's local JNI handles table
+	//  @todo scan global JNI handles
+	for (auto& vm : _vms) {
+		vm->visitReferences([](Object* obj) { obj->setMarked(true); });
+	}
+
+	// Sweeping: free unmarked objects
+	_objects.erase(std::remove_if(_objects.begin(), _objects.end(), [](const std::unique_ptr<Object>& obj) { return !obj->isMarked(); }), _objects.end());
+	// Clear marks for next GC for live objects
+	for (auto& obj : _objects) {
+		obj->setMarked(false);
+	}
+
+	logger.fdebug("GC: {} live objects", _objects.size());
+	// Resume the world
+	for (auto& vm : _vms) {
+		vm->resume();
+	}
 }
 
 void GC::track(std::unique_ptr<Object> obj_) {

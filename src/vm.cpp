@@ -27,10 +27,12 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "frame.hpp"
+#include "gc.hpp"
 #include "interpreter.hpp"
 #include "jni.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
+#include "monitor.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
@@ -39,6 +41,7 @@
 using namespace sandvik;
 
 Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
+	GC::getInstance().manageVm(this);
 	logger.info("VM instance created.");
 
 	ClassBuilder(*_classloader, "", "boolean").finalize();
@@ -257,4 +260,23 @@ std::string Vm::getProperty(const std::string& name_) const {
 
 void Vm::setProperty(const std::string& name_, const std::string& value_) {
 	_properties[name_] = value_;
+}
+
+void Vm::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	_classloader->visitReferences(visitor_);
+	for (const auto& thread : _threads) {
+		thread->visitReferences(visitor_);
+	}
+}
+
+void Vm::suspend() {
+	for (const auto& thread : _threads) {
+		thread->suspend();
+	}
+}
+
+void Vm::resume() {
+	for (const auto& thread : _threads) {
+		thread->resume();
+	}
 }

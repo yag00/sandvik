@@ -135,6 +135,11 @@ namespace sandvik {
 			 */
 			ObjectRef clone() const override;
 
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const override;
+
 		private:
 			uint32_t flattenIndex(const std::vector<uint32_t>& indices_) const;
 

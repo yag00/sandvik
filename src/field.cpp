@@ -129,3 +129,10 @@ void Field::setObjectValue(ObjectRef value) {
 	}
 	_obj = value;
 }
+
+void Field::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	if (_obj) {
+		visitor_(_obj);
+		_obj->visitReferences(visitor_);
+	}
+}

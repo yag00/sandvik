@@ -184,3 +184,19 @@ void JThread::setReturnValue(int32_t ret_) {
 void JThread::setReturnDoubleValue(int64_t ret_) {
 	_objectReturn = Object::make(ret_);
 }
+
+void JThread::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	visitor_(_thisThread);
+	visitor_(_objectReturn);
+	for (const auto& frame : _stack) {
+		frame->visitReferences(visitor_);
+	}
+}
+
+void JThread::suspend() {
+	logger.warning("Suspending thread '{}' not implemented", _name);
+}
+
+void JThread::resume() {
+	logger.warning("Resuming thread '{}' not implemented", _name);
+}

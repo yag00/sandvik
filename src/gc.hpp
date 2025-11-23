@@ -20,16 +20,21 @@
 #define __GARBAGE_COLLECTOR_HPP__
 
 #include <memory>
-#include <system/singleton.hpp>
 #include <vector>
 
+#include "system/singleton.hpp"
+
 namespace sandvik {
+	class Vm;
 	class Object;
 	/** @brief Garbage Collector singleton class.
 	 */
 	class GC : public Singleton<GC> {
 		public:
-		public:
+			/** Add Vm to be managed by the GC
+			 * @param vm_ Vm to manage
+			 */
+			void manageVm(Vm* vm_);
 			/** release all tracked objects */
 			void release();
 			/** perform garbage collection */
@@ -43,6 +48,8 @@ namespace sandvik {
 		private:
 			// tracked objects
 			std::vector<std::unique_ptr<Object>> _objects;
+			// Vms
+			std::vector<Vm*> _vms;
 	};
 }  // namespace sandvik
 

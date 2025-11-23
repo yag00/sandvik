@@ -197,3 +197,13 @@ ObjectRef Array::clone() const {
 	}
 	return newArray;
 }
+
+void Array::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	Object::visitReferences(visitor_);
+	for (size_t i = 0; i < _length; ++i) {
+		Object* obj = (*_data)[_offset + i];
+		if (obj != nullptr) {
+			visitor_(obj);
+		}
+	}
+}
