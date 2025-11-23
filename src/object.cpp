@@ -30,6 +30,7 @@
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
+#include "gc.hpp"
 #include "monitor.hpp"
 #include "system/logger.hpp"
 
@@ -315,27 +316,46 @@ using namespace sandvik;
 
 ObjectRef Object::make(Class& class_) {
 	if (class_.getFullname() == "java.lang.String") {
-		return new StringObject(class_, "");
+		auto u = std::make_unique<StringObject>(class_, "");
+		auto ptr = u.get();
+		GC::getInstance().track(std::move(u));
+		return ptr;
+	} else {
+		auto u = std::make_unique<ObjectClass>(class_);
+		auto ptr = u.get();
+		GC::getInstance().track(std::move(u));
+		return ptr;
 	}
-	return new ObjectClass(class_);
 }
 ObjectRef Object::make(uint64_t number_) {
-	return new NumberObject(number_);
+	auto u = std::make_unique<NumberObject>(number_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 ObjectRef Object::make(ClassLoader& classloader_, const std::string& str_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.String");
-	return new StringObject(clazz, str_);
+	auto u = std::make_unique<StringObject>(clazz, str_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 ObjectRef Object::makeNull() {
-	return new NullObject();
+	auto u = std::make_unique<NullObject>();
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 ObjectRef Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
-	return new ConstClassObject(clazz, classtype_);
+	auto u = std::make_unique<ConstClassObject>(clazz, classtype_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 
 ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
-	return new Array(classtype_, dimensions_);
+	return Array::make(classtype_, dimensions_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -599,10 +619,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 				case 'J':
 				case 'F':
 				case 'D':
-					_fields[fieldname] = new NumberObject(0);
+					_fields[fieldname] = Object::make(0);
 					break;
 				default:
-					_fields[fieldname] = new NullObject();
+					_fields[fieldname] = Object::makeNull();
 					break;
 			}
 		}
@@ -625,10 +645,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 					case 'J':
 					case 'F':
 					case 'D':
-						_fields[fieldname] = new NumberObject(0);
+						_fields[fieldname] = Object::make(0);
 						break;
 					default:
-						_fields[fieldname] = new NullObject();
+						_fields[fieldname] = Object::makeNull();
 						break;
 				}
 			}
