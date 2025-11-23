@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "object.hpp"
+#include "system/thread.hpp"
 
 namespace sandvik {
 	class Vm;
@@ -33,10 +34,8 @@ namespace sandvik {
 	class Interpreter;
 	class ClassLoader;
 	/** @brief Java thread representation */
-	class JThread {
+	class JThread : public Thread {
 		public:
-			/** @brief Thread states */
-			enum class ThreadState { Starting, Running, Suspended, Stopped };
 			/** @brief Constructs a new Java thread.
 			 * @param vm_ Reference to the VM instance
 			 * @param classloader_ Reference to the class loader
@@ -49,20 +48,6 @@ namespace sandvik {
 			 * @param thread_ Shared pointer to the Java Thread object
 			 */
 			explicit JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_);
-			~JThread();
-
-			/** @brief Gets the name of the thread.
-			 * @return Name of the thread
-			 */
-			inline std::string getName() const {
-				return _name;
-			}
-			/** @brief Gets the thread ID.
-			 * @return Thread ID
-			 */
-			inline std::thread::id getId() const {
-				return _thread.get_id();
-			}
 
 			/** @brief Gets the VM instance.
 			 * @return Reference to the VM instance
@@ -93,13 +78,6 @@ namespace sandvik {
 			 */
 			uint64_t stackDepth() const;
 
-			/** @brief Runs the thread.
-			 * @param wait_ If true, waits for the thread to finish
-			 */
-			void run(bool wait_ = false);
-			/** @brief Joins the thread (waits for it to finish). */
-			void join();
-
 			/** @brief Gets the thread object.
 			 * @return Shared pointer to the thread object
 			 */
@@ -129,37 +107,25 @@ namespace sandvik {
 			 */
 			void setReturnDoubleValue(int64_t ret_);
 
-			/** @brief Checks if the thread is currently running.
-			 * @return true if the thread is running, false otherwise
-			 */
-			bool isRunning() const;
-			/** @brief Checks if the thread is currently running.
-			 * @return the thread state
-			 */
-			ThreadState getState() const;
-
 			/** Visit outgoing references
 			 * @param visitor_ function to call for each referenced object
 			 */
 			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
-			/** @brief Suspends the thread execution. */
-			void suspend();
-			/** @brief Resumes the thread execution. */
-			void resume();
+		protected:
+			/** @brief thread loop function of the thread implemented by subclass. */
+			void loop() override;
+			/** @brief thread loop end condition. */
+			bool done() override;
 
 		private:
 			Vm& _vm;
 			ClassLoader& _classloader;
-			std::string _name;
 			std::unique_ptr<Interpreter> _interpreter;
 
 			std::vector<std::unique_ptr<Frame>> _stack;
 			ObjectRef _objectReturn;
 			ObjectRef _thisThread;
-
-			std::thread _thread;
-			std::atomic<ThreadState> _state{ThreadState::Starting};
 	};
 }  // namespace sandvik
 

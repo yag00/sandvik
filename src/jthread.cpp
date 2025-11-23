@@ -34,16 +34,14 @@
 using namespace sandvik;
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
-    : _vm(vm_), _classloader(classloader_), _name(name_), _interpreter(std::make_unique<Interpreter>(*this)) {
+    : Thread(name_), _vm(vm_), _classloader(classloader_), _interpreter(std::make_unique<Interpreter>(*this)), _objectReturn(Object::makeNull()) {
 	_thisThread = Object::make(_classloader.getOrLoad("java/lang/Thread"));
 	_thisThread->setField("name", Object::make(_classloader, name_));
 	_thisThread->setField("priority", Object::make(5));  // normal priority
 }
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
-    : _vm(vm_), _classloader(classloader_), _interpreter(std::make_unique<Interpreter>(*this)) {
-	_thisThread = thread_;
-	_name = _thisThread->getField("name")->str();
+    : Thread(thread_->getField("name")->str()), _vm(vm_), _classloader(classloader_), _interpreter(std::make_unique<Interpreter>(*this)), _thisThread(thread_) {
 	auto target = _thisThread->getField("target");
 	if (target == nullptr || target == Object::makeNull()) {
 		throw VmException("Thread object has no target Runnable");
@@ -55,36 +53,12 @@ JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
 	frame.setObjRegister(method.getNbRegisters() - 1, target);
 }
 
-JThread::~JThread() {
-	if (_thread.joinable()) {
-		auto current = std::this_thread::get_id();
-		if (_thread.get_id() != current) {
-			try {
-				_thread.join();
-			} catch (const std::exception& ex) {
-				logger.ferror("Failed to join thread '{}': {}", _name, ex.what());
-			}
-		} else {
-			logger.fwarning("Destructor invoked from thread '{}' itself; detaching to avoid deadlock", _name);
-			_thread.detach();
-		}
-	}
-}
-
 Vm& JThread::vm() const {
 	return _vm;
 }
 
 ClassLoader& JThread::getClassLoader() const {
 	return _classloader;
-}
-
-JThread::ThreadState JThread::getState() const {
-	return _state.load();
-}
-
-bool JThread::isRunning() const {
-	return _state.load() == ThreadState::Running;
 }
 
 bool JThread::end() const {
@@ -120,39 +94,20 @@ Frame& JThread::currentFrame() const {
 	return *(_stack.back().get());
 }
 
-void JThread::run(bool wait_) {
-	_state.store(ThreadState::Running);
-	_thread = std::thread([this]() {
-		auto id = std::this_thread::get_id();
-		if (_name != "main") {
-			logger.addThread(id, _name);
-		}
-		logger.fdebug("Starting thread '{}'", _name);
-		try {
-			while (!end() && _vm.isRunning()) {
-				_interpreter->execute();
-			}
-		} catch (const std::exception& e) {
-			logger.error(e.what());
-			// terminate the whole VM on unhandled exception in thread
-			_vm.stop();
-			// clear the stack, call to end() will be true
-			_stack.clear();
-		}
-		logger.fdebug("End of thread '{}'", _name);
-		logger.removeThread(id);
-		_state.store(ThreadState::Stopped);
-	});
-	if (wait_ && _thread.joinable()) {
-		_thread.join();
+void JThread::loop() {
+	try {
+		_interpreter->execute();
+	} catch (const std::exception& e) {
+		logger.error(e.what());
+		// terminate the whole VM on unhandled exception in thread
+		_vm.stop();
+		// clear the stack, call to end() will be true
+		_stack.clear();
 	}
 }
 
-void JThread::join() {
-	if (_thread.joinable()) {
-		_thread.join();
-	}
-	_vm.deleteThread(_name);
+bool JThread::done() {
+	return _stack.empty() || !_vm.isRunning();
 }
 
 ObjectRef JThread::getThreadObject() const {
@@ -195,12 +150,4 @@ void JThread::visitReferences(const std::function<void(Object*)>& visitor_) cons
 	for (const auto& frame : _stack) {
 		frame->visitReferences(visitor_);
 	}
-}
-
-void JThread::suspend() {
-	logger.warning("Suspending thread '{}' not implemented", _name);
-}
-
-void JThread::resume() {
-	logger.warning("Resuming thread '{}' not implemented", _name);
 }
