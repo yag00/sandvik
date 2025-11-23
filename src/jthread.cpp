@@ -79,8 +79,12 @@ ClassLoader& JThread::getClassLoader() const {
 	return _classloader;
 }
 
+JThread::ThreadState JThread::getState() const {
+	return _state.load();
+}
+
 bool JThread::isRunning() const {
-	return _isRunning.load();
+	return _state.load() == ThreadState::Running;
 }
 
 bool JThread::end() const {
@@ -117,7 +121,7 @@ Frame& JThread::currentFrame() const {
 }
 
 void JThread::run(bool wait_) {
-	_isRunning.store(true);
+	_state.store(ThreadState::Running);
 	_thread = std::thread([this]() {
 		auto id = std::this_thread::get_id();
 		if (_name != "main") {
@@ -137,7 +141,7 @@ void JThread::run(bool wait_) {
 		}
 		logger.fdebug("End of thread '{}'", _name);
 		logger.removeThread(id);
-		_isRunning.store(false);
+		_state.store(ThreadState::Stopped);
 	});
 	if (wait_ && _thread.joinable()) {
 		_thread.join();

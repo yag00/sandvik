@@ -35,6 +35,8 @@ namespace sandvik {
 	/** @brief Java thread representation */
 	class JThread {
 		public:
+			/** @brief Thread states */
+			enum class ThreadState { Starting, Running, Suspended, Stopped };
 			/** @brief Constructs a new Java thread.
 			 * @param vm_ Reference to the VM instance
 			 * @param classloader_ Reference to the class loader
@@ -131,6 +133,10 @@ namespace sandvik {
 			 * @return true if the thread is running, false otherwise
 			 */
 			bool isRunning() const;
+			/** @brief Checks if the thread is currently running.
+			 * @return the thread state
+			 */
+			ThreadState getState() const;
 
 			/** Visit outgoing references
 			 * @param visitor_ function to call for each referenced object
@@ -153,7 +159,7 @@ namespace sandvik {
 			ObjectRef _thisThread;
 
 			std::thread _thread;
-			std::atomic<bool> _isRunning{false};
+			std::atomic<ThreadState> _state{ThreadState::Starting};
 	};
 }  // namespace sandvik
 
