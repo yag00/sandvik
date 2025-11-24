@@ -131,5 +131,8 @@ public class RunAllTests {
 
         System.out.println("== Running TestInvokeVirtualRange ==");
         TestInvokeVirtualRange.main(new String[]{});
+
+        System.out.println("== Running TestInvokeInterfaceRange ==");
+        TestInvokeInterfaceRange.main(new String[]{});
     }
 }
