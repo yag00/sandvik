@@ -61,7 +61,7 @@ def check_fmt(conf):
 			os.mkdir('ext/fmt/build')
 
 		cwd = os.path.abspath('ext/fmt/build')
-		execute('cmake -DCMAKE_POSITION_INDEPENDENT_CODE=True -DCMAKE_INSTALL_PREFIX={} ../'.format(installdir), cwd)
+		execute('cmake -DFMT_TEST=OFF -DFMT_DOC=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=True -DCMAKE_INSTALL_PREFIX={} ../'.format(installdir), cwd)
 		execute('make -j{}'.format(multiprocessing.cpu_count()), cwd)
 		execute('make install', cwd)
 
@@ -217,7 +217,7 @@ def check_googletest(conf):
 			os.mkdir('ext/googletest/build')
 		# needs to be built with -fPIC in order to work
 		cwd = os.path.abspath('ext/googletest/build')
-		execute('cmake -DCMAKE_POSITION_INDEPENDENT_CODE=True -DCMAKE_INSTALL_PREFIX={} ../'.format(installdir), cwd)
+		execute('cmake -DBUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=True -DCMAKE_INSTALL_PREFIX={} ../'.format(installdir), cwd)
 		execute('make -j{}'.format(multiprocessing.cpu_count()), cwd)
 		execute('make install', cwd)
 
