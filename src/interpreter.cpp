@@ -2610,7 +2610,72 @@ void Interpreter::invoke_static_range(const uint8_t* operand_) {
 }
 // invoke-interface/range {vCCCC .. vNNNN}, meth@BBBB
 void Interpreter::invoke_interface_range(const uint8_t* operand_) {
-	throw VmException("invoke_interface_range not implemented");
+	const uint16_t methodRef = *reinterpret_cast<const uint16_t*>(&operand_[1]);
+	const uint16_t startReg = *reinterpret_cast<const uint16_t*>(&operand_[3]);
+	const uint8_t regCount = operand_[0];
+
+	auto& frame = _rt.currentFrame();
+	auto& classloader = _rt.getClassLoader();
+
+	std::vector<std::shared_ptr<Object>> args;
+	for (uint8_t i = 0; i < regCount; ++i) {
+		args.push_back(frame.getObjRegister(startReg + i));
+	}
+
+	auto this_ptr = args[0];
+	if (this_ptr->isNull()) {
+		throw NullPointerException("invoke-virtual/range on null object");
+	}
+	if (!this_ptr->isClass()) {
+		throw VmException("invoke-virtual/range: this pointer is not an ObjectClass, got {}", this_ptr->toString());
+	}
+	Class* instance = &this_ptr->getClass();
+	if (!instance->isStaticInitialized()) {
+		executeClinit(*instance);
+	}
+
+	std::string ifclassname, methodname, signature;
+	classloader.findMethod(frame.getDexIdx(), methodRef, ifclassname, methodname, signature);
+
+	Method* vmethod = nullptr;
+	Class* current = instance;
+	while (current) {
+		try {
+			vmethod = &current->getMethod(methodname, signature);
+			break;  // Method found, exit loop
+		} catch (...) {
+			// not found in this class
+			if (current->hasSuperClass()) {
+				current = &classloader.getOrLoad(current->getSuperClassname());
+				if (!current->isStaticInitialized()) {
+					executeClinit(*current);
+				}
+			} else {
+				current = nullptr;
+			}
+		}
+	}
+	if (vmethod) {
+		if (!vmethod->isVirtual()) {
+			logger.ferror("invoke-interface/range: {}->{}{} not virtual", ifclassname, methodname, signature);
+		}
+		trace.logCall("invoke-interface/range", ifclassname, methodname, signature, args, vmethod->isStatic());
+		if (vmethod->isNative()) {
+			executeNativeMethod(*vmethod, args);
+		} else {
+			auto& newframe = _rt.newFrame(*vmethod);
+			// When a method is invoked, the parameters to the method are placed into the last n registers.
+			for (auto i = 0; i < args.size(); i++) {
+				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+			}
+		}
+	} else {
+		// If no method found, throw an error
+		throw VmException("invoke-interface/range: call method {}->{}{} not found for instance {}", ifclassname, methodname, signature,
+		                  instance->getFullname());
+	}
+
+	frame.pc() += 5;
 }
 // neg-int vA, vB
 void Interpreter::neg_int(const uint8_t* operand_) {
