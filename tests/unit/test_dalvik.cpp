@@ -290,3 +290,7 @@ TEST(VM, Regex) {
 TEST(VM, InvokeVirtualRange) {
 	run_common_test("TestInvokeVirtualRange");
 }
+TEST(VM, InvokeInterfaceRange) {
+	run_common_test("TestInvokeInterfaceRange");
+}
+
