@@ -158,7 +158,7 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<ObjectRef>::iterator& it, co
 ObjectRef NativeCallHelper::getReturnObject(uintptr_t result, const char jniType) {
 	switch (jniType) {
 		case 'V':
-			return nullptr;  // void return type
+			return Object::makeNull();  // void return null object (should not be used)
 		case 'I':
 		case 'Z':
 		case 'B':
