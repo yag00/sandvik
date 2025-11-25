@@ -177,7 +177,7 @@ bool Method::isOverload() const {
 	return _class.isMethodOverloaded(getName());
 }
 
-void Method::execute(Frame& frame_, std::vector<std::shared_ptr<Object>>& registers_) {
+void Method::execute(Frame& frame_, std::vector<ObjectRef>& registers_) {
 	if (!_function) {
 		throw VmException("Method {}.{} has no implementation", _class.getFullname(), getName());
 	}

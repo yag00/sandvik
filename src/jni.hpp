@@ -26,7 +26,6 @@
 namespace sandvik {
 	class Vm;
 	class ClassLoader;
-	class JNIHandleMap;
 	class JThread;
 	class NativeInterface : public JNIEnv {
 		public:
@@ -35,7 +34,6 @@ namespace sandvik {
 
 			Vm &getVm() const;
 			ClassLoader &getClassLoader() const;
-			JNIHandleMap &getHandles() const;
 
 		protected:
 			static jint GetVersion(JNIEnv *env);
@@ -339,7 +337,6 @@ namespace sandvik {
 		private:
 			Vm &_vm;
 			ClassLoader &_classloader;
-			std::unique_ptr<JNIHandleMap> _handles;
 			std::unique_ptr<JNINativeInterface_> _interface;
 	};
 }  // namespace sandvik

@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include "object.hpp"
+
 namespace LIEF::DEX {
 	class Class;
 }  // namespace LIEF::DEX
@@ -31,8 +33,8 @@ namespace LIEF::DEX {
 namespace sandvik {
 	class ClassLoader;
 	class Monitor;
-	class Object;
 	class Method;
+	class Object;
 	class Field;
 	/** @brief Represents a Java class. */
 	class Class {
@@ -151,7 +153,7 @@ namespace sandvik {
 			 * @param class_ a Java object.
 			 * @return true if the class is an instance of the specified class, false otherwise.
 			 */
-			bool isInstanceOf(const std::shared_ptr<Object>& class_) const;
+			bool isInstanceOf(const ObjectRef class_) const;
 			/** @brief Checks if the class is external (declared but defined outside the DEX files).
 			 * @return true if the class is external, false otherwise.
 			 */
@@ -192,6 +194,11 @@ namespace sandvik {
 			 * used for synchronization of static fields
 			 */
 			void monitorCheck() const;
+
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
 		private:
 			ClassLoader& _classloader;

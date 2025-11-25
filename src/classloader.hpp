@@ -19,6 +19,7 @@
 #ifndef __CLASS_LOADER_HPP__
 #define __CLASS_LOADER_HPP__
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -26,6 +27,7 @@
 
 namespace sandvik {
 	class Class;
+	class Object;
 	class Method;
 	class Field;
 	class Apk;
@@ -147,6 +149,11 @@ namespace sandvik {
 			 * @return dex index
 			 */
 			uint64_t getDexIndex(const Dex& dex_) const;
+
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
 		private:
 			friend class ClassBuilder;

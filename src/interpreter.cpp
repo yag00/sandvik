@@ -347,7 +347,7 @@ void Interpreter::executeClinit(Class& class_) const {
 	thread.join();
 }
 
-void Interpreter::executeNativeMethod(const Method& method_, const std::vector<std::shared_ptr<Object>>& args_) {
+void Interpreter::executeNativeMethod(const Method& method_, const std::vector<ObjectRef>& args_) {
 	// Construct the JNI symbol name
 	std::string symbolName = "Java_" + std::regex_replace(method_.getClass().getFullname(), std::regex("\\."), "_") + "_" + method_.getName();
 	if (method_.isOverload()) {
@@ -369,14 +369,15 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<s
 	std::string returnType = match[2];
 	logger.fdebug("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(), symbolName,
 	              (uintptr_t)symbol);
-	auto caller = std::make_unique<NativeCallHelper>(*_rt.vm().getJNIEnv());
+	auto caller = std::make_unique<NativeCallHelper>();
 	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
-	_rt.currentFrame().setReturnObject(ret);
+	if (returnType != "V") {
+		_rt.currentFrame().setReturnObject(ret);
+	}
 }
 
-void Interpreter::handleException(std::shared_ptr<Object> exception_) {
-	auto exception = exception_;
-	if (!exception->isClass()) {
+void Interpreter::handleException(ObjectRef exception_) {
+	if (!exception_->isClass()) {
 		throw VmException("throw operand is not an object!");
 	}
 
@@ -411,16 +412,15 @@ void Interpreter::handleException(std::shared_ptr<Object> exception_) {
 		}
 		if (_rt.stackDepth() == 0) {
 			// uncaught exception
-			auto detailMessage = exception->getField("detailMessage");
+			auto detailMessage = exception_->getField("detailMessage");
 			std::string msg = detailMessage->isString() ? detailMessage->str() : "";
-			logger.ferror("Unhandled exception {} : {}", exception->getClass().getFullname(), msg);
-			throw JavaException(exception->getClass().getFullname(), msg);
+			logger.ferror("Unhandled exception {} : {}", exception_->getClass().getFullname(), msg);
+			throw JavaException(exception_->getClass().getFullname(), msg);
 		}
-		_rt.currentFrame().setException(exception_);
 	}
 }
 
-std::vector<std::shared_ptr<Object>> Interpreter::getInvokeMethodArgs(const uint8_t* operand_) const {
+std::vector<ObjectRef> Interpreter::getInvokeMethodArgs(const uint8_t* operand_) const {
 	auto& frame = _rt.currentFrame();
 	const uint8_t vA = (operand_[0] >> 4) & 0x0F;  // Number of registers (A)
 	uint8_t vC = (vA > 0) ? operand_[3] & 0x0F : 0;
@@ -430,7 +430,7 @@ std::vector<std::shared_ptr<Object>> Interpreter::getInvokeMethodArgs(const uint
 	uint8_t vG = (vA > 2) ? operand_[0] & 0x0F : 0;
 
 	std::vector<uint8_t> regs = {vC, vD, vE, vF, vG};
-	std::vector<std::shared_ptr<Object>> args{};
+	std::vector<ObjectRef> args{};
 	for (uint8_t i = 0; i < vA; ++i) {
 		auto obj = frame.getObjRegister(regs[i]);
 		args.push_back(obj);
@@ -736,7 +736,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 			break;
 		}
 		case TYPES::ARRAY: {
-			auto array = std::dynamic_pointer_cast<Array>(obj);
+			auto array = static_cast<ArrayRef>(obj);
 			if (!array) {
 				throw ClassCastException("Object is not an array");
 			}
@@ -865,7 +865,7 @@ void Interpreter::fill_array_data(const uint8_t* operand_) {
 		throw NullPointerException("fill_array_data on null array object");
 	}
 
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("fill_array_data: Object is not an array");
 	}
@@ -1245,7 +1245,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget: Object is not an array");
 	}
@@ -1277,7 +1277,7 @@ void Interpreter::aget_wide(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-wide on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-wide: Object is not an array");
 	}
@@ -1305,7 +1305,7 @@ void Interpreter::aget_object(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-object on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-object: Object is not an array");
 	}
@@ -1329,7 +1329,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-boolean on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-boolean: Object is not an array");
 	}
@@ -1357,7 +1357,7 @@ void Interpreter::aget_byte(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-byte on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-byte: Object is not an array");
 	}
@@ -1385,7 +1385,7 @@ void Interpreter::aget_char(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-char on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-char: Object is not an array");
 	}
@@ -1413,7 +1413,7 @@ void Interpreter::aget_short(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aget-short on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aget-short: Object is not an array");
 	}
@@ -1443,7 +1443,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput: Object is not an array");
 	}
@@ -1467,7 +1467,7 @@ void Interpreter::aput_wide(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-wide on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-wide: Object is not an array");
 	}
@@ -1491,7 +1491,7 @@ void Interpreter::aput_object(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-object on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-object: Object is not an array");
 	}
@@ -1515,7 +1515,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-boolean on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-boolean: Object is not an array");
 	}
@@ -1539,7 +1539,7 @@ void Interpreter::aput_byte(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-byte on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-byte: Object is not an array");
 	}
@@ -1563,7 +1563,7 @@ void Interpreter::aput_char(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-char on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-char: Object is not an array");
 	}
@@ -1587,7 +1587,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 	if (arrayObj->isNull()) {
 		throw NullPointerException("aput-short on null array object");
 	}
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	if (!array) {
 		throw ClassCastException("aput-short: Object is not an array");
 	}
@@ -2322,8 +2322,9 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 			if (vmethod->hasBytecode()) {
 				auto& newframe = _rt.newFrame(*vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (auto i = 0; i < args.size(); i++) {
-					newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+				for (size_t i = 0; i < args.size(); ++i) {
+					uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+					newframe.setObjRegister(regIdx, args[i]);
 				}
 			} else {
 				vmethod->execute(frame, args);
@@ -2377,8 +2378,9 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (auto i = 0; i < args.size(); i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+			for (size_t i = 0; i < args.size(); ++i) {
+				uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+				newframe.setObjRegister(regIdx, args[i]);
 			}
 		}
 	}
@@ -2410,8 +2412,9 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 			auto& newframe = _rt.newFrame(method);
 			// set args on new frame
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (auto i = 0; i < args.size(); i++) {
-				newframe.setObjRegister(method.getNbRegisters() - args.size() + i, args[i]);
+			for (size_t i = 0; i < args.size(); ++i) {
+				uint32_t regIdx = method.getNbRegisters() - args.size() + i;
+				newframe.setObjRegister(regIdx, args[i]);
 			}
 		}
 	}
@@ -2473,8 +2476,9 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (auto i = 0; i < args.size(); i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+			for (size_t i = 0; i < args.size(); ++i) {
+				uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+				newframe.setObjRegister(regIdx, args[i]);
 			}
 		}
 	} else {
@@ -2492,7 +2496,7 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	std::vector<std::shared_ptr<Object>> args;
+	std::vector<ObjectRef> args;
 	for (uint8_t i = 0; i < regCount; ++i) {
 		args.push_back(frame.getObjRegister(startReg + i));
 	}
@@ -2545,8 +2549,9 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 			if (vmethod->hasBytecode()) {
 				auto& newframe = _rt.newFrame(*vmethod);
 				// When a method is invoked, the parameters to the method are placed into the last n registers.
-				for (auto i = 0; i < args.size(); i++) {
-					newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+				for (size_t i = 0; i < args.size(); ++i) {
+					uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+					newframe.setObjRegister(regIdx, args[i]);
 				}
 			} else {
 				vmethod->execute(frame, args);
@@ -2579,7 +2584,7 @@ void Interpreter::invoke_direct_range(const uint8_t* operand_) {
 		executeClinit(cls);
 	}
 
-	std::vector<std::shared_ptr<Object>> args;
+	std::vector<ObjectRef> args;
 	for (uint8_t i = 0; i < regCount; ++i) {
 		args.push_back(frame.getObjRegister(startReg + i));
 	}
@@ -2617,7 +2622,7 @@ void Interpreter::invoke_interface_range(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	std::vector<std::shared_ptr<Object>> args;
+	std::vector<ObjectRef> args;
 	for (uint8_t i = 0; i < regCount; ++i) {
 		args.push_back(frame.getObjRegister(startReg + i));
 	}

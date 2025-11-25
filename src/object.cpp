@@ -30,6 +30,7 @@
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
+#include "gc.hpp"
 #include "monitor.hpp"
 #include "system/logger.hpp"
 
@@ -313,29 +314,47 @@ namespace sandvik {
 
 using namespace sandvik;
 
+static std::unique_ptr<NullObject> NULL_OBJ = std::make_unique<NullObject>();
+
 ObjectRef Object::make(Class& class_) {
 	if (class_.getFullname() == "java.lang.String") {
-		return std::make_shared<StringObject>(class_, "");
+		auto u = std::make_unique<StringObject>(class_, "");
+		auto ptr = u.get();
+		GC::getInstance().track(std::move(u));
+		return ptr;
+	} else {
+		auto u = std::make_unique<ObjectClass>(class_);
+		auto ptr = u.get();
+		GC::getInstance().track(std::move(u));
+		return ptr;
 	}
-	return std::make_shared<ObjectClass>(class_);
 }
 ObjectRef Object::make(uint64_t number_) {
-	return std::make_shared<NumberObject>(number_);
+	auto u = std::make_unique<NumberObject>(number_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 ObjectRef Object::make(ClassLoader& classloader_, const std::string& str_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.String");
-	return std::make_shared<StringObject>(clazz, str_);
+	auto u = std::make_unique<StringObject>(clazz, str_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 ObjectRef Object::makeNull() {
-	return std::make_shared<NullObject>();
+	return NULL_OBJ.get();
 }
 ObjectRef Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
-	return std::make_shared<ConstClassObject>(clazz, classtype_);
+	auto u = std::make_unique<ConstClassObject>(clazz, classtype_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 
 ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
-	return std::make_shared<Array>(classtype_, dimensions_);
+	return Array::make(classtype_, dimensions_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -491,6 +510,21 @@ void Object::setField(const std::string& name_, ObjectRef value_) {
 	_fields[name_] = value_;
 }
 
+void Object::setMarked(bool v_) {
+	_marked.store(v_, std::memory_order_relaxed);
+}
+bool Object::isMarked() const {
+	return _marked.load(std::memory_order_relaxed);
+}
+void Object::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	for (const auto& kv : _fields) {
+		if (kv.second) {
+			visitor_(kv.second);
+			kv.second->visitReferences(visitor_);
+		}
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 NumberObject::NumberObject(uint64_t value_) : _value(value_) {
 }
@@ -599,10 +633,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 				case 'J':
 				case 'F':
 				case 'D':
-					_fields[fieldname] = std::make_shared<NumberObject>(0);
+					_fields[fieldname] = Object::make(0);
 					break;
 				default:
-					_fields[fieldname] = std::make_shared<NullObject>();
+					_fields[fieldname] = Object::makeNull();
 					break;
 			}
 		}
@@ -625,10 +659,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 					case 'J':
 					case 'F':
 					case 'D':
-						_fields[fieldname] = std::make_shared<NumberObject>(0);
+						_fields[fieldname] = Object::make(0);
 						break;
 					default:
-						_fields[fieldname] = std::make_shared<NullObject>();
+						_fields[fieldname] = Object::makeNull();
 						break;
 				}
 			}

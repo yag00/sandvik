@@ -27,6 +27,8 @@
 #include <thread>
 #include <vector>
 
+#include "object.hpp"
+
 /** @brief sandvik : project namespace */
 namespace sandvik {
 	class Class;
@@ -34,7 +36,6 @@ namespace sandvik {
 	class SharedLibrary;
 	class NativeInterface;
 	class JThread;
-	class Object;
 	/** @class Vm
 	 *  @brief Dalvik Java Virtual Machine implementation.
 	 *
@@ -101,7 +102,7 @@ namespace sandvik {
 			 * @param thread_ Java Thread Object
 			 * @return Reference to the created thread
 			 */
-			JThread& newThread(std::shared_ptr<Object> thread_);
+			JThread& newThread(ObjectRef thread_);
 			/** Get a thread by name
 			 * @param name_ Name of the thread
 			 * @return Reference to the thread
@@ -134,14 +135,24 @@ namespace sandvik {
 			 */
 			NativeInterface* getJNIEnv() const;
 
+			/** Suspend all threads (used for garbage collection) */
+			void suspend();
+			/** Resume all threads (use for garbage collection) */
+			void resume();
+
 		protected:
 			/** Run main method of given class with given arguments
 			 * @param clazz_ Class to run
 			 * @param args_ Arguments to pass to the class
 			 */
 			void run(Class& clazz_, const std::vector<std::string>& args_);
+			/** Visit outgoing references
+			 * @param visitor_ function to call for each referenced object
+			 */
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
 		private:
+			friend class GC;
 			std::unique_ptr<ClassLoader> _classloader;
 			std::vector<std::string> _ldpath;
 			std::vector<std::unique_ptr<SharedLibrary>> _sharedlibs;

@@ -96,7 +96,7 @@ std::string Field::getStringValue() const {
 	return _strValue;
 }
 
-std::shared_ptr<Object> Field::getObjectValue() const {
+ObjectRef Field::getObjectValue() const {
 	if (isStatic()) {
 		_class.monitorCheck();
 	}
@@ -123,9 +123,16 @@ void Field::setStringValue(const std::string& value) {
 	_strValue = value;
 }
 
-void Field::setObjectValue(std::shared_ptr<Object> value) {
+void Field::setObjectValue(ObjectRef value) {
 	if (isStatic()) {
 		_class.monitorCheck();
 	}
 	_obj = value;
+}
+
+void Field::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	if (_obj) {
+		visitor_(_obj);
+		_obj->visitReferences(visitor_);
+	}
 }

@@ -260,3 +260,9 @@ uint64_t ClassLoader::getDexIndex(const Dex& dex_) const {
 	}
 	throw VmException("DEX not found in classloader");
 }
+
+void ClassLoader::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	for (const auto& [name, classPtr] : _classes) {
+		classPtr->visitReferences(visitor_);
+	}
+}

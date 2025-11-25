@@ -27,7 +27,6 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "jthread.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
@@ -46,15 +45,13 @@ extern "C" {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto& vm = jenv->getVm();
 		auto threadObj = vm.currentThread().getThreadObject();
-		jobject tobj = jenv->getHandles().toJObject(threadObj);
-		return tobj;
+		return (jobject)threadObj;
 	}
 
 	JNIEXPORT void JNICALL Java_java_lang_Thread_start0(JNIEnv* env, jobject obj) {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto& vm = jenv->getVm();
-		auto tobj = jenv->getHandles().fromJObject(obj);
-		auto& thread = vm.newThread(tobj);
+		auto& thread = vm.newThread(sandvik::native::getObject(obj));
 		thread.run();
 	}
 
@@ -71,7 +68,7 @@ extern "C" {
 		}
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto& vm = jenv->getVm();
-		auto tobj = jenv->getHandles().fromJObject(obj);
+		auto tobj = sandvik::native::getObject(obj);
 		auto tname = tobj->getField("name")->str();
 		logger.fdebug("Joining thread '{}' for {} milliseconds", tname, millis);
 		auto& target = vm.getThread(tname);

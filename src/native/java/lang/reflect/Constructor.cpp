@@ -24,21 +24,18 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
 extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Constructor_newInstance(JNIEnv* env, jobject ctorObj, jobjectArray args) {
-		auto jenv = sandvik::native::getNativeInterface(env);
 		auto ctor = sandvik::native::getObject(ctorObj);
 		logger.debug(fmt::format("Constructor.newInstance: declaringClass = {}", ctor->toString()));
 		auto declaringClass = ctor->getField("declaringClass");
 		logger.debug(fmt::format("Constructor.newInstance: declaringClass = {}", declaringClass->toString()));
 		auto instance = sandvik::Object::make(declaringClass->getClass());
 		logger.debug(fmt::format("Constructor.newInstance: Created instance of class {}", instance->toString()));
-		jobject jInstance = jenv->getHandles().toJObject(instance);
-		return jInstance;
+		return (jobject)instance;
 	}
 }

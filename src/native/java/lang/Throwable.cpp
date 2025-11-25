@@ -22,7 +22,6 @@
 #include "class.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 

@@ -25,7 +25,6 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -37,8 +36,7 @@ extern "C" {
 		std::string name = ptr->getClassType().getFullname();
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 		auto strObj = sandvik::Object::make(classloader, name);
-		jobject jstr = jenv->getHandles().toJObject(strObj);
-		return (jstring)jstr;
+		return (jstring)strObj;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_forName(JNIEnv* env, jclass, jstring name) {
@@ -50,8 +48,7 @@ extern "C" {
 		auto& clazz = classloader.getOrLoad("java/lang/Class");
 		auto classObj = sandvik::Object::make(clazz);
 		classObj->setField("internal", sandvik::Object::make(objclass));
-		jobject jclassObj = jenv->getHandles().toJObject(classObj);
-		return jclassObj;
+		return (jobject)classObj;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredConstructor(JNIEnv* env, jobject obj) {
@@ -71,8 +68,7 @@ extern "C" {
 		// For simplicity, parameterTypes is empty for default constructor
 		ctorObj->setField("parameterTypes", sandvik::Object::make(classloader.getOrLoad("java/lang/Object")));
 
-		jobject jctorObj = jenv->getHandles().toJObject(ctorObj);
-		return jctorObj;
+		return (jobject)ctorObj;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getField(JNIEnv* env, jobject obj, jstring name) {
@@ -85,7 +81,7 @@ extern "C" {
 		logger.debug(fmt::format("Class.getField: Getting field '{}' for class {}", fieldName, ptr->toString()));
 
 		try {
-			auto field = ptr->getField(fieldName);
+			ptr->getField(fieldName);
 		} catch (const std::exception& e) {
 			logger.debug(fmt::format("{} Class.getField: Created missing field '{}' in class {}", e.what(), fieldName, ptr->toString()));
 			ptr->setField(fieldName, sandvik::Object::make(0));
@@ -99,9 +95,7 @@ extern "C" {
 		// fieldObj->setField("clazz", sandvik::Object::make(ptr));
 		fieldObj->setField("name", sandvik::Object::make(classloader, fieldName));
 		// Optionally set other fields like 'type', 'modifiers', etc.
-
-		jobject jfieldObj = jenv->getHandles().toJObject(fieldObj);
-		return jfieldObj;
+		return (jobject)fieldObj;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getPrimitiveClass(JNIEnv* env, jclass, jstring name) {
@@ -115,7 +109,6 @@ extern "C" {
 		// Obtain the internal class representation and wrap it in a java.lang.Class instance.
 		auto& primClass = classloader.getOrLoad(primName);
 		auto classObj = sandvik::Object::makeConstClass(classloader, primClass);
-		jobject jclassObj = jenv->getHandles().toJObject(classObj);
-		return jclassObj;
+		return (jobject)classObj;
 	}
 }

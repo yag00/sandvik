@@ -27,10 +27,12 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "frame.hpp"
+#include "gc.hpp"
 #include "interpreter.hpp"
 #include "jni.hpp"
 #include "jthread.hpp"
 #include "method.hpp"
+#include "monitor.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
@@ -39,6 +41,7 @@
 using namespace sandvik;
 
 Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
+	GC::getInstance().manageVm(this);
 	logger.info("VM instance created.");
 
 	ClassBuilder(*_classloader, "", "boolean").finalize();
@@ -57,6 +60,7 @@ Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_uniq
 
 Vm::~Vm() {
 	logger.debug("VM instance destroyed.");
+	GC::getInstance().unmanageVm(this);
 }
 
 void Vm::loadRt(const std::string& path) {
@@ -185,7 +189,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	auto args = Array::make(stringClass, (uint32_t)args_.size());
 	for (size_t i = 0; i < args_.size(); ++i) {
 		auto strObj = Object::make(*_classloader, args_[i]);
-		std::static_pointer_cast<Array>(args)->setElement((uint32_t)i, strObj);
+		static_cast<ArrayRef>(args)->setElement((uint32_t)i, strObj);
 	}
 	mainThread.currentFrame().setObjRegister(nbRegisters, args);
 	try {
@@ -196,6 +200,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	_isRunning.store(true);
 	mainThread.run(true);
 	_isRunning.store(false);
+	mainThread.join();
 }
 
 void Vm::stop() {
@@ -209,7 +214,7 @@ JThread& Vm::newThread(const std::string& name_) {
 	return *(_threads.back());
 }
 
-JThread& Vm::newThread(std::shared_ptr<Object> thread_) {
+JThread& Vm::newThread(ObjectRef thread_) {
 	std::unique_lock lock(_mutex);
 	_threads.emplace_back(std::make_unique<JThread>(*this, *_classloader, thread_));
 	return *(_threads.back());
@@ -256,4 +261,71 @@ std::string Vm::getProperty(const std::string& name_) const {
 
 void Vm::setProperty(const std::string& name_, const std::string& value_) {
 	_properties[name_] = value_;
+}
+
+void Vm::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	_classloader->visitReferences(visitor_);
+	for (const auto& thread : _threads) {
+		thread->visitReferences(visitor_);
+	}
+}
+
+void Vm::suspend() {
+	// If VM not running, nothing to do
+	if (_isRunning.load() == false) {
+		return;
+	}
+	bool all_suspended = true;
+	do {
+		all_suspended = true;
+		// Copy pointers to threads while holding the lock, then release the lock
+		std::vector<JThread*> threads_to_suspend;
+		{
+			std::unique_lock lock(_mutex);
+			threads_to_suspend.reserve(_threads.size());
+			for (const auto& thread : _threads) {
+				if (thread->getState() == Thread::ThreadState::Stopped) {
+					continue;
+				}
+				threads_to_suspend.push_back(thread.get());
+			}
+		}
+		// Suspend each thread without holding the VM mutex to avoid deadlock with thread creation
+		for (auto thread : threads_to_suspend) {
+			thread->suspend();
+		}
+		// check if all threads are suspended
+		{
+			std::unique_lock lock(_mutex);
+			for (const auto& thread : _threads) {
+				if (thread->getState() == Thread::ThreadState::Stopped) {
+					continue;
+				}
+				if (thread->getState() != Thread::ThreadState::Suspended) {
+					all_suspended = false;
+					break;
+				}
+			}
+		}
+	} while (!all_suspended);
+
+	// take the opportunity to clean stopped threads while world is stopped
+	std::unique_lock lock(_mutex);
+	for (auto it = _threads.begin(); it != _threads.end(); ++it) {
+		if ((*it)->getState() == Thread::ThreadState::Stopped) {
+			_threads.erase(it);
+			return;
+		}
+	}
+}
+
+void Vm::resume() {
+	if (_isRunning.load() == false) {
+		return;
+	}
+	// world is fully stopped, resume all threads
+	std::unique_lock lock(_mutex);
+	for (const auto& thread : _threads) {
+		thread->resume();
+	}
 }

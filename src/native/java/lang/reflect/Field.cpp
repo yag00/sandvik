@@ -25,14 +25,12 @@
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
 extern "C" {
 	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Field_get(JNIEnv* env, jobject fieldObj, jobject targetObj) {
-		auto jenv = sandvik::native::getNativeInterface(env);
 		auto field = sandvik::native::getObject(fieldObj);
 		auto target = sandvik::native::getObject(targetObj);
 		// Get the field name from the Field object
@@ -41,7 +39,6 @@ extern "C" {
 		// Get the value of the field from the target object
 		auto value = target->getField(fieldName);
 		// Return the value as a jobject
-		jobject jValue = jenv->getHandles().toJObject(value);
-		return jValue;
+		return (jobject)value;
 	}
 }

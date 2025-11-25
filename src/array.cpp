@@ -24,16 +24,20 @@
 
 #include "class.hpp"
 #include "exceptions.hpp"
+#include "gc.hpp"
 #include "monitor.hpp"
 #include "object.hpp"
 
 using namespace sandvik;
 
 ObjectRef Array::make(const Class& classtype_, uint32_t size_) {
-	return std::make_shared<Array>(classtype_, std::vector<uint32_t>{size_});
+	return Array::make(classtype_, std::vector<uint32_t>{size_});
 }
 ObjectRef Array::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
-	return std::make_shared<Array>(classtype_, dimensions_);
+	auto u = std::make_unique<Array>(classtype_, dimensions_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
 }
 
 Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_)
@@ -163,7 +167,7 @@ uint32_t Array::flattenIndex(const std::vector<uint32_t>& indices_) const {
 	return idx;
 }
 
-std::shared_ptr<Array> Array::getArray(uint32_t idx_) const {
+ArrayRef Array::getArray(uint32_t idx_) const {
 	// Ensure the array is multi-dimensional
 	if (_dimensions.size() <= 1) {
 		throw std::invalid_argument("Cannot get a sub-array from a one-dimensional array");
@@ -180,13 +184,26 @@ std::shared_ptr<Array> Array::getArray(uint32_t idx_) const {
 	// Calculate the starting index of the sub-array in the flattened data
 	uint32_t startIdx = idx_ * subArraySize;
 	// Create a sub-array that references the original data
-	return std::make_shared<Array>(_data, _classtype, std::vector<uint32_t>(_dimensions.begin() + 1, _dimensions.end()), _offset + startIdx);
+	auto subArray = std::make_unique<Array>(_data, _classtype, std::vector<uint32_t>(_dimensions.begin() + 1, _dimensions.end()), _offset + startIdx);
+	auto ptr = subArray.get();
+	GC::getInstance().track(std::move(subArray));
+	return ptr;
 }
 
 ObjectRef Array::clone() const {
-	auto newArray = std::make_shared<Array>(_classtype, _dimensions);
+	ArrayRef newArray = (ArrayRef)Array::make(_classtype, _dimensions);
 	for (uint32_t i = 0; i < _length; ++i) {
 		(*newArray->_data)[i] = (*_data)[_offset + i];
 	}
 	return newArray;
+}
+
+void Array::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	Object::visitReferences(visitor_);
+	for (size_t i = 0; i < _length; ++i) {
+		Object* obj = (*_data)[_offset + i];
+		if (obj != nullptr) {
+			visitor_(obj);
+		}
+	}
 }

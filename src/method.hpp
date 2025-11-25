@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+#include "object.hpp"
+
 namespace LIEF {
 	namespace DEX {
 		class Method;
@@ -33,7 +35,6 @@ namespace LIEF {
 
 namespace sandvik {
 	class Frame;
-	class Object;
 	class Class;
 	/** @brief Access flags for methods. */
 	enum ACCESS_FLAGS {
@@ -180,7 +181,7 @@ namespace sandvik {
 			 * @param frame_ Reference to the Frame object.
 			 * @param registers_ Vector of Object references representing the registers.
 			 */
-			void execute(Frame& frame_, std::vector<std::shared_ptr<Object>>& registers_);
+			void execute(Frame& frame_, std::vector<ObjectRef>& registers_);
 
 			/** @brief Debug method to print method information. */
 			void debug() const;
@@ -207,7 +208,7 @@ namespace sandvik {
 			std::vector<trycatch_item> _trycatch_items;
 			std::vector<std::string> _argsType;
 
-			std::function<void(Frame&, std::vector<std::shared_ptr<Object>>&)> _function;
+			std::function<void(Frame&, std::vector<ObjectRef>&)> _function;
 
 			friend class ClassBuilder;
 	};

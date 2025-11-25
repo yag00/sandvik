@@ -24,7 +24,6 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "jnihandlemap.hpp"
 #include "native/native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -36,7 +35,7 @@ extern "C" {
 
 		auto this_ptr = sandvik::native::getObject(obj);
 		auto nullstring = sandvik::Object::make(classloader, "null");
-		auto objstr = sandvik::native::getObject(str)->isNull() ? nullstring.get() : sandvik::native::getString(str);
+		auto objstr = sandvik::native::getObject(str)->isNull() ? nullstring : sandvik::native::getString(str);
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, objstr->str()));
 		} else {
@@ -132,7 +131,6 @@ extern "C" {
 			throw sandvik::ClassCastException("Field 'string' is not a StringObject");
 		}
 		auto strObj = sandvik::Object::make(classloader, current->str());
-		jobject jstr = jenv->getHandles().toJObject(strObj);
-		return jstr;
+		return (jobject)strObj;
 	}
 }

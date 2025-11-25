@@ -151,7 +151,7 @@ bool Class::isInstanceOf(const Class& class_) const {
 	}
 	return false;
 }
-bool Class::isInstanceOf(const std::shared_ptr<Object>& class_) const {
+bool Class::isInstanceOf(const ObjectRef class_) const {
 	if (class_->isNull()) {
 		return false;
 	}
@@ -317,4 +317,12 @@ void Class::monitorExit() {
 
 void Class::monitorCheck() const {
 	_monitor->check();
+}
+
+void Class::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	for (const auto& [name, field] : _fields) {
+		if (field->isStatic()) {
+			field->visitReferences(visitor_);
+		}
+	}
 }
