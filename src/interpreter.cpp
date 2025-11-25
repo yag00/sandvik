@@ -836,7 +836,35 @@ void Interpreter::new_array(const uint8_t* operand_) {
 }
 // filled-new-array {vD, vE, vF, vG, vA}, type@CCCC
 void Interpreter::filled_new_array(const uint8_t* operand_) {
-	throw VmException("filled_new_array not implemented");
+	auto& frame = _rt.currentFrame();
+	auto& classloader = _rt.getClassLoader();
+
+	auto args = getInvokeMethodArgs(operand_);
+	uint8_t count = (operand_[0] >> 4) & 0x0F;
+	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
+
+	auto arrayType = classloader.resolveArray(frame.getDexIdx(), typeIndex);
+	if (arrayType.empty()) {
+		throw VmException("filled-new-array: cannot resolve array type for index {}", typeIndex);
+	}
+	if (count != args.size()) {
+		throw VmException("filled-new-array: argument count mismatch (expected {}, got {})", count, args.size());
+	}
+
+	const auto& compClass = classloader.getOrLoad(arrayType[0].first);
+	auto arrayObj = Array::make(compClass, count);
+	if (!arrayObj) {
+		throw VmException("filled-new-array: failed to create array of type {}", arrayType[0].first);
+	}
+
+	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	for (uint8_t i = 0; i < args.size(); ++i) {
+		array->setElement(i, args[i]);
+	}
+
+	uint8_t dest = operand_[3] & 0x0F;
+	frame.setObjRegister(dest, arrayObj);
+	frame.pc() += 5;
 }
 // filled-new-array/range {vCCCC .. vNNNN}, type@BBBB
 void Interpreter::filled_new_array_range(const uint8_t* operand_) {
