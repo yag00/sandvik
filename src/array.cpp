@@ -191,7 +191,7 @@ ArrayRef Array::getArray(uint32_t idx_) const {
 }
 
 ObjectRef Array::clone() const {
-	ArrayRef newArray = (ArrayRef)Array::make(_classtype, _dimensions);
+	auto newArray = (ArrayRef)Array::make(_classtype, _dimensions);
 	for (uint32_t i = 0; i < _length; ++i) {
 		(*newArray->_data)[i] = (*_data)[_offset + i];
 	}

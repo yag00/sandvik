@@ -33,14 +33,9 @@
 #include "object.hpp"
 
 namespace sandvik {
-	class NativeInterface;
 	/** @brief Helper class to invoke native functions */
 	class NativeCallHelper {
 		public:
-			/** Constructor for NativeCallHelper. */
-			NativeCallHelper();
-			~NativeCallHelper();
-
 			/** @brief method to invoke native functions
 			 * @param functionPtr Pointer to the native function to invoke
 			 * @param env Pointer to the JNI environment
@@ -48,8 +43,8 @@ namespace sandvik {
 			 * @param paramTypes String representing the parameter types in JNI format
 			 * @param isStatic Boolean indicating if the method is static
 			 * @param returnType String representing the return type in JNI format */
-			ObjectRef invoke(void* functionPtr, JNIEnv* env, const std::vector<ObjectRef>& args, const std::string& returnType, const std::string& paramTypes,
-			                 bool isStatic = false);
+			static ObjectRef invoke(void* functionPtr, JNIEnv* env, const std::vector<ObjectRef>& args, const std::string& returnType,
+			                        const std::string& paramTypes, bool isStatic = false);
 
 		private:
 			// Internal call context
@@ -61,13 +56,12 @@ namespace sandvik {
 			};
 
 			// Type conversion helpers
-			ffi_type* getFFITypeForJNIType(char jniType) const;
-			ffi_type* getFFITypeForReturn(const std::string& returnType) const;
-			void prepareCallContext(CallContext& context, const std::string& paramTypes, const std::string& returnType, std::vector<std::string>& argTypes);
-			uintptr_t getArgValue(std::vector<ObjectRef>::iterator& it, const char jniType);
-			ObjectRef getReturnObject(uintptr_t result, const char jniType);
-
-			std::vector<uintptr_t> _handles;
+			static ffi_type* getFFITypeForJNIType(char jniType);
+			static ffi_type* getFFITypeForReturn(const std::string& returnType);
+			static void prepareCallContext(CallContext& context, const std::string& paramTypes, const std::string& returnType,
+			                               std::vector<std::string>& argTypes);
+			static uintptr_t getArgValue(std::vector<ObjectRef>::iterator& it, const char jniType);
+			static ObjectRef getReturnObject(uintptr_t result, const char jniType);
 	};
 }  // namespace sandvik
 

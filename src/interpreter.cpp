@@ -369,8 +369,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	std::string returnType = match[2];
 	logger.fdebug("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(), symbolName,
 	              (uintptr_t)symbol);
-	auto caller = std::make_unique<NativeCallHelper>();
-	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
+	auto ret = NativeCallHelper::invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
 	if (returnType != "V") {
 		_rt.currentFrame().setReturnObject(ret);
 	}
@@ -1156,8 +1155,8 @@ void Interpreter::if_eqz(const uint8_t* operand_) {
 	int16_t offset = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(regA);
-	if (obj && obj->isNumberObject()) {
-		if (frame.getIntRegister(regA) == 0) {
+	if (obj->isNumberObject()) {
+		if (obj->getValue() == 0) {
 			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
 		} else {
 			frame.pc() += 3;
@@ -1176,8 +1175,8 @@ void Interpreter::if_nez(const uint8_t* operand_) {
 	int16_t offset = *reinterpret_cast<const int16_t*>(&operand_[1]);
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(regA);
-	if (obj && obj->isNumberObject()) {
-		if (frame.getIntRegister(regA) != 0) {
+	if (obj->isNumberObject()) {
+		if (obj->getValue() != 0) {
 			frame.pc() += (offset << 1) - 1;  // -1 because pc is incremented before.
 		} else {
 			frame.pc() += 3;

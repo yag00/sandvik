@@ -28,13 +28,7 @@
 
 using namespace sandvik;
 
-NativeCallHelper::NativeCallHelper() {
-}
-
-NativeCallHelper::~NativeCallHelper() {
-}
-
-ffi_type* NativeCallHelper::getFFITypeForJNIType(char jniType) const {
+ffi_type* NativeCallHelper::getFFITypeForJNIType(char jniType) {
 	switch (jniType) {
 		case 'I':
 		case 'Z':
@@ -56,7 +50,7 @@ ffi_type* NativeCallHelper::getFFITypeForJNIType(char jniType) const {
 	}
 }
 
-ffi_type* NativeCallHelper::getFFITypeForReturn(const std::string& returnType) const {
+ffi_type* NativeCallHelper::getFFITypeForReturn(const std::string& returnType) {
 	if (returnType.empty() || returnType == "V") {
 		return &ffi_type_void;
 	}
@@ -183,18 +177,11 @@ ObjectRef NativeCallHelper::getReturnObject(uintptr_t result, const char jniType
 
 ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::vector<ObjectRef>& args, const std::string& returnType,
                                    const std::string& paramTypes, bool isStatic) {
-	_handles.clear();
 	// Create a temporary call context
 	std::vector<std::string> argTypes;
 	CallContext context;
 	prepareCallContext(context, paramTypes, returnType, argTypes);
 
-	// Execute the call
-	uintptr_t result_storage = 0;
-	uintptr_t* param_storage = nullptr;
-	if (args.size() > 0) {
-		param_storage = new uintptr_t[args.size()];
-	}
 	std::vector<void*> arg_values;
 	// jni environment pointer
 	arg_values.push_back(&env);
@@ -207,20 +194,27 @@ ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::ve
 		this_ref = (jobject)(uintptr_t)args[0];
 	}
 	arg_values.push_back(&this_ref);
+
 	// Prepare argument values
-	size_t idx = 0;
-	auto mutableArgs = args;  // Create a mutable copy of args
-	auto it = mutableArgs.begin();
-	if (!isStatic) {
-		// If not static, skip the first argument (this reference)
-		it++;
-	}
-	while (it != mutableArgs.end()) {
-		param_storage[idx] = getArgValue(it, argTypes[idx][0]);
-		arg_values.push_back((void*)&param_storage[idx]);
-		idx++;
+	uintptr_t result_storage = 0;
+	uintptr_t* param_storage = nullptr;
+	if (args.size() > 0) {
+		size_t idx = 0;
+		param_storage = new uintptr_t[args.size()];
+		auto mutableArgs = args;  // Create a mutable copy of args
+		auto it = mutableArgs.begin();
+		if (!isStatic) {
+			// If not static, skip the first argument (this reference)
+			it++;
+		}
+		while (it != mutableArgs.end()) {
+			param_storage[idx] = getArgValue(it, argTypes[idx][0]);
+			arg_values.push_back((void*)&param_storage[idx]);
+			idx++;
+		}
 	}
 
+	// Execute the call
 	ffi_call(&context.cif, FFI_FN(functionPtr), &result_storage, arg_values.data());
 
 	// Process and return result

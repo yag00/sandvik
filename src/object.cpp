@@ -314,7 +314,7 @@ namespace sandvik {
 
 using namespace sandvik;
 
-static std::unique_ptr<NullObject> NULL_OBJ = std::make_unique<NullObject>();
+static const std::unique_ptr<NullObject> NULL_OBJ = std::make_unique<NullObject>();
 
 ObjectRef Object::make(Class& class_) {
 	if (class_.getFullname() == "java.lang.String") {
@@ -517,11 +517,9 @@ bool Object::isMarked() const {
 	return _marked.load(std::memory_order_relaxed);
 }
 void Object::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	for (const auto& kv : _fields) {
-		if (kv.second) {
-			visitor_(kv.second);
-			kv.second->visitReferences(visitor_);
-		}
+	for (const auto& [name, obj] : _fields) {
+		visitor_(obj);
+		obj->visitReferences(visitor_);
 	}
 }
 

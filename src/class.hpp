@@ -153,7 +153,7 @@ namespace sandvik {
 			 * @param class_ a Java object.
 			 * @return true if the class is an instance of the specified class, false otherwise.
 			 */
-			bool isInstanceOf(const ObjectRef class_) const;
+			bool isInstanceOf(ObjectRef const class_) const;
 			/** @brief Checks if the class is external (declared but defined outside the DEX files).
 			 * @return true if the class is external, false otherwise.
 			 */
