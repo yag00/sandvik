@@ -862,8 +862,7 @@ void Interpreter::filled_new_array(const uint8_t* operand_) {
 		array->setElement(i, args[i]);
 	}
 
-	uint8_t dest = operand_[3] & 0x0F;
-	frame.setObjRegister(dest, arrayObj);
+	frame.setReturnObject(arrayObj);
 	frame.pc() += 5;
 }
 // filled-new-array/range {vCCCC .. vNNNN}, type@BBBB
