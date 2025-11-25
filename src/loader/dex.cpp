@@ -276,8 +276,40 @@ std::vector<std::pair<std::string, uint32_t>> Dex::resolveArray(uint16_t idx) {
 					}
 					break;
 				}
-				case LIEF::DEX::Type::TYPES::ARRAY:
-					throw DexLoaderException(fmt::format("Nested array type: {} [{}] not supported", get_type_descriptor(item), item.dim()));
+				case LIEF::DEX::Type::TYPES::ARRAY: {
+					// Handle nested arrays by parsing the item's descriptor directly.
+					// Example descriptors: "[[I", "[[Ljava/lang/String;"
+					const std::string nested_desc = get_type_descriptor(item);
+					// Count leading '[' to get the array dimensionality
+					size_t dims = 0;
+					while (dims < nested_desc.size() && nested_desc[dims] == '[') {
+						++dims;
+					}
+					if (dims == 0) {
+						throw DexLoaderException(fmt::format("Malformed nested array descriptor: {}", nested_desc));
+					}
+
+					std::string base = nested_desc.substr(dims);
+					if (base.empty()) {
+						throw DexLoaderException(fmt::format("Empty base descriptor in nested array: {}", nested_desc));
+					}
+
+					if (base.front() == 'L') {
+						// class descriptor: Ljava/lang/String; -> java.lang.String
+						if (base.back() == ';') {
+							base.pop_back();
+						} else {
+							logger.ferror("Expected class descriptor to end with ';', got '{}'", base);
+						}
+						base = base.substr(1);  // remove leading 'L'
+						std::replace(base.begin(), base.end(), '/', '.');
+						_array.push_back({base, static_cast<uint32_t>(dims)});
+					} else {
+						// primitive descriptor like 'I', 'B', etc.
+						_array.push_back({get_primitive_type(base), static_cast<uint32_t>(dims)});
+					}
+					break;
+				}
 				case LIEF::DEX::Type::TYPES::UNKNOWN:
 				default:
 					throw DexLoaderException(fmt::format("Unknown type: {} [{}] not supported", get_type_descriptor(item), item.dim()));
