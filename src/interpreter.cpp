@@ -371,7 +371,9 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	              (uintptr_t)symbol);
 	auto caller = std::make_unique<NativeCallHelper>();
 	auto ret = caller->invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
-	_rt.currentFrame().setReturnObject(ret);
+	if (returnType != "V") {
+		_rt.currentFrame().setReturnObject(ret);
+	}
 }
 
 void Interpreter::handleException(ObjectRef exception_) {
