@@ -60,6 +60,7 @@ Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_uniq
 
 Vm::~Vm() {
 	logger.debug("VM instance destroyed.");
+	GC::getInstance().unmanageVm(this);
 }
 
 void Vm::loadRt(const std::string& path) {
@@ -270,12 +271,60 @@ void Vm::visitReferences(const std::function<void(Object*)>& visitor_) const {
 }
 
 void Vm::suspend() {
-	for (const auto& thread : _threads) {
-		thread->suspend();
+	// If VM not running, nothing to do
+	if (_isRunning.load() == false) {
+		return;
+	}
+	bool all_suspended = true;
+	do {
+		all_suspended = true;
+		// Copy pointers to threads while holding the lock, then release the lock
+		std::vector<JThread*> threads_to_suspend;
+		{
+			std::unique_lock lock(_mutex);
+			threads_to_suspend.reserve(_threads.size());
+			for (const auto& thread : _threads) {
+				if (thread->getState() == Thread::ThreadState::Stopped) {
+					continue;
+				}
+				threads_to_suspend.push_back(thread.get());
+			}
+		}
+		// Suspend each thread without holding the VM mutex to avoid deadlock with thread creation
+		for (auto thread : threads_to_suspend) {
+			thread->suspend();
+		}
+		// check if all threads are suspended
+		{
+			std::unique_lock lock(_mutex);
+			for (const auto& thread : _threads) {
+				if (thread->getState() == Thread::ThreadState::Stopped) {
+					continue;
+				}
+				if (thread->getState() != Thread::ThreadState::Suspended) {
+					all_suspended = false;
+					break;
+				}
+			}
+		}
+	} while (!all_suspended);
+
+	// take the opportunity to clean stopped threads while world is stopped
+	std::unique_lock lock(_mutex);
+	for (auto it = _threads.begin(); it != _threads.end(); ++it) {
+		if ((*it)->getState() == Thread::ThreadState::Stopped) {
+			_threads.erase(it);
+			return;
+		}
 	}
 }
 
 void Vm::resume() {
+	if (_isRunning.load() == false) {
+		return;
+	}
+	// world is fully stopped, resume all threads
+	std::unique_lock lock(_mutex);
 	for (const auto& thread : _threads) {
 		thread->resume();
 	}
