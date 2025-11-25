@@ -65,6 +65,7 @@ namespace sandvik {
 			std::string format_i22t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const;
 			std::string format_i22s(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const;
 			std::string format_i22c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const;
+			std::string format_i25c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const;
 			std::string format_i30t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const;
 			std::string format_i32x(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const;
 			std::string format_i31i(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const;
