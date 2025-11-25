@@ -183,8 +183,6 @@ namespace sandvik {
 			std::vector<ObjectRef> _registers;
 
 			uint16_t _pc = 0;
-
-			ObjectRef _null;
 			ObjectRef _objectReturn;
 			ObjectRef _exception;
 	};

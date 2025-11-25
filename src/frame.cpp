@@ -32,7 +32,6 @@ using namespace sandvik;
 
 Frame::Frame(Method& method_) : _method(method_) {
 	logger.fdebug("new Frame for method = {}.{} registers ={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
-	_null = Object::makeNull();
 	_exception = Object::makeNull();
 	_objectReturn = Object::makeNull();
 	increaseRegSize(method_.getNbRegisters());
@@ -220,7 +219,6 @@ void Frame::debug() const {
 }
 
 void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	visitor_(_null);
 	visitor_(_objectReturn);
 	visitor_(_exception);
 	for (const auto& reg : _registers) {
