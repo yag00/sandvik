@@ -293,4 +293,6 @@ TEST(VM, InvokeVirtualRange) {
 TEST(VM, InvokeInterfaceRange) {
 	run_common_test("TestInvokeInterfaceRange");
 }
-
+TEST(VM, FilledNewArray) {
+	run_common_test("TestFilledNewArray");
+}
