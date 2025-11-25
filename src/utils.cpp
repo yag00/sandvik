@@ -87,13 +87,13 @@ std::string sandvik::get_method_descriptor(const LIEF::DEX::Method& method) {
 }
 
 std::string sandvik::get_primitive_type(const std::string& descriptor) {
-	static std::map<std::string, std::string> descriptors = {{"Z", "boolean"}, {"B", "byte"},  {"C", "char"},   {"S", "short"}, {"I", "int"},
-	                                                         {"J", "long"},    {"F", "float"}, {"D", "double"}, {"V", "void"}};
+	static std::map<std::string, std::string, std::less<>> descriptors = {{"Z", "boolean"}, {"B", "byte"},  {"C", "char"},   {"S", "short"}, {"I", "int"},
+	                                                                      {"J", "long"},    {"F", "float"}, {"D", "double"}, {"V", "void"}};
 	return descriptors[descriptor];
 }
 
 bool sandvik::is_primitive_type(const std::string& classname) {
-	static std::map<std::string, bool> primitive_types = {{"boolean", true}, {"byte", true},  {"char", true},   {"short", true}, {"int", true},
-	                                                      {"long", true},    {"float", true}, {"double", true}, {"void", true}};
+	static std::map<std::string, bool, std::less<>> primitive_types = {{"boolean", true}, {"byte", true},  {"char", true},   {"short", true}, {"int", true},
+	                                                                   {"long", true},    {"float", true}, {"double", true}, {"void", true}};
 	return primitive_types[classname];
 }

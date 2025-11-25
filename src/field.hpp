@@ -120,8 +120,8 @@ namespace sandvik {
 			std::string _type;
 			bool _isStatic;
 
-			uint64_t _value;
-			std::string _strValue;
+			uint64_t _value = 0;
+			std::string _strValue = "";
 			ObjectRef _obj;
 	};
 }  // namespace sandvik

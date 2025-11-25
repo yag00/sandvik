@@ -70,10 +70,6 @@ namespace sandvik {
 			void release();
 			/** request garbage collection */
 			void requestCollect();
-			/** wait for GC completion */
-			void waitForCompletion();
-			/** terminate the GC */
-			void end();
 
 			/** track allocated object
 			 * @param obj_ object to track (take ownership)

@@ -97,7 +97,7 @@ Frame& JThread::currentFrame() const {
 void JThread::loop() {
 	try {
 		_interpreter->execute();
-	} catch (const std::exception& e) {
+	} catch (const VmException& e) {
 		logger.error(e.what());
 		// terminate the whole VM on unhandled exception in thread
 		_vm.stop();

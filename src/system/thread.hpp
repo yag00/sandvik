@@ -32,7 +32,7 @@ namespace sandvik {
 			/** @brief Thread states */
 			enum class ThreadState { NotStarted, Running, SuspendedRequested, Suspended, Stopped };
 			/** @brief Constructor */
-			Thread(const std::string& name_);
+			explicit Thread(const std::string& name_);
 			/** @brief Destructor */
 			virtual ~Thread();
 

@@ -56,8 +56,6 @@ void Thread::run(bool wait_) {
 					_thread.join();
 				} catch (const std::exception& ex) {
 					logger.ferror("Failed to join previous thread '{}': {}", _name, ex.what());
-				} catch (...) {
-					logger.ferror("Failed to join previous thread '{}' : unknown exception", _name);
 				}
 			} else {
 				// Shouldn't normally happen: attempting to join the same thread object from within that thread.
@@ -77,7 +75,7 @@ void Thread::run(bool wait_) {
 		logger.fdebug("Starting thread '{}'", _name);
 		while (_state.load() != ThreadState::Stopped && !done()) {
 			if (_state.load() == ThreadState::SuspendedRequested) {
-				std::unique_lock<std::mutex> lock(_mtx);
+				std::unique_lock lock(_mtx);
 				_state.store(ThreadState::Suspended);  // Confirm suspension
 				_cv.notify_all();                      // Notify that the thread is suspended
 				_cv.wait(lock, [this]() { return _state.load() != ThreadState::Suspended; });
@@ -111,7 +109,7 @@ Thread::ThreadState Thread::getState() const {
 }
 
 void Thread::suspend() {
-	std::unique_lock<std::mutex> lock(_mtx);
+	std::unique_lock lock(_mtx);
 	if (_state.load() == ThreadState::Running) {
 		_state.store(ThreadState::SuspendedRequested);  // Request suspension
 		_cv.wait(lock, [this]() { return _state.load() == ThreadState::Suspended; });
@@ -119,7 +117,7 @@ void Thread::suspend() {
 }
 
 void Thread::resume() {
-	std::lock_guard<std::mutex> lock(_mtx);
+	std::lock_guard lock(_mtx);
 	if (_state.load() == ThreadState::Suspended) {
 		_state.store(ThreadState::Running);
 		_cv.notify_all();  // Wake up the thread

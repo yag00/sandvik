@@ -18,6 +18,8 @@
 
 #include "gc.hpp"
 
+#include <algorithm>
+
 #include "monitor.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -36,7 +38,7 @@ GC::~GC() {
 
 void GC::loop() {
 	{
-		std::unique_lock<std::mutex> lock(_mtx);
+		std::unique_lock lock(_mtx);
 		// Wait until someone requests a GC
 		_cv.wait(lock, [&] { return _gcRequested.load(); });
 		_gcRequested.store(false);
@@ -69,7 +71,7 @@ void GC::manageVm(Vm* vm_) {
 }
 
 void GC::unmanageVm(Vm* vm_) {
-	_vms.erase(std::remove(_vms.begin(), _vms.end(), vm_), _vms.end());
+	std::erase(_vms, vm_);
 	if (_vms.empty()) {
 		_done.store(true);
 		_gcRequested.store(true);
@@ -82,13 +84,10 @@ void GC::release() {
 }
 
 void GC::requestCollect() {
-	std::unique_lock<std::mutex> lock(_mtx);
+	std::unique_lock lock(_mtx);
 	_gcRequested.store(true);
 	_cv.notify_all();
 	std::this_thread::yield();
-}
-
-void GC::waitForCompletion() {
 }
 
 uint64_t GC::getGcCycles() const {
@@ -112,9 +111,9 @@ void GC::collect() {
 	}
 
 	// Sweeping: free unmarked objects
-	_objects.erase(std::remove_if(_objects.begin(), _objects.end(), [](const std::unique_ptr<Object>& obj) { return !obj->isMarked(); }), _objects.end());
+	std::erase_if(_objects, [](const std::unique_ptr<Object>& obj) { return !obj->isMarked(); });
 	// Clear marks for next GC for live objects
-	for (auto& obj : _objects) {
+	for (const auto& obj : _objects) {
 		obj->setMarked(false);
 	}
 
