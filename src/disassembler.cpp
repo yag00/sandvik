@@ -686,29 +686,38 @@ std::string Disassembler::format_i31c(const std::string& name_, const uint8_t* o
 
 std::string Disassembler::format_i35c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const {
 	size_ += 5;
-	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;         // Number of registers used
-	uint16_t method_idx = *(const uint16_t*)&operand_[1];  // Method index
+	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;  // Number of registers used
+	uint16_t idx = *(const uint16_t*)&operand_[1];  // method or type index
 	uint8_t vC = operand_[3] & 0x0F;
 	uint8_t vD = (reg_count > 0) ? (operand_[3] >> 4) & 0x0F : 0;
 	uint8_t vE = (reg_count > 1) ? operand_[4] & 0x0F : 0;
 	uint8_t vF = (reg_count > 2) ? (operand_[4] >> 4) & 0x0F : 0;
 	uint8_t vG = operand_[0] & 0x0F;
 
+	std::string ref_kind;
+	if (name_.find("filled-new-array") != std::string::npos) {
+		ref_kind = "type@";
+	} else if (name_.find("invoke-custom") != std::string::npos) {
+		ref_kind = "call-site@";
+	} else {
+		ref_kind = "meth@";
+	}
+
 	switch (reg_count) {
 		case 0:
-			return fmt::format("{} method@{}", name_, method_idx);
+			return fmt::format("{} {}{}", name_, ref_kind, idx);
 		case 1:
-			return fmt::format("{} {{v{}}}, method@{}", name_, vC, method_idx);
+			return fmt::format("{} {{v{}}}, {}{}", name_, vC, ref_kind, idx);
 		case 2:
-			return fmt::format("{} {{v{}, v{}}}, method@{}", name_, vC, vD, method_idx);
+			return fmt::format("{} {{v{}, v{}}}, {}{}", name_, vC, vD, ref_kind, idx);
 		case 3:
-			return fmt::format("{} {{v{}, v{}, v{}}}, method@{}", name_, vC, vD, vE, method_idx);
+			return fmt::format("{} {{v{}, v{}, v{}}}, {}{}", name_, vC, vD, vE, ref_kind, idx);
 		case 4:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}}}, method@{}", name_, vC, vD, vE, vF, method_idx);
+			return fmt::format("{} {{v{}, v{}, v{}, v{}}}, {}{}", name_, vC, vD, vE, vF, ref_kind, idx);
 		case 5:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, method@{}", name_, vC, vD, vE, vF, vG, method_idx);
+			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, {}{}", name_, vC, vD, vE, vF, vG, ref_kind, idx);
 		default:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, method@{} (unsupported reg count={})", name_, vC, vD, vE, vF, vG, method_idx, reg_count);
+			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, {}{} (unsupported reg count={})", name_, vC, vD, vE, vF, vG, ref_kind, idx, reg_count);
 	}
 }
 
