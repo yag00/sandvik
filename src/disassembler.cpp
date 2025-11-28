@@ -292,7 +292,7 @@ Disassembler::Disassembler() {
 		return "Unknown opcode";
 	});
 
-	_dispatch[0x00] = std::c(&Disassembler::format_i10x, this);
+	_dispatch[0x00] = std::bind_front(&Disassembler::format_i10x, this);
 	_dispatch[0x01] = std::bind_front(&Disassembler::format_i12x, this);
 	_dispatch[0x02] = std::bind_front(&Disassembler::format_i22x, this);
 	_dispatch[0x03] = std::bind_front(&Disassembler::format_i32x, this);
