@@ -292,7 +292,7 @@ Disassembler::Disassembler() {
 		return "Unknown opcode";
 	});
 
-	_dispatch[0x00] = std::bind_front(&Disassembler::format_i10x, this);
+	_dispatch[0x00] = std::c(&Disassembler::format_i10x, this);
 	_dispatch[0x01] = std::bind_front(&Disassembler::format_i12x, this);
 	_dispatch[0x02] = std::bind_front(&Disassembler::format_i22x, this);
 	_dispatch[0x03] = std::bind_front(&Disassembler::format_i32x, this);
@@ -328,7 +328,7 @@ Disassembler::Disassembler() {
 	_dispatch[0x21] = std::bind_front(&Disassembler::format_i12x, this);
 	_dispatch[0x22] = std::bind_front(&Disassembler::format_i21c, this);
 	_dispatch[0x23] = std::bind_front(&Disassembler::format_i22c, this);
-	_dispatch[0x24] = std::bind_front(&Disassembler::format_i25c, this);
+	_dispatch[0x24] = std::bind_front(&Disassembler::format_i35c, this);
 	_dispatch[0x25] = std::bind_front(&Disassembler::format_i3rc, this);
 	_dispatch[0x26] = std::bind_front(&Disassembler::format_i31t, this);
 	_dispatch[0x27] = std::bind_front(&Disassembler::format_i11x, this);
@@ -650,34 +650,6 @@ std::string Disassembler::format_i22c(const std::string& name_, const uint8_t* o
 	return fmt::format("{} v{}, v{}, type@{}", name_, vA, vB, type_idx);
 }
 
-std::string Disassembler::format_i25c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const {
-	size_ += 5;
-	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;         // Number of registers used
-	uint16_t method_idx = *(const uint16_t*)&operand_[1];  // Method index
-	uint8_t vC = operand_[3] & 0x0F;
-	uint8_t vD = (reg_count > 0) ? (operand_[3] >> 4) & 0x0F : 0;
-	uint8_t vE = (reg_count > 1) ? operand_[4] & 0x0F : 0;
-	uint8_t vF = (reg_count > 2) ? (operand_[4] >> 4) & 0x0F : 0;
-	uint8_t vG = operand_[0] & 0x0F;
-
-	switch (reg_count) {
-		case 0:
-			return fmt::format("{} type@{}", name_, method_idx);
-		case 1:
-			return fmt::format("{} {{v{}}}, type@{}", name_, vC, method_idx);
-		case 2:
-			return fmt::format("{} {{v{}, v{}}}, type@{}", name_, vC, vD, method_idx);
-		case 3:
-			return fmt::format("{} {{v{}, v{}, v{}}}, type@{}", name_, vC, vD, vE, method_idx);
-		case 4:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}}}, type@{}", name_, vC, vD, vE, vF, method_idx);
-		case 5:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, type@{}", name_, vC, vD, vE, vF, vG, method_idx);
-		default:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, type@{} (unsupported reg count={})", name_, vC, vD, vE, vF, vG, method_idx, reg_count);
-	}
-}
-
 std::string Disassembler::format_i30t(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const {
 	size_ += 5;
 	int32_t offset = *(const int32_t*)&operand_[1];
@@ -715,28 +687,38 @@ std::string Disassembler::format_i31c(const std::string& name_, const uint8_t* o
 std::string Disassembler::format_i35c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const {
 	size_ += 5;
 	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;         // Number of registers used
-	uint16_t method_idx = *(const uint16_t*)&operand_[1];  // Method index
+	uint16_t idx = *(const uint16_t*)&operand_[1];        // method or type index
 	uint8_t vC = operand_[3] & 0x0F;
 	uint8_t vD = (reg_count > 0) ? (operand_[3] >> 4) & 0x0F : 0;
 	uint8_t vE = (reg_count > 1) ? operand_[4] & 0x0F : 0;
 	uint8_t vF = (reg_count > 2) ? (operand_[4] >> 4) & 0x0F : 0;
 	uint8_t vG = operand_[0] & 0x0F;
 
+	std::string ref_kind;
+	if (name_.find("filled-new-array") != std::string::npos) {
+		ref_kind = "type@";
+	} else if (name_.find("invoke-custom") != std::string::npos) {
+		ref_kind = "call-site@";
+	} else {
+		ref_kind = "meth@";
+	}
+
 	switch (reg_count) {
 		case 0:
-			return fmt::format("{} method@{}", name_, method_idx);
+			return fmt::format("{} {}{}", name_, ref_kind, idx);
 		case 1:
-			return fmt::format("{} {{v{}}}, method@{}", name_, vC, method_idx);
+			return fmt::format("{} {{v{}}}, {}{}", name_, vC, ref_kind, idx);
 		case 2:
-			return fmt::format("{} {{v{}, v{}}}, method@{}", name_, vC, vD, method_idx);
+			return fmt::format("{} {{v{}, v{}}}, {}{}", name_, vC, vD, ref_kind, idx);
 		case 3:
-			return fmt::format("{} {{v{}, v{}, v{}}}, method@{}", name_, vC, vD, vE, method_idx);
+			return fmt::format("{} {{v{}, v{}, v{}}}, {}{}", name_, vC, vD, vE, ref_kind, idx);
 		case 4:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}}}, method@{}", name_, vC, vD, vE, vF, method_idx);
+			return fmt::format("{} {{v{}, v{}, v{}, v{}}}, {}{}", name_, vC, vD, vE, vF, ref_kind, idx);
 		case 5:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, method@{}", name_, vC, vD, vE, vF, vG, method_idx);
+			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, {}{}", name_, vC, vD, vE, vF, vG, ref_kind, idx);
 		default:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, method@{} (unsupported reg count={})", name_, vC, vD, vE, vF, vG, method_idx, reg_count);
+			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, {}{} (unsupported reg count={})",
+							   name_, vC, vD, vE, vF, vG, ref_kind, idx, reg_count);
 	}
 }
 
