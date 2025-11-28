@@ -867,6 +867,7 @@ void Interpreter::filled_new_array(const uint8_t* operand_) {
 }
 // filled-new-array/range {vCCCC .. vNNNN}, type@BBBB
 void Interpreter::filled_new_array_range(const uint8_t* operand_) {
+	// We have not found Java code generating this instruction yet due to recent d8 compiler.
 	throw VmException("filled_new_array_range not implemented");
 }
 // fill-array-data vAA, +BBBBBBBB
