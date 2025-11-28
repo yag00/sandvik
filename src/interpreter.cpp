@@ -857,7 +857,7 @@ void Interpreter::filled_new_array(const uint8_t* operand_) {
 		throw VmException("filled-new-array: failed to create array of type {}", arrayType[0].first);
 	}
 
-	auto array = std::dynamic_pointer_cast<Array>(arrayObj);
+	auto array = static_cast<ArrayRef>(arrayObj);
 	for (uint8_t i = 0; i < args.size(); ++i) {
 		array->setElement(i, args[i]);
 	}

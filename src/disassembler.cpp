@@ -686,8 +686,8 @@ std::string Disassembler::format_i31c(const std::string& name_, const uint8_t* o
 
 std::string Disassembler::format_i35c(const std::string& name_, const uint8_t* operand_, uint32_t& size_) const {
 	size_ += 5;
-	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;         // Number of registers used
-	uint16_t idx = *(const uint16_t*)&operand_[1];        // method or type index
+	uint8_t reg_count = (operand_[0] >> 4) & 0x0F;  // Number of registers used
+	uint16_t idx = *(const uint16_t*)&operand_[1];  // method or type index
 	uint8_t vC = operand_[3] & 0x0F;
 	uint8_t vD = (reg_count > 0) ? (operand_[3] >> 4) & 0x0F : 0;
 	uint8_t vE = (reg_count > 1) ? operand_[4] & 0x0F : 0;
@@ -717,8 +717,7 @@ std::string Disassembler::format_i35c(const std::string& name_, const uint8_t* o
 		case 5:
 			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, {}{}", name_, vC, vD, vE, vF, vG, ref_kind, idx);
 		default:
-			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, {}{} (unsupported reg count={})",
-							   name_, vC, vD, vE, vF, vG, ref_kind, idx, reg_count);
+			return fmt::format("{} {{v{}, v{}, v{}, v{}, v{}}}, {}{} (unsupported reg count={})", name_, vC, vD, vE, vF, vG, ref_kind, idx, reg_count);
 	}
 }
 
