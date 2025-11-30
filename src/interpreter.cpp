@@ -2697,8 +2697,9 @@ void Interpreter::invoke_interface_range(const uint8_t* operand_) {
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
-			for (auto i = 0; i < args.size(); i++) {
-				newframe.setObjRegister(vmethod->getNbRegisters() - args.size() + i, args[i]);
+			for (size_t i = 0; i < args.size(); ++i) {
+				uint32_t regIdx = vmethod->getNbRegisters() - args.size() + i;
+				newframe.setObjRegister(regIdx, args[i]);
 			}
 		}
 	} else {

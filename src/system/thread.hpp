@@ -77,6 +77,9 @@ namespace sandvik {
 			virtual void loop() = 0;
 			/** @brief thread loop end condition. */
 			virtual bool done() = 0;
+			/** @brief hook called when run() is about to start a new thread. */
+			virtual void onStart() {
+			}
 
 		private:
 			std::string _name;

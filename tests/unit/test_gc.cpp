@@ -31,19 +31,19 @@ using namespace sandvik;
 
 TEST(gc, collect) {
 	GC::getInstance().run();
-	EXPECT_EQ(GC::getInstance().getTrackedObjectCount(), 0);
+	EXPECT_EQ(GC::getInstance().getTrackedObjectCount(), 0u);
 	for (uint32_t i = 0; i < 50; ++i) {
 		Object::make(i);
 	}
-	EXPECT_EQ(GC::getInstance().getTrackedObjectCount(), 50);
-	EXPECT_EQ(GC::getInstance().getGcCycles(), 0);
+	EXPECT_EQ(GC::getInstance().getTrackedObjectCount(), 50u);
+	EXPECT_EQ(GC::getInstance().getGcCycles(), 0u);
 	GC::getInstance().requestCollect();
 	uint32_t cpt = 20;
-	while (GC::getInstance().getGcCycles() == 0 && cpt > 0) {
+	while (GC::getInstance().getGcCycles() == 0u && cpt > 0) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		--cpt;
 	}
-	EXPECT_EQ(GC::getInstance().getGcCycles(), 1);
-	EXPECT_EQ(GC::getInstance().getTrackedObjectCount(), 0);
+	EXPECT_EQ(GC::getInstance().getGcCycles(), 1u);
+	EXPECT_EQ(GC::getInstance().getTrackedObjectCount(), 0u);
 	GC::getInstance().stop();
 }

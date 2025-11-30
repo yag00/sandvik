@@ -81,6 +81,8 @@ namespace sandvik {
 			void loop() override;
 			/** @brief thread loop end condition. */
 			bool done() override;
+			/** @brief hook called when run() is about to start a new thread. */
+			void onStart() override;
 
 		private:
 			/** perform garbage collection */
