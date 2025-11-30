@@ -111,7 +111,7 @@ def build(bld):
 	#-------------------------------------------------
 	# check style
 	#-------------------------------------------------
-	checkstyle_sources = bld.path.ant_glob(['sanddirt/**/*.java', 'src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
+	checkstyle_sources = bld.path.ant_glob(['android-12.0.0/**/*.cpp', 'sanddirt/**/*.java', 'src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
 	bld.checkstyle(
 		inputs = checkstyle_sources,
 	)
@@ -123,20 +123,20 @@ def build(bld):
 	#-------------------------------------------------
 	# build java runtime sanddirt.jar
 	#-------------------------------------------------
-	bld(features   = 'javac jar d8',
-		srcdir     = 'sanddirt/', # folder containing the sources to compile
-		outdir     = 'sanddirt', # folder where to output the classes (in the build directory)
-		compat     = '8', # java compatibility version number
-		sourcepath = ['sanddirt'],
-		classpath  = ['.', '..'],
-		jaropts = [], # can be used to give files
-		basedir    = 'sanddirt', # folder containing the classes and other files to package (must match outdir)
-		destfile   = 'sanddirt.jar', # do not put the destfile in the folder of the java classes!
-	)
+	#bld(features   = 'javac jar d8',
+	#	srcdir     = 'sanddirt/', # folder containing the sources to compile
+	#	outdir     = 'sanddirt', # folder where to output the classes (in the build directory)
+	#	compat     = '8', # java compatibility version number
+	#	sourcepath = ['sanddirt'],
+	#	classpath  = ['.', '..'],
+	#	jaropts = [], # can be used to give files
+	#	basedir    = 'sanddirt', # folder containing the classes and other files to package (must match outdir)
+	#	destfile   = 'sanddirt.jar', # do not put the destfile in the folder of the java classes!
+	#)
 	#-------------------------------------------------
 	# build sandvik library
 	#-------------------------------------------------
-	sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c'], excl=['src/main.cpp'])
+	sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c', 'android-12.0.0/**/*.cpp'], excl=['src/main.cpp'])
 	bld.shlib(
 		features        = ['resources', 'doxygen'],
 		source          = sources,
@@ -146,7 +146,7 @@ def build(bld):
 		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
 		linkflags       = ["-Wl,-z,defs"],
 		install_path    = '${PREFIX}/lib',
-		resources       = 'sanddirt.dex.jar',
+		#resources       = 'android-12.0.0/bin/core-oj.dex.jar',
 		doxyfile        = 'doc/sandvik.doxygen',
 	)
 	#-------------------------------------------------
