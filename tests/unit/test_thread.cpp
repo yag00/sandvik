@@ -30,6 +30,10 @@ class DummyThread : public Thread {
 	public:
 		DummyThread(const std::string& name) : Thread(name), _counter(0), _done(false) {}
 
+		void onStart() override {
+			_done = false;
+		}
+
 		int getCounter() const {
 			return _counter.load();
 		}
@@ -199,6 +203,7 @@ TEST(Thread, restartAfterStop) {
 	EXPECT_EQ(Thread::ThreadState::Stopped, thread.getState());
 	// Restart the thread
 	thread.run(false);
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Let the thread time to be in running state
 	EXPECT_EQ(Thread::ThreadState::Running, thread.getState());
 	// Stop the thread
 	thread.stopThread();

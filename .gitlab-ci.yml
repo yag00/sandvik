@@ -51,7 +51,23 @@ package:
   only:
     - main
 
-tests:
+gcc-build-tests:
+  stage: build
+  script:
+    # need to re-configure to switch compiler
+    - ./waf configure --gcc
+    - ./waf build --tests
+  dependencies:
+    - configure
+  cache:
+    key: "${WAF_CONFIG_CACHE_KEY}"
+    paths:
+      - "ext"
+      - "${BUILD_DIR}"
+      - .lock-waf_linux_build
+    policy: pull
+
+clang-build-tests:
   stage: build
   script:
     - ./waf build --tests

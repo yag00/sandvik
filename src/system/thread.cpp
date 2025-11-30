@@ -66,6 +66,7 @@ void Thread::run(bool wait_) {
 		}
 	}
 
+	onStart();
 	_state.store(ThreadState::Running);
 	_thread = std::thread([this]() {
 		auto id = std::this_thread::get_id();
