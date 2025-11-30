@@ -30,7 +30,7 @@
 #include "field.hpp"
 #include "jni.hpp"
 #include "jthread.hpp"
-#include "native/native_utils.hpp"
+#include "native_utils.hpp"
 #include "system/logger.hpp"
 #include "vm.hpp"
 

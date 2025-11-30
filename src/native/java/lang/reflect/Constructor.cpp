@@ -24,7 +24,7 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
-#include "native/native_utils.hpp"
+#include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 

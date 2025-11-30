@@ -25,7 +25,7 @@
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "jni.hpp"
-#include "native/native_utils.hpp"
+#include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 
