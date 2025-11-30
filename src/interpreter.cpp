@@ -2313,7 +2313,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	}
 	Class* instance = &this_ptr->getClass();
 	if (!instance->isStaticInitialized()) {
-		throw VmException("invoke-virtual: class {} is not static initialized", instance->getFullname());
+		executeClinit(*instance);
 	}
 
 	std::string classname, methodname, signature;
@@ -2467,7 +2467,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	}
 	Class* instance = &this_ptr->getClass();
 	if (!instance->isStaticInitialized()) {
-		throw VmException("invoke-interface: class {} is not static initialized", instance->getFullname());
+		executeClinit(*instance);
 	}
 
 	std::string ifclassname, methodname, signature;
