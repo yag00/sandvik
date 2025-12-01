@@ -69,7 +69,7 @@ namespace sandvik {
 			void suspend();
 			/** @brief Resumes the thread execution. */
 			void resume();
-			/** @brief Strop the thread execution. */
+			/** @brief Stop the thread execution. */
 			void stop();
 
 		protected:

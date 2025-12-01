@@ -44,7 +44,7 @@ void GC::loop() {
 	{
 		std::unique_lock lock(_mtx);
 		// Wait until someone requests a GC
-		_cv.wait(lock, [&] { return _gcRequested.load(); });
+		_cv.wait(lock, [this] { return _gcRequested.load(); });
 		_gcRequested.store(false);
 		if (_done.load()) {
 			return;

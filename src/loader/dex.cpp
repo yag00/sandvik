@@ -302,7 +302,7 @@ std::vector<std::pair<std::string, uint32_t>> Dex::resolveArray(uint16_t idx) {
 							logger.ferror("Expected class descriptor to end with ';', got '{}'", base);
 						}
 						base = base.substr(1);  // remove leading 'L'
-						std::replace(base.begin(), base.end(), '/', '.');
+						std::ranges::replace(base, '/', '.');
 						_array.push_back({base, static_cast<uint32_t>(dims)});
 					} else {
 						// primitive descriptor like 'I', 'B', etc.

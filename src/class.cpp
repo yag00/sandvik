@@ -82,7 +82,7 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 	// Initialize interfaces
 	for (const auto& interface : class_.interfaces()) {
 		auto iface = interface;
-		std::replace(iface.begin(), iface.end(), '/', '.');
+		std::ranges::replace(iface, '/', '.');
 		_interfaces.push_back(iface);
 	}
 }
