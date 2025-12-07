@@ -2323,6 +2323,10 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	while (true) {
 		try {
 			vmethod = &instance->getMethod(methodname, signature);
+			if (!vmethod->isVirtual()) {
+				// throw exception here to go up the superclass chain
+				throw VmException();
+			}
 			break;  // Method found, exit loop
 		} catch (std::exception& e) {
 			logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
@@ -2547,6 +2551,10 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 	while (true) {
 		try {
 			vmethod = &instance->getMethod(methodname, signature);
+			if (!vmethod->isVirtual()) {
+				// throw exception here to go up the superclass chain
+				throw VmException();
+			}
 			break;  // Method found, exit loop
 		} catch (std::exception& e) {
 			logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
