@@ -690,9 +690,13 @@ jmethodID NativeInterface::GetMethodID(JNIEnv *env, jclass clazz, const char *na
 	if (!clsObj->isClass()) {
 		throw ClassCastException("GetMethodID: class is not a class object");
 	}
-	auto &cls = clsObj->getClass();
-	const auto &method = cls.getMethod(name, sig);
-	return (jmethodID)(uintptr_t)method.getIndex();
+	try {
+		auto &cls = clsObj->getClass();
+		const auto &method = cls.getMethod(name, sig);
+		return (jmethodID)(uintptr_t)method.getIndex();
+	} catch (const std::invalid_argument &) {
+		return nullptr;
+	}
 }
 
 JThread &NativeInterface::__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, va_list &args) {
