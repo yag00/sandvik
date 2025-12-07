@@ -144,6 +144,18 @@ TEST(object, string) {
 	EXPECT_TRUE(ref_c != ref_b);
 }
 
+TEST(object, string16) {
+	ClassLoader classloader;
+	java::lang::String(classloader);
+	auto obj_a = Object::make(classloader, "\u0068\u0065\u006c\u006c\u006f"); // "hello"
+	auto s16 = std::u16string{u'\u0068', u'\u0065', u'\u006c', u'\u006c', u'\u006f'};
+	auto obj_b = Object::make(classloader, std::string(s16.begin(), s16.end()));
+
+	EXPECT_EQ(obj_a->str16(), s16);
+	EXPECT_EQ(obj_b->str16(), obj_a->str16());
+	EXPECT_EQ(obj_b->str(), "hello");
+}
+
 TEST(object, array) {
 	ClassLoader classloader;
 	ClassBuilder(classloader, "", "int").finalize();

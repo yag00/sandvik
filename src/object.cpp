@@ -267,6 +267,12 @@ namespace sandvik {
 			 */
 			std::string str() const override;
 			/**
+			 * @brief Gets the UTF16 string value of the object.
+			 * @return String value.
+			 * @throw std::bad_cast if the object is not a string.
+			 */
+			std::u16string str16() const override;
+			/**
 			 * @brief Set the string value of the object.
 			 * @param str_ String value.
 			 * @throw std::bad_cast if the object is not a string.
@@ -473,6 +479,10 @@ std::string Object::str() const {
 	throw std::bad_cast();
 }
 
+std::u16string Object::str16() const {
+	throw std::bad_cast();
+}
+
 void Object::setString(const std::string& str_) {
 	throw std::bad_cast();
 }
@@ -607,6 +617,9 @@ bool StringObject::isString() const {
 }
 std::string StringObject::str() const {
 	return _value;
+}
+std::u16string StringObject::str16() const {
+	return std::u16string(_value.begin(), _value.end());
 }
 std::string StringObject::toString() const {
 	return "\"" + _value + "\"";

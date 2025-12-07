@@ -351,6 +351,12 @@ namespace sandvik {
 			 */
 			virtual std::string str() const;
 			/**
+			 * @brief Gets the UTF16 string value of the object.
+			 * @return String value.
+			 * @throw std::bad_cast if the object is not a string.
+			 */
+			virtual std::u16string str16() const;
+			/**
 			 * @brief Set the string value of the object.
 			 * @param str_ String value.
 			 * @throw std::bad_cast if the object is not a string.
