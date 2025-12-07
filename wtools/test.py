@@ -27,7 +27,10 @@ class UnitTest:
 	def run(self):
 		bld = self.bld
 
-		setenv(bld, paths=[bld.path.find_node('tests/java/native').abspath()])
+		setenv(bld, paths=[
+			bld.path.find_node('tests/java/native').abspath(),
+			bld.path.find_node('tests/java/jni').abspath()
+		])
 
 		bld.stlib(
 			name		= 'googletest',
