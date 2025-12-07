@@ -43,15 +43,15 @@ namespace sandvik {
 			/** @brief Creates a new array object.
 			 * @param classtype_ Reference to the Class type of the array
 			 * @param size_ Size of the array
-			 * @return ObjectRef to the created array object
+			 * @return ArrayRef to the created array object
 			 */
-			static ObjectRef make(const Class& classtype_, uint32_t size_);
+			static ArrayRef make(const Class& classtype_, uint32_t size_);
 			/** @brief Creates a new multi-dimensional array object.
 			 * @param classtype_ Reference to the Class type of the array
 			 * @param dimensions_ Vector of dimensions for the array
-			 * @return ObjectRef to the created multi-dimensional array object
+			 * @return ArrayRef to the created multi-dimensional array object
 			 */
-			static ObjectRef make(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
+			static ArrayRef make(const Class& classtype_, const std::vector<uint32_t>& dimensions_);
 			/** @brief Constructs a new Array object.
 			 * @param classtype_ Reference to the Class type of the array
 			 * @param dimensions_ Vector of dimensions for the array

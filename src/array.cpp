@@ -30,10 +30,10 @@
 
 using namespace sandvik;
 
-ObjectRef Array::make(const Class& classtype_, uint32_t size_) {
+ArrayRef Array::make(const Class& classtype_, uint32_t size_) {
 	return Array::make(classtype_, std::vector<uint32_t>{size_});
 }
-ObjectRef Array::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
+ArrayRef Array::make(const Class& classtype_, const std::vector<uint32_t>& dimensions_) {
 	auto u = std::make_unique<Array>(classtype_, dimensions_);
 	auto ptr = u.get();
 	GC::getInstance().track(std::move(u));
