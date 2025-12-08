@@ -86,6 +86,7 @@ namespace sandvik {
 			ClassLoader& _classLoader;
 			std::unique_ptr<Class> _class;
 			uint32_t _methodIndex = 1;
+			uint32_t _fieldIndex = 1;
 	};
 
 }  // namespace sandvik

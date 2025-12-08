@@ -60,7 +60,8 @@ void ClassBuilder::addMethod(const std::string& name_, const std::string& signat
 }
 
 void ClassBuilder::addField(const std::string& name_, const std::string& type_, bool isStatic_, ObjectRef value_) {
-	_class->_fields[name_] = std::make_unique<Field>(*_class, name_, type_, isStatic_);
+	_class->_fields[name_] = std::make_unique<Field>(*_class, name_, type_, isStatic_, _fieldIndex);
+	_fieldIndex++;
 	if (isStatic_ && value_) {
 		_class->_fields[name_]->setObjectValue(value_);
 	}

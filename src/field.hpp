@@ -39,14 +39,20 @@ namespace sandvik {
 			 * @param name_ Name of the field
 			 * @param type_ Type of the field
 			 * @param isStatic_ Indicates if the field is static
+			 * @param index_ Index of the field
 			 */
-			Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_);
+			Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_, uint32_t index_);
 			/** @brief Constructs a Field from a LIEF DEX Field.
 			 * @param class_ Reference to the Class that owns this field
 			 * @param field_ Reference to the LIEF DEX Field
 			 */
 			Field(Class& class_, const LIEF::DEX::Field& field_);
 			~Field() = default;
+
+			/** @brief Returns the index of the field in the class.
+			 * @return Index of the field.
+			 */
+			uint32_t getIndex() const;
 
 			/** @brief Returns a string representation of the field.
 			 * @return String representation.
@@ -119,6 +125,7 @@ namespace sandvik {
 			std::string _name;
 			std::string _type;
 			bool _isStatic;
+			uint32_t _index;
 
 			uint64_t _value = 0;
 			std::string _strValue = "";

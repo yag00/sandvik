@@ -25,16 +25,22 @@
 #include <LIEF/DEX/Type.hpp>
 
 #include "class.hpp"
+#include "exceptions.hpp"
 #include "object.hpp"
 #include "utils.hpp"
 
 using namespace sandvik;
 
-Field::Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_)
-    : _class(class_), _name(name_), _type(type_), _isStatic(isStatic_), _obj(Object::makeNull()) {
+Field::Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_, uint32_t index_)
+    : _class(class_), _name(name_), _type(type_), _isStatic(isStatic_), _index(index_), _obj(Object::makeNull()) {
 }
 Field::Field(Class& class_, const LIEF::DEX::Field& field_)
-    : _class(class_), _name(field_.name()), _type(get_type_descriptor(*field_.type())), _isStatic(field_.has(LIEF::DEX::ACC_STATIC)), _obj(Object::makeNull()) {
+    : _class(class_),
+      _name(field_.name()),
+      _type(get_type_descriptor(*field_.type())),
+      _isStatic(field_.has(LIEF::DEX::ACC_STATIC)),
+      _index(field_.index()),
+      _obj(Object::makeNull()) {
 }
 
 std::string Field::str() const {
@@ -52,6 +58,10 @@ std::string Field::getFieldTypeClassname() const {
 		return prettyType;
 	}
 	return type;
+}
+
+uint32_t Field::getIndex() const {
+	return _index;
 }
 
 Class& Field::getClass() const {
