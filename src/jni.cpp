@@ -42,7 +42,61 @@
 
 using namespace sandvik;
 
+SandvikVM::SandvikVM(Vm &vm_) : _vm(vm_) {
+	_interface = std::make_unique<JNIInvokeInterface_>();
+	_interface->reserved0 = nullptr;
+	_interface->reserved1 = nullptr;
+	_interface->reserved2 = nullptr;
+	// Initialize the function pointers with the implemented methods
+	_interface->DestroyJavaVM = &SandvikVM::DestroyJavaVM;
+	_interface->AttachCurrentThread = &SandvikVM::AttachCurrentThread;
+	_interface->DetachCurrentThread = &SandvikVM::DetachCurrentThread;
+	_interface->GetEnv = &SandvikVM::GetEnv;
+	_interface->AttachCurrentThreadAsDaemon = &SandvikVM::AttachCurrentThreadAsDaemon;
+	functions = reinterpret_cast<const JNIInvokeInterface_ *>(_interface.get());
+}
+
+SandvikVM::~SandvikVM() {
+}
+
+Vm &SandvikVM::getVm() const {
+	return _vm;
+}
+
+jint SandvikVM::DestroyJavaVM(JavaVM *vm) {
+	throw std::runtime_error("DestroyJavaVM not implemented");
+}
+
+jint SandvikVM::AttachCurrentThread(JavaVM *vm, void **penv, void *args) {
+	logger.fwarning("AttachCurrentThread called - not implemented");
+	return JNI_OK;
+}
+
+jint SandvikVM::DetachCurrentThread(JavaVM *vm) {
+	logger.fwarning("DetachCurrentThread called - not implemented");
+	return JNI_OK;
+}
+
+jint SandvikVM::GetEnv(JavaVM *vm, void **penv, jint version) {
+	SandvikVM *sandvikVm = static_cast<SandvikVM *>(vm);
+	if (penv == nullptr) {
+		return JNI_ERR;
+	}
+	if (version != JNI_VERSION_1_6) {
+		return JNI_EVERSION;
+	}
+	// Return the NativeInterface as JNIEnv
+	*penv = reinterpret_cast<void *>(sandvikVm->getVm().getJNIEnv());
+	return JNI_OK;
+}
+
+jint SandvikVM::AttachCurrentThreadAsDaemon(JavaVM *vm, void **penv, void *args) {
+	logger.fwarning("AttachCurrentThreadAsDaemon called - not implemented");
+	return JNI_ERR;
+}
+
 NativeInterface::NativeInterface(Vm &vm_) : _vm(vm_), _classloader(vm_.getClassLoader()) {
+	_javaVm = std::make_unique<SandvikVM>(vm_);
 	_interface = std::make_unique<JNINativeInterface_>();
 	functions = _interface.get();
 
@@ -288,6 +342,10 @@ Vm &NativeInterface::getVm() const {
 	return _vm;
 }
 
+SandvikVM *NativeInterface::getJavaVm() const {
+	return _javaVm.get();
+}
+
 ClassLoader &NativeInterface::getClassLoader() const {
 	return _classloader;
 }
@@ -299,15 +357,18 @@ ClassLoader &NativeInterface::getClassLoader() const {
 jint NativeInterface::GetVersion(JNIEnv *env) {
 	return JNI_VERSION_1_6;
 }
+
 jclass NativeInterface::DefineClass(JNIEnv *env, const char *name, jobject loader, const jbyte *buf, jsize len) {
 	throw VmException("DefineClass not implemented");
 }
+
 jclass NativeInterface::FindClass(JNIEnv *env, const char *name) {
 	NativeInterface *this_ptr = static_cast<NativeInterface *>(env);
 	ClassLoader &classloader = this_ptr->getClassLoader();
 	Class &cls = classloader.getOrLoad(name);
-	return (jclass)&cls;
+	return (jclass)Object::make(cls);
 }
+
 jmethodID NativeInterface::FromReflectedMethod(JNIEnv *env, jobject method) {
 	throw VmException("FromReflectedMethod not implemented");
 }
@@ -328,10 +389,17 @@ jobject NativeInterface::ToReflectedField(JNIEnv *env, jclass cls, jfieldID fiel
 }
 
 jint NativeInterface::Throw(JNIEnv *env, jthrowable obj) {
-	throw VmException("Throw not implemented");
+	logger.fwarning("JNI Throw: throwing exception not implemented");
+	auto o = native::getObject(obj);
+	logger.fwarning("JNI Throw: throwing exception object {} not implemented", o->toString());
+	return JNI_OK;
 }
+
 jint NativeInterface::ThrowNew(JNIEnv *env, jclass clazz, const char *msg) {
-	throw VmException("ThrowNew not implemented");
+	logger.fwarning("JNI ThrowNew: throwing exception not implemented");
+	auto clsObj = native::getObject(clazz);
+	logger.fwarning("JNI Throw: throwing exception object {}({}) not implemented", clsObj->toString(), msg ? msg : "null");
+	return JNI_OK;
 }
 jthrowable NativeInterface::ExceptionOccurred(JNIEnv *env) {
 	throw VmException("ExceptionOccurred not implemented");
@@ -340,7 +408,7 @@ void NativeInterface::ExceptionDescribe(JNIEnv *env) {
 	throw VmException("ExceptionDescribe not implemented");
 }
 void NativeInterface::ExceptionClear(JNIEnv *env) {
-	throw VmException("ExceptionClear not implemented");
+	logger.fwarning("ExceptionClear not implemented");
 }
 void NativeInterface::FatalError(JNIEnv *env, const char *msg) {
 	throw VmException("FatalError not implemented");
@@ -353,20 +421,36 @@ jobject NativeInterface::PopLocalFrame(JNIEnv *env, jobject result) {
 	throw VmException("PopLocalFrame not implemented");
 }
 jobject NativeInterface::NewGlobalRef(JNIEnv *env, jobject lobj) {
-	throw VmException("NewGlobalRef not implemented");
+	// Rely on the garbage collector to manage object lifetimes.
+	return lobj;
 }
 void NativeInterface::DeleteGlobalRef(JNIEnv *env, jobject gref) {
-	throw VmException("DeleteGlobalRef not implemented");
+	// Rely on the garbage collector to clean them up.
 }
+
 void NativeInterface::DeleteLocalRef(JNIEnv *env, jobject obj) {
-	throw VmException("DeleteLocalRef not implemented");
+	// Rely on the garbage collector to clean them up.
 }
 jboolean NativeInterface::IsSameObject(JNIEnv *env, jobject obj1, jobject obj2) {
-	throw VmException("IsSameObject not implemented");
+	// Handle null references
+	if (obj1 == nullptr && obj2 == nullptr) {
+		return JNI_TRUE;
+	}
+	if (obj1 == nullptr || obj2 == nullptr) {
+		return JNI_FALSE;
+	}
+	// Get native object pointers
+	auto o1 = native::getObject(obj1);
+	auto o2 = native::getObject(obj2);
+	// Compare object references
+	return (*o1 == *o2) ? JNI_TRUE : JNI_FALSE;
 }
+
 jobject NativeInterface::NewLocalRef(JNIEnv *env, jobject ref) {
-	throw VmException("NewLocalRef not implemented");
+	// local refs are just the same object (no explicit tracking needed)
+	return ref;
 }
+
 jint NativeInterface::EnsureLocalCapacity(JNIEnv *env, jint capacity) {
 	throw VmException("EnsureLocalCapacity not implemented");
 }
@@ -385,12 +469,11 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 }
 
 jclass NativeInterface::GetObjectClass(JNIEnv *env, jobject obj) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetObjectClass on null object");
-	}
 	auto jobj = native::getObject(obj);
-	auto &clazz = jobj->getClass();
-	return (jclass)Object::make(clazz);
+	if (!jobj->isClass()) {
+		throw ClassCastException("GetObjectClass: object is not a class object");
+	}
+	return (jclass)obj;
 }
 jboolean NativeInterface::IsInstanceOf(JNIEnv *env, jobject obj, jclass clazz) {
 	throw VmException("IsInstanceOf not implemented");
@@ -700,20 +783,36 @@ void NativeInterface::CallNonvirtualVoidMethodA(JNIEnv *env, jobject obj, jclass
 	throw VmException("CallNonvirtualVoidMethodA not implemented");
 }
 jfieldID NativeInterface::GetFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw VmException("GetFieldID not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetFieldID: class is not a class object");
+	}
+	if (name == nullptr || sig == nullptr) {
+		throw NullPointerException("GetFieldID: name, or sig is null");
+	}
+	auto &cls = clsObj->getClass();
+	auto &field = cls.getField(name);
+	if (field.getType() != sig) {
+		throw NoSuchFieldException(fmt::format("GetFieldID: field '{}' type '{}' does not match requested '{}'", name, field.getType(), sig));
+	}
+	return (jfieldID)(uintptr_t)field.getIndex();
 }
 
 jobject NativeInterface::GetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	throw VmException("GetObjectField not implemented");
-}
-jboolean NativeInterface::GetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetBooleanField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetBooleanField: invalid object");
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetObjectField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
 	}
+	const auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType()[0] != 'L' && field.getType()[0] != '[') {
+		throw ClassCastException("GetObjectField: field is not an object or array");
+	}
+	return (jobject)jobj->getField(field.getName());
+}
+
+jboolean NativeInterface::GetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID) {
+	auto jobj = native::getObject(obj);
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetBooleanField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -722,17 +821,11 @@ jboolean NativeInterface::GetBooleanField(JNIEnv *env, jobject obj, jfieldID fie
 	if (field.getType() != "Z") {
 		throw ClassCastException("GetBooleanField: field is not boolean");
 	}
-	return (jboolean)field.getIntValue();
+	return (jboolean)jobj->getField(field.getName())->getValue();
 }
 
 jbyte NativeInterface::GetByteField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetByteField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetByteField: invalid object");
-	}
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetByteField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -741,17 +834,11 @@ jbyte NativeInterface::GetByteField(JNIEnv *env, jobject obj, jfieldID fieldID) 
 	if (field.getType() != "B") {
 		throw ClassCastException("GetByteField: field is not byte");
 	}
-	return (jbyte)field.getIntValue();
+	return (jbyte)jobj->getField(field.getName())->getValue();
 }
 
 jchar NativeInterface::GetCharField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetCharField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetCharField: invalid object");
-	}
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetCharField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -760,17 +847,11 @@ jchar NativeInterface::GetCharField(JNIEnv *env, jobject obj, jfieldID fieldID) 
 	if (field.getType() != "C") {
 		throw ClassCastException("GetCharField: field is not char");
 	}
-	return (jchar)field.getIntValue();
+	return (jchar)jobj->getField(field.getName())->getValue();
 }
 
 jshort NativeInterface::GetShortField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetShortField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetShortField: invalid object");
-	}
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetShortField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -779,17 +860,11 @@ jshort NativeInterface::GetShortField(JNIEnv *env, jobject obj, jfieldID fieldID
 	if (field.getType() != "S") {
 		throw ClassCastException("GetShortField: field is not short");
 	}
-	return (jshort)field.getIntValue();
+	return (jshort)jobj->getField(field.getName())->getValue();
 }
 
 jint NativeInterface::GetIntField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetIntField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetIntField: invalid object");
-	}
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetIntField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -798,17 +873,11 @@ jint NativeInterface::GetIntField(JNIEnv *env, jobject obj, jfieldID fieldID) {
 	if (field.getType() != "I") {
 		throw ClassCastException("GetIntField: field is not int");
 	}
-	return (jint)field.getIntValue();
+	return (jint)jobj->getField(field.getName())->getValue();
 }
 
 jlong NativeInterface::GetLongField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetLongField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetLongField: invalid object");
-	}
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetLongField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -817,17 +886,11 @@ jlong NativeInterface::GetLongField(JNIEnv *env, jobject obj, jfieldID fieldID) 
 	if (field.getType() != "J") {
 		throw ClassCastException("GetLongField: field is not long");
 	}
-	return (jlong)field.getLongValue();
+	return (jlong)jobj->getField(field.getName())->getLongValue();
 }
 
 jfloat NativeInterface::GetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetFloatField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetFloatField: invalid object");
-	}
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetFloatField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -836,17 +899,12 @@ jfloat NativeInterface::GetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID
 	if (field.getType() != "F") {
 		throw ClassCastException("GetFloatField: field is not float");
 	}
-	return (jfloat)field.getIntValue();
+	uint32_t value = jobj->getField(field.getName())->getValue();
+	return (jfloat) * (float *)&value;
 }
 
 jdouble NativeInterface::GetDoubleField(JNIEnv *env, jobject obj, jfieldID fieldID) {
-	if (obj == nullptr) {
-		throw NullPointerException("GetDoubleField on null object");
-	}
 	auto jobj = native::getObject(obj);
-	if (!jobj) {
-		throw ClassCastException("GetDoubleField: invalid object");
-	}
 	auto &clazz = jobj->getClass();
 	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
 		throw NoSuchFieldException(fmt::format("GetDoubleField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
@@ -855,38 +913,142 @@ jdouble NativeInterface::GetDoubleField(JNIEnv *env, jobject obj, jfieldID field
 	if (field.getType() != "D") {
 		throw ClassCastException("GetDoubleField: field is not double");
 	}
-	return (jdouble)field.getLongValue();
+	uint64_t value = jobj->getField(field.getName())->getLongValue();
+	return (jdouble) * (double *)&value;
 }
 
 void NativeInterface::SetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID, jobject val) {
-	throw VmException("SetObjectField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetObjectField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	jobj->setField(field.getName(), native::getObject(val));
 }
+
 void NativeInterface::SetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID, jboolean val) {
-	throw VmException("SetBooleanField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetBooleanField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "Z") {
+		throw ClassCastException("SetBooleanField: field is not boolean");
+	}
+	jobj->setField(field.getName(), Object::make(val));
 }
+
 void NativeInterface::SetByteField(JNIEnv *env, jobject obj, jfieldID fieldID, jbyte val) {
-	throw VmException("SetByteField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetByteField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "B") {
+		throw ClassCastException("SetByteField: field is not byte");
+	}
+	jobj->setField(field.getName(), Object::make(val));
 }
+
 void NativeInterface::SetCharField(JNIEnv *env, jobject obj, jfieldID fieldID, jchar val) {
-	throw VmException("SetCharField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetCharField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "C") {
+		throw ClassCastException("SetCharField: field is not char");
+	}
+	jobj->setField(field.getName(), Object::make(val));
 }
+
 void NativeInterface::SetShortField(JNIEnv *env, jobject obj, jfieldID fieldID, jshort val) {
-	throw VmException("SetShortField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetShortField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "S") {
+		throw ClassCastException("SetShortField: field is not short");
+	}
+	jobj->setField(field.getName(), Object::make(val));
 }
 void NativeInterface::SetIntField(JNIEnv *env, jobject obj, jfieldID fieldID, jint val) {
-	throw VmException("SetIntField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetIntField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "I") {
+		throw ClassCastException("SetIntField: field is not int");
+	}
+	jobj->setField(field.getName(), Object::make(val));
 }
 void NativeInterface::SetLongField(JNIEnv *env, jobject obj, jfieldID fieldID, jlong val) {
-	throw VmException("SetLongField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetLongField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "J") {
+		throw ClassCastException("SetLongField: field is not long");
+	}
+	jobj->setField(field.getName(), Object::make(val));
 }
+
 void NativeInterface::SetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID, jfloat val) {
-	throw VmException("SetFloatField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetFloatField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "F") {
+		throw ClassCastException("SetFloatField: field is not float");
+	}
+	uint32_t value = *((uint32_t *)&val);
+	jobj->setField(field.getName(), Object::make(value));
 }
+
 void NativeInterface::SetDoubleField(JNIEnv *env, jobject obj, jfieldID fieldID, jdouble val) {
-	throw VmException("SetDoubleField not implemented");
+	auto jobj = native::getObject(obj);
+	auto &clazz = jobj->getClass();
+	if (!clazz.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetDoubleField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
+	}
+	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
+	if (field.getType() != "D") {
+		throw ClassCastException("SetDoubleField: field is not double");
+	}
+	uint64_t value = *((uint64_t *)&val);
+	jobj->setField(field.getName(), Object::make(value));
 }
+
 jmethodID NativeInterface::GetStaticMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw VmException("GetStaticMethodID not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticMethodID: class is not a class object");
+	}
+	if (name == nullptr || sig == nullptr) {
+		throw NullPointerException("GetStaticMethodID: class, name, or sig is null");
+	}
+	try {
+		auto &cls = clsObj->getClass();
+		auto &method = cls.getMethod(name, sig);
+		if (!method.isStatic()) {
+			throw NoSuchMethodException(fmt::format("GetStaticMethodID: method '{}' with signature '{}' is not static in class {}", name, sig, cls.getName()));
+		}
+		return (jmethodID)(uintptr_t)method.getIndex();
+	} catch (const std::invalid_argument &) {
+		return nullptr;
+	}
 }
 
 jobject NativeInterface::CallStaticObjectMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
@@ -990,62 +1152,314 @@ void NativeInterface::CallStaticVoidMethodA(JNIEnv *env, jclass cls, jmethodID m
 }
 
 jfieldID NativeInterface::GetStaticFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-	throw VmException("GetStaticFieldID not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticFieldID: class is not a class object");
+	}
+	if (name == nullptr || sig == nullptr) {
+		throw NullPointerException("GetStaticFieldID: name or sig is null");
+	}
+	auto &cls = clsObj->getClass();
+	auto &field = cls.getField(name);
+	if (!field.isStatic()) {
+		throw NoSuchFieldException(fmt::format("GetStaticFieldID: field '{}' is not static in class {}", name, cls.getName()));
+	}
+	if (field.getType() != sig) {
+		throw NoSuchFieldException(fmt::format("GetStaticFieldID: field '{}' type '{}' does not match requested '{}'", name, field.getType(), sig));
+	}
+	return (jfieldID)(uintptr_t)field.getIndex();
 }
+
 jobject NativeInterface::GetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticObjectField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticObjectField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticObjectField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic()) {
+		throw ClassCastException("GetStaticObjectField: field is not static");
+	}
+	return (jobject)field.getObjectValue();
 }
+
 jboolean NativeInterface::GetStaticBooleanField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticBooleanField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticBooleanField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticBooleanField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "Z") {
+		throw ClassCastException("GetStaticBooleanField: field is not static boolean");
+	}
+	return (jboolean)field.getIntValue();
 }
+
 jbyte NativeInterface::GetStaticByteField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticByteField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticByteField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticByteField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "B") {
+		throw ClassCastException("GetStaticByteField: field is not static byte");
+	}
+	return (jbyte)field.getIntValue();
 }
+
 jchar NativeInterface::GetStaticCharField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticCharField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticCharField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticCharField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "C") {
+		throw ClassCastException("GetStaticCharField: field is not static char");
+	}
+	return (jchar)field.getIntValue();
 }
+
 jshort NativeInterface::GetStaticShortField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticShortField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticShortField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticShortField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "S") {
+		throw ClassCastException("GetStaticShortField: field is not static short");
+	}
+	return (jshort)field.getIntValue();
 }
+
 jint NativeInterface::GetStaticIntField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticIntField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticIntField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticIntField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "I") {
+		throw ClassCastException("GetStaticIntField: field is not static int");
+	}
+	return (jint)field.getIntValue();
 }
+
 jlong NativeInterface::GetStaticLongField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticLongField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticLongField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticLongField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "J") {
+		throw ClassCastException("GetStaticLongField: field is not static long");
+	}
+	return (jlong)field.getLongValue();
 }
+
 jfloat NativeInterface::GetStaticFloatField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticFloatField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticFloatField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticFloatField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "F") {
+		throw ClassCastException("GetStaticFloatField: field is not static float");
+	}
+	uint32_t value = field.getIntValue();
+	return *(jfloat *)&value;
 }
+
 jdouble NativeInterface::GetStaticDoubleField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
-	throw VmException("GetStaticDoubleField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("GetStaticDoubleField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("GetStaticDoubleField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	const auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "D") {
+		throw ClassCastException("GetStaticDoubleField: field is not static double");
+	}
+	uint64_t value = field.getLongValue();
+	return *(jdouble *)&value;
 }
 
 void NativeInterface::SetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID, jobject value) {
-	throw VmException("SetStaticObjectField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticObjectField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticObjectField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic()) {
+		throw ClassCastException("SetStaticObjectField: field is not static");
+	}
+	field.setObjectValue(native::getObject(value));
 }
+
 void NativeInterface::SetStaticBooleanField(JNIEnv *env, jclass clazz, jfieldID fieldID, jboolean value) {
-	throw VmException("SetStaticBooleanField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticBooleanField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticBooleanField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "Z") {
+		throw ClassCastException("SetStaticBooleanField: field is not static boolean");
+	}
+	field.setIntValue(value);
 }
+
 void NativeInterface::SetStaticByteField(JNIEnv *env, jclass clazz, jfieldID fieldID, jbyte value) {
-	throw VmException("SetStaticByteField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticByteField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticByteField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "B") {
+		throw ClassCastException("SetStaticByteField: field is not static byte");
+	}
+	field.setIntValue(value);
 }
+
 void NativeInterface::SetStaticCharField(JNIEnv *env, jclass clazz, jfieldID fieldID, jchar value) {
-	throw VmException("SetStaticCharField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticCharField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticCharField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "C") {
+		throw ClassCastException("SetStaticCharField: field is not static char");
+	}
+	field.setIntValue(value);
 }
+
 void NativeInterface::SetStaticShortField(JNIEnv *env, jclass clazz, jfieldID fieldID, jshort value) {
-	throw VmException("SetStaticShortField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticShortField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticShortField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "S") {
+		throw ClassCastException("SetStaticShortField: field is not static short");
+	}
+	field.setIntValue(value);
 }
+
 void NativeInterface::SetStaticIntField(JNIEnv *env, jclass clazz, jfieldID fieldID, jint value) {
-	throw VmException("SetStaticIntField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticIntField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticIntField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "I") {
+		throw ClassCastException("SetStaticIntField: field is not static int");
+	}
+	field.setIntValue(value);
 }
+
 void NativeInterface::SetStaticLongField(JNIEnv *env, jclass clazz, jfieldID fieldID, jlong value) {
-	throw VmException("SetStaticLongField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticLongField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticLongField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "J") {
+		throw ClassCastException("SetStaticLongField: field is not static long");
+	}
+	field.setLongValue(value);
 }
+
 void NativeInterface::SetStaticFloatField(JNIEnv *env, jclass clazz, jfieldID fieldID, jfloat value) {
-	throw VmException("SetStaticFloatField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticFloatField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticFloatField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "F") {
+		throw ClassCastException("SetStaticFloatField: field is not static float");
+	}
+	uint32_t val = *((uint32_t *)&value);
+	field.setIntValue(val);
 }
+
 void NativeInterface::SetStaticDoubleField(JNIEnv *env, jclass clazz, jfieldID fieldID, jdouble value) {
-	throw VmException("SetStaticDoubleField not implemented");
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj->isClass()) {
+		throw ClassCastException("SetStaticDoubleField: clazz is not a class object");
+	}
+	auto &cls = clsObj->getClass();
+	if (!cls.hasField((uint32_t)(uintptr_t)fieldID)) {
+		throw NoSuchFieldException(fmt::format("SetStaticDoubleField: fieldID {} not found in class {}", (size_t)fieldID, cls.getName()));
+	}
+	auto &field = cls.getField((uint32_t)(uintptr_t)fieldID);
+	if (!field.isStatic() || field.getType() != "D") {
+		throw ClassCastException("SetStaticDoubleField: field is not static double");
+	}
+	uint64_t val = *((uint64_t *)&value);
+	field.setLongValue(val);
 }
 
 jstring NativeInterface::NewString(JNIEnv *env, const jchar *unicode, jsize len) {
@@ -1277,6 +1691,7 @@ void NativeInterface::SetCharArrayRegion(JNIEnv *env, jcharArray array, jsize st
 		arr.setElement(start + i, Object::make((uint64_t)buf[i]));
 	}
 }
+
 void NativeInterface::SetShortArrayRegion(JNIEnv *env, jshortArray array, jsize start, jsize len, const jshort *buf) {
 	throw VmException("SetShortArrayRegion not implemented");
 }
@@ -1317,7 +1732,12 @@ jint NativeInterface::MonitorExit(JNIEnv *env, jobject obj) {
 }
 
 jint NativeInterface::GetJavaVM(JNIEnv *env, JavaVM **vm) {
-	throw VmException("GetJavaVM not implemented");
+	if (vm == nullptr) {
+		return JNI_ERR;
+	}
+	auto jenv = static_cast<NativeInterface *>(env);
+	*vm = jenv->getJavaVm();
+	return JNI_OK;
 }
 
 void NativeInterface::GetStringRegion(JNIEnv *env, jstring str, jsize start, jsize len, jchar *buf) {
@@ -1342,14 +1762,17 @@ void NativeInterface::ReleaseStringCritical(JNIEnv *env, jstring string, const j
 }
 
 jweak NativeInterface::NewWeakGlobalRef(JNIEnv *env, jobject obj) {
-	throw VmException("NewWeakGlobalRef not implemented");
+	// treat weak refs as normal refs (no GC distinction yet)
+	return (jweak)obj;
 }
+
 void NativeInterface::DeleteWeakGlobalRef(JNIEnv *env, jweak ref) {
-	throw VmException("DeleteWeakGlobalRef not implemented");
+	// No-op: rely on GC to clean up
 }
 
 jboolean NativeInterface::ExceptionCheck(JNIEnv *env) {
-	throw VmException("ExceptionCheck not implemented");
+	logger.fwarning("ExceptionCheck not implemented");
+	return JNI_TRUE;
 }
 
 jobject NativeInterface::NewDirectByteBuffer(JNIEnv *env, void *address, jlong capacity) {

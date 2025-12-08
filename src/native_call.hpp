@@ -42,9 +42,10 @@ namespace sandvik {
 			 * @param args Vector of Object references representing the arguments
 			 * @param paramTypes String representing the parameter types in JNI format
 			 * @param isStatic Boolean indicating if the method is static
+			 * @param staticClass Object reference representing the static class (if applicable)
 			 * @param returnType String representing the return type in JNI format */
 			static ObjectRef invoke(void* functionPtr, JNIEnv* env, const std::vector<ObjectRef>& args, const std::string& returnType,
-			                        const std::string& paramTypes, bool isStatic = false);
+			                        const std::string& paramTypes, bool isStatic, ObjectRef staticClass);
 
 		private:
 			// Internal call context

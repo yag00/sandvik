@@ -27,12 +27,31 @@ namespace sandvik {
 	class Vm;
 	class ClassLoader;
 	class JThread;
+	class SandvikVM : public JavaVM_ {
+		public:
+			explicit SandvikVM(Vm &vm_);
+			virtual ~SandvikVM();
+
+			Vm &getVm() const;
+
+		protected:
+			static jint DestroyJavaVM(JavaVM *vm);
+			static jint AttachCurrentThread(JavaVM *vm, void **penv, void *args);
+			static jint DetachCurrentThread(JavaVM *vm);
+			static jint GetEnv(JavaVM *vm, void **penv, jint version);
+			static jint AttachCurrentThreadAsDaemon(JavaVM *vm, void **penv, void *args);
+
+		private:
+			Vm &_vm;
+			std::unique_ptr<JNIInvokeInterface_> _interface;
+	};
 	class NativeInterface : public JNIEnv {
 		public:
 			explicit NativeInterface(Vm &vm_);
 			virtual ~NativeInterface();
 
 			Vm &getVm() const;
+			SandvikVM *getJavaVm() const;
 			ClassLoader &getClassLoader() const;
 
 		protected:
@@ -338,6 +357,7 @@ namespace sandvik {
 			Vm &_vm;
 			ClassLoader &_classloader;
 			std::unique_ptr<JNINativeInterface_> _interface;
+			std::unique_ptr<SandvikVM> _javaVm;
 	};
 }  // namespace sandvik
 

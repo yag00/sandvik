@@ -369,7 +369,11 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	std::string returnType = match[2];
 	logger.fdebug("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(), symbolName,
 	              (uintptr_t)symbol);
-	auto ret = NativeCallHelper::invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic());
+	ObjectRef staticClass = nullptr;
+	if (method_.isStatic()) {
+		staticClass = Object::make(method_.getClass());
+	}
+	auto ret = NativeCallHelper::invoke(symbol, _rt.vm().getJNIEnv(), args_, returnType, params, method_.isStatic(), staticClass);
 	if (returnType != "V") {
 		_rt.currentFrame().setReturnObject(ret);
 	}

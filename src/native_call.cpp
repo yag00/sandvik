@@ -176,7 +176,7 @@ ObjectRef NativeCallHelper::getReturnObject(uintptr_t result, const char jniType
 }
 
 ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::vector<ObjectRef>& args, const std::string& returnType,
-                                   const std::string& paramTypes, bool isStatic) {
+                                   const std::string& paramTypes, bool isStatic, ObjectRef staticClass) {
 	// Create a temporary call context
 	std::vector<std::string> argTypes;
 	CallContext context;
@@ -189,7 +189,7 @@ ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::ve
 	jobject this_ref;
 	if (isStatic) {
 		// static method
-		this_ref = nullptr;  // todo handle this case, should be a class object reference
+		this_ref = (jobject)(uintptr_t)staticClass;
 	} else {
 		this_ref = (jobject)(uintptr_t)args[0];
 	}
