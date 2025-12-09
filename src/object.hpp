@@ -145,13 +145,6 @@ namespace sandvik {
 			 */
 			virtual int32_t identityHashCode() const;
 
-			/**
-			 * @brief Checks if the object is an instance of the specified type.
-			 * @param instance_ Name of the type to check.
-			 * @return True if the object is an instance of the specified type, false otherwise.
-			 */
-			virtual bool isInstanceOf(const std::string& instance_) const;
-
 			/** @brief Clones the object.
 			 * @return Shared pointer to the cloned Object.
 			 */

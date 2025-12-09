@@ -182,12 +182,6 @@ namespace sandvik {
 			~ObjectClass() override = default;
 
 			/**
-			 * @brief Checks if the object is an instance of the specified type.
-			 * @param instance_ Name of the type to check.
-			 * @return True if the object is an instance of the specified type, false otherwise.
-			 */
-			bool isInstanceOf(const std::string& instance_) const override;
-			/**
 			 * @brief Checks if the object is a class object (instance of java.lang.Class).
 			 * @return True if the object is a class object, false otherwise.
 			 * @throw std::bad_cast if object is not a class.
@@ -502,10 +496,6 @@ int32_t Object::identityHashCode() const {
 	return static_cast<int32_t>(XXH32(&ptr, sizeof(ptr), 0));
 }
 
-bool Object::isInstanceOf(const std::string& instance_) const {
-	return false;
-}
-
 ObjectRef Object::getField(const std::string& name_) const {
 	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	auto it = _fields.find(name_);
@@ -688,9 +678,6 @@ Class& ObjectClass::getClass() const {
 }
 std::string ObjectClass::toString() const {
 	return _class.getFullname();
-}
-bool ObjectClass::isInstanceOf(const std::string& instance_) const {
-	return _class.getFullname() == instance_;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ConstClassObject::ConstClassObject(Class& class_, Class& classtype_) : ObjectClass(class_), _type(classtype_) {
