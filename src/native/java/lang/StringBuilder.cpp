@@ -139,7 +139,7 @@ extern "C" {
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 
 		auto this_ptr = sandvik::native::getObject(obj);
-		std::string charStr = std::string(1, static_cast<char>(static_cast<unsigned char>(c & 0xFF)));
+		auto charStr = std::string(1, static_cast<char>(static_cast<unsigned char>(c & 0xFF)));
 		if (this_ptr->getField("string")->isNull()) {
 			this_ptr->setField("string", sandvik::Object::make(classloader, charStr));
 		} else {

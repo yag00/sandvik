@@ -39,7 +39,7 @@ Field::Field(Class& class_, const LIEF::DEX::Field& field_)
       _name(field_.name()),
       _type(get_type_descriptor(*field_.type())),
       _isStatic(field_.has(LIEF::DEX::ACC_STATIC)),
-      _index(field_.index()),
+      _index(static_cast<uint32_t>(field_.index())),
       _obj(Object::makeNull()) {
 }
 

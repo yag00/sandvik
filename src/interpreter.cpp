@@ -856,17 +856,11 @@ void Interpreter::filled_new_array(const uint8_t* operand_) {
 	}
 
 	const auto& compClass = classloader.getOrLoad(arrayType[0].first);
-	auto arrayObj = Array::make(compClass, count);
-	if (!arrayObj) {
-		throw VmException("filled-new-array: failed to create array of type {}", arrayType[0].first);
-	}
-
-	auto array = static_cast<ArrayRef>(arrayObj);
+	auto array = Array::make(compClass, count);
 	for (uint8_t i = 0; i < args.size(); ++i) {
 		array->setElement(i, args[i]);
 	}
-
-	frame.setReturnObject(arrayObj);
+	frame.setReturnObject(array);
 	frame.pc() += 5;
 }
 // filled-new-array/range {vCCCC .. vNNNN}, type@BBBB
