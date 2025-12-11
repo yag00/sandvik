@@ -477,7 +477,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 	auto &frame = thread.newFrame(method);
 	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
-	auto regidx = 0;
+	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
 	frame.setObjRegister(regidx++, obj);  // this
 	// Set method arguments in the frame registers from varargs
 	va_list args;
@@ -489,15 +489,11 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			case 'C':  // char
 			case 'S':  // short
 			case 'I':  // int
-				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int32_t)));
+				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
 				break;
 			case 'J':  // long
-			{
-				uint64_t value = (uint64_t)va_arg(args, int64_t);
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((int64_t)va_arg(args, int64_t)));
 				break;
-			}
 			case 'F':  // float
 			{
 				// float is promoted to double in varargs
@@ -510,8 +506,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			{
 				double d = va_arg(args, double);
 				uint64_t value = *(uint64_t *)&d;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make(value));
 				break;
 			}
 			case 'L':  // object
@@ -550,7 +545,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 	auto &frame = thread.newFrame(method);
 	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
-	auto regidx = 0;
+	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
 	frame.setObjRegister(regidx++, obj);  // this
 	// Set method arguments in the frame registers from varargs
 	for (auto arg : method.arguments()) {
@@ -560,15 +555,11 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 			case 'C':  // char
 			case 'S':  // short
 			case 'I':  // int
-				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int32_t)));
+				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
 				break;
 			case 'J':  // long
-			{
-				uint64_t value = (uint64_t)va_arg(args, int64_t);
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((int64_t)va_arg(args, int64_t)));
 				break;
-			}
 			case 'F':  // float
 			{
 				// float is promoted to double in varargs
@@ -581,8 +572,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 			{
 				double d = va_arg(args, double);
 				uint64_t value = *(uint64_t *)&d;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make(value));
 				break;
 			}
 			case 'L':  // object
@@ -634,22 +624,14 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 				frame.setObjRegister(regidx++, Object::make((int32_t)args[argIndex++].i));
 				break;
 			case 'J':  // long
-			{
-				uint64_t value = (uint64_t)args[argIndex++].j;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((int64_t)args[argIndex++].j));
 				break;
-			}
 			case 'F':  // float
 				frame.setObjRegister(regidx++, Object::make(args[argIndex++].i));
 				break;
 			case 'D':  // double
-			{
-				uint64_t value = (uint64_t)args[argIndex++].j;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make(args[argIndex++].j));
 				break;
-			}
 			case 'L':  // object
 			case '[':  // array
 				frame.setObjRegister(regidx++, native::getObject(args[argIndex++].l));
@@ -690,13 +672,9 @@ jmethodID NativeInterface::GetMethodID(JNIEnv *env, jclass clazz, const char *na
 	if (!clsObj->isClass()) {
 		throw ClassCastException("GetMethodID: class is not a class object");
 	}
-	try {
-		auto &cls = clsObj->getClass();
-		const auto &method = cls.getMethod(name, sig);
-		return (jmethodID)(uintptr_t)method.getIndex();
-	} catch (const std::invalid_argument &) {
-		return nullptr;
-	}
+	auto &cls = clsObj->getClass();
+	const auto &method = cls.getMethod(name, sig);
+	return (jmethodID)(uintptr_t)method.getIndex();
 }
 
 JThread &NativeInterface::__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, va_list &args) {
