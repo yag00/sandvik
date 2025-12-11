@@ -477,7 +477,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 	auto &frame = thread.newFrame(method);
 	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
-	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
+	auto regidx = 0;
 	frame.setObjRegister(regidx++, obj);  // this
 	// Set method arguments in the frame registers from varargs
 	va_list args;
@@ -492,8 +492,12 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
 				break;
 			case 'J':  // long
-				frame.setObjRegister(regidx++, Object::make((int64_t)va_arg(args, int64_t)));
+			{
+				uint64_t value = (uint64_t)va_arg(args, int64_t);
+				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
 				break;
+			}
 			case 'F':  // float
 			{
 				// float is promoted to double in varargs
@@ -506,7 +510,8 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			{
 				double d = va_arg(args, double);
 				uint64_t value = *(uint64_t *)&d;
-				frame.setObjRegister(regidx++, Object::make(value));
+				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
 				break;
 			}
 			case 'L':  // object
@@ -545,7 +550,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 	auto &frame = thread.newFrame(method);
 	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
-	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
+	auto regidx = 0;
 	frame.setObjRegister(regidx++, obj);  // this
 	// Set method arguments in the frame registers from varargs
 	for (auto arg : method.arguments()) {
@@ -558,8 +563,12 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
 				break;
 			case 'J':  // long
-				frame.setObjRegister(regidx++, Object::make((int64_t)va_arg(args, int64_t)));
+			{
+				uint64_t value = (uint64_t)va_arg(args, int64_t);
+				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
 				break;
+			}
 			case 'F':  // float
 			{
 				// float is promoted to double in varargs
@@ -572,7 +581,8 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 			{
 				double d = va_arg(args, double);
 				uint64_t value = *(uint64_t *)&d;
-				frame.setObjRegister(regidx++, Object::make(value));
+				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
 				break;
 			}
 			case 'L':  // object
@@ -624,14 +634,22 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 				frame.setObjRegister(regidx++, Object::make((int32_t)args[argIndex++].i));
 				break;
 			case 'J':  // long
-				frame.setObjRegister(regidx++, Object::make((int64_t)args[argIndex++].j));
+			{
+				uint64_t value = (uint64_t)args[argIndex++].j;
+				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
 				break;
+			}
 			case 'F':  // float
 				frame.setObjRegister(regidx++, Object::make(args[argIndex++].i));
 				break;
 			case 'D':  // double
-				frame.setObjRegister(regidx++, Object::make(args[argIndex++].j));
+			{
+				uint64_t value = (uint64_t)args[argIndex++].j;
+				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
 				break;
+			}
 			case 'L':  // object
 			case '[':  // array
 				frame.setObjRegister(regidx++, native::getObject(args[argIndex++].l));
