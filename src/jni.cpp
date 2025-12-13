@@ -489,7 +489,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			case 'C':  // char
 			case 'S':  // short
 			case 'I':  // int
-				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
+				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int32_t)));
 				break;
 			case 'J':  // long
 			{
@@ -560,7 +560,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 			case 'C':  // char
 			case 'S':  // short
 			case 'I':  // int
-				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
+				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int32_t)));
 				break;
 			case 'J':  // long
 			{
