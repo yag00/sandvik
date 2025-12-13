@@ -2406,7 +2406,7 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 	if (vmethod->isNative()) {
 		executeNativeMethod(*vmethod, args);
 	} else {
-		if (vmethod->getBytecode() == nullptr) {
+		if (!vmethod->hasBytecode()) {
 			vmethod->execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
@@ -2440,7 +2440,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	if (method.isNative()) {
 		executeNativeMethod(method, args);
 	} else {
-		if (method.getBytecode() == nullptr) {
+		if (!method.hasBytecode()) {
 			method.execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(method);
@@ -2635,7 +2635,7 @@ void Interpreter::invoke_direct_range(const uint8_t* operand_) {
 	if (method.isNative()) {
 		executeNativeMethod(method, args);
 	} else {
-		if (method.getBytecode() == nullptr) {
+		if (!method.hasBytecode()) {
 			method.execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(method);

@@ -176,15 +176,23 @@ namespace sandvik {
 			 * @return True if the method is overloaded, false otherwise.
 			 */
 			bool isOverload() const;
+			/** @brief Checks if the method is hooked.
+			 * @return True if the method is hooked, false otherwise.
+			 */
+			bool isHooked() const;
 
 			/** @brief Executes the method.
 			 * @param frame_ Reference to the Frame object.
 			 * @param registers_ Vector of Object references representing the registers.
 			 */
 			void execute(Frame& frame_, std::vector<ObjectRef>& registers_);
-
-			/** @brief Debug method to print method information. */
-			void debug() const;
+			/** @brief Hook the method.
+			 * @param function_ function used to hook current method
+			 */
+			void hook(std::function<void(Frame&, std::vector<ObjectRef>&)> function_);
+			/** @brief unhook the method.
+			 */
+			void unhook();
 
 		private:
 			void parseArgumentTypes();

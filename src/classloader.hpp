@@ -158,6 +158,7 @@ namespace sandvik {
 		private:
 			friend class ClassBuilder;
 			void addClass(std::unique_ptr<Class> class_);
+			void linkClass(Class& class_);
 
 			std::vector<std::string> _classpath;
 			std::vector<std::unique_ptr<Apk>> _apks;

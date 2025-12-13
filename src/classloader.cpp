@@ -22,13 +22,16 @@
 #include <filesystem>
 #include <sstream>
 
+#include "array.hpp"
 #include "class.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
+#include "frame.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
 #include "loader/rtld.hpp"
 #include "method.hpp"
+#include "object.hpp"
 #include "system/logger.hpp"
 #include "types.hpp"
 
@@ -129,6 +132,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			if (classPtr->isExternal()) {
 				continue;
 			}
+			linkClass(*classPtr);
 			_classes[dotclassname] = std::move(classPtr);
 			return *(_classes[dotclassname]);
 		} catch (std::exception& e) {
@@ -148,7 +152,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 				auto dex = std::make_unique<Dex>(fullPath);
 				_classes[dotclassname] = dex->findClass(*this, dotclassname);
 				_dexs.push_back(std::move(dex));
-				logger.fok("class {} loaded", dotclassname);
+				linkClass(*(_classes[dotclassname]));
 				return *(_classes[dotclassname]);
 			}
 		} catch (std::exception&) {
@@ -264,5 +268,27 @@ uint64_t ClassLoader::getDexIndex(const Dex& dex_) const {
 void ClassLoader::visitReferences(const std::function<void(Object*)>& visitor_) const {
 	for (const auto& [name, classPtr] : _classes) {
 		classPtr->visitReferences(visitor_);
+	}
+}
+
+void ClassLoader::linkClass(Class& class_) {
+	if (class_.getFullname() == "java.lang.String") {
+		auto& m = class_.getMethod("<init>", "([CII)V");
+		m.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
+			// args: this, char[], int, int
+			if (args.size() != 4) {
+				throw VmException("Invalid number of arguments for String.<init>");
+			}
+			auto thisObj = args[0];
+			auto charArray = args[1];
+			auto offset = args[2]->getValue();
+			auto length = args[3]->getValue();
+			std::string str = "";
+			for (size_t i = 0; i < length; ++i) {
+				str += static_cast<char>(((ArrayRef)charArray)->getElement(offset + i)->getValue());
+			}
+			thisObj->setString(str);
+		});
+		return;
 	}
 }
