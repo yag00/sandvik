@@ -2385,6 +2385,10 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 	while (true) {
 		try {
 			vmethod = &instance->getMethod(methodname, signature);
+			if (!vmethod->isVirtual()) {
+				// throw exception here to go up the superclass chain
+				throw VmException();
+			}
 			break;  // Method found, exit loop
 		} catch (std::exception& e) {
 			logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
