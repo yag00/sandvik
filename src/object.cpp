@@ -585,7 +585,7 @@ bool NumberObject::isNull() const {
 	return _value.load() == 0;
 }
 std::string NumberObject::toString() const {
-	return fmt::format("{}", _value.load());
+	return fmt::format("{}", (int64_t)_value.load());
 }
 ///////////////////////////////////////////////////////////////////////////////
 StringObject::StringObject(Class& class_, const std::string& value_) : ObjectClass(class_), _value(value_) {
