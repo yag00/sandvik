@@ -761,7 +761,11 @@ jobject NativeInterface::CallObjectMethod(JNIEnv *env, jobject obj, jmethodID me
 	return (jobject)(result.getReturnObject());
 }
 jobject NativeInterface::CallObjectMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallObjectMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jobject)(result.getReturnObject());
 }
 jobject NativeInterface::CallObjectMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallObjectMethodA not implemented");
@@ -774,7 +778,11 @@ jboolean NativeInterface::CallBooleanMethod(JNIEnv *env, jobject obj, jmethodID 
 	return (jboolean)result.getReturnValue();
 }
 jboolean NativeInterface::CallBooleanMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallBooleanMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jboolean)result.getReturnValue();
 }
 jboolean NativeInterface::CallBooleanMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallBooleanMethodA not implemented");
@@ -787,7 +795,11 @@ jbyte NativeInterface::CallByteMethod(JNIEnv *env, jobject obj, jmethodID method
 	return (jbyte)result.getReturnValue();
 }
 jbyte NativeInterface::CallByteMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallByteMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jbyte)result.getReturnValue();
 }
 jbyte NativeInterface::CallByteMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallByteMethodA not implemented");
@@ -800,7 +812,11 @@ jchar NativeInterface::CallCharMethod(JNIEnv *env, jobject obj, jmethodID method
 	return (jchar)result.getReturnValue();
 }
 jchar NativeInterface::CallCharMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallCharMethodV not implemented");
+	va_list args_copy;
+    va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jchar)result.getReturnValue();
 }
 jchar NativeInterface::CallCharMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallCharMethodA not implemented");
@@ -813,7 +829,11 @@ jshort NativeInterface::CallShortMethod(JNIEnv *env, jobject obj, jmethodID meth
 	return (jshort)result.getReturnValue();
 }
 jshort NativeInterface::CallShortMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallShortMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jshort)result.getReturnValue();
 }
 jshort NativeInterface::CallShortMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallShortMethodA not implemented");
@@ -826,7 +846,11 @@ jint NativeInterface::CallIntMethod(JNIEnv *env, jobject obj, jmethodID methodID
 	return result.getReturnValue();
 }
 jint NativeInterface::CallIntMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallIntMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return result.getReturnValue();
 }
 jint NativeInterface::CallIntMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallIntMethodA not implemented");
@@ -839,7 +863,11 @@ jlong NativeInterface::CallLongMethod(JNIEnv *env, jobject obj, jmethodID method
 	return (jlong)result.getReturnDoubleValue();
 }
 jlong NativeInterface::CallLongMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallLongMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jlong)result.getReturnDoubleValue();
 }
 jlong NativeInterface::CallLongMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallLongMethodA not implemented");
@@ -852,7 +880,11 @@ jfloat NativeInterface::CallFloatMethod(JNIEnv *env, jobject obj, jmethodID meth
 	return (jfloat)result.getReturnValue();
 }
 jfloat NativeInterface::CallFloatMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallFloatMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jfloat)result.getReturnValue();
 }
 jfloat NativeInterface::CallFloatMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallFloatMethodA not implemented");
@@ -865,7 +897,11 @@ jdouble NativeInterface::CallDoubleMethod(JNIEnv *env, jobject obj, jmethodID me
 	return (jdouble)result.getReturnDoubleValue();
 }
 jdouble NativeInterface::CallDoubleMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallDoubleMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
+	return (jdouble)result.getReturnDoubleValue();
 }
 jdouble NativeInterface::CallDoubleMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallDoubleMethodA not implemented");
@@ -877,7 +913,10 @@ void NativeInterface::CallVoidMethod(JNIEnv *env, jobject obj, jmethodID methodI
 	va_end(args);
 }
 void NativeInterface::CallVoidMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
-	throw VmException("CallVoidMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	__CallObjectMethod(env, obj, methodID, args_copy);
+	va_end(args_copy);
 }
 void NativeInterface::CallVoidMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	throw VmException("CallVoidMethodA not implemented");
