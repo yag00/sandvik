@@ -77,6 +77,10 @@ namespace sandvik {
 			 * @param superClassName_ Name of the superclass
 			 */
 			void setSuperClass(const std::string& superClassName_);
+			/** @brief Adds an interface to the class
+			 * @param ifClassName_ Name of the interface class
+			 */
+			void addInterface(const std::string& ifClassName_);
 			/** @brief Sets the class as an interface */
 			void setInterface();
 			/** @brief Finalizes the class definition */

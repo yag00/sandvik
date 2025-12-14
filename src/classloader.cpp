@@ -24,6 +24,7 @@
 
 #include "array.hpp"
 #include "class.hpp"
+#include "classbuilder.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "frame.hpp"
@@ -159,6 +160,16 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			// pass
 		}
 	}
+	// Handle native array types like [B, [I, etc.
+	if (dotclassname[0] == '[' && dotclassname.length() == 2) {
+		auto builder = ClassBuilder(*this, "", dotclassname);
+		builder.setSuperClass("java.lang.Object");
+		builder.addInterface("java.lang.Cloneable");
+		builder.addInterface("java.io.Serializable");
+		builder.finalize();
+		return *(_classes[dotclassname]);
+	}
+
 	// If the class is not found, throw an exception
 	throw VmException("ClassNotFoundError: {}", dotclassname);
 }
