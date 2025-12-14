@@ -20,6 +20,7 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
@@ -107,7 +108,23 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredField(JNIEnv* env, jobject obj, jstring name) {
-		throw VmException("Java_java_lang_Class_getDeclaredField not implemented!");
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+		auto classObj = sandvik::native::getObject(obj);
+		auto fieldName = sandvik::native::getString(name);
+		// Get the field from the internal class representation
+		auto& clazz = classObj->getClassType();
+		auto& field = clazz.getField(fieldName->str());
+		// Create a java.lang.reflect.Field object
+		auto& fieldClass = classloader.getOrLoad("java/lang/reflect/Field");
+		auto fieldObj = sandvik::Object::make(fieldClass);
+		// Set the necessary fields
+		fieldObj->setField("declaringClass", Object::makeConstClass(classloader, const_cast<Class&>(clazz)));
+		fieldObj->setField("name", fieldName);
+		fieldObj->setField("type", Object::makeConstClass(classloader, field.getClass()));
+		fieldObj->setField("accessFlags", Object::make((uint64_t)field.getAccessFlags()));
+		fieldObj->setField("offset", Object::make((uint64_t)field.getIndex()));
+		return (jobject)fieldObj;
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getPublicDeclaredFields(JNIEnv* env, jobject obj) {
