@@ -244,7 +244,7 @@ bool Class::hasField(uint32_t idx_) const {
 	return true;
 }
 
-Field& Class::getField(const std::string& name_) {
+Field& Class::getField(const std::string& name_) const {
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
 		return *(it->second);
@@ -252,7 +252,7 @@ Field& Class::getField(const std::string& name_) {
 	throw VmException("Field not found: {}", name_);
 }
 
-Field& Class::getField(uint32_t idx_) {
+Field& Class::getField(uint32_t idx_) const {
 	if (idx_ >= _fields.size()) {
 		throw std::out_of_range(fmt::format("Field index out of range: {}", idx_));
 	}

@@ -114,7 +114,10 @@ namespace sandvik {
 			 * @return true if the field is static, false otherwise.
 			 */
 			bool isStatic() const;
-
+			/** @brief Gets the access flags of the field.
+			 * @return Access flags as a uint32_t.
+			 */
+			uint32_t getAccessFlags() const;
 			/** Visit outgoing references
 			 * @param visitor_ function to call for each referenced object
 			 */
@@ -126,6 +129,7 @@ namespace sandvik {
 			std::string _type;
 			bool _isStatic;
 			uint32_t _index;
+			uint32_t _accessFlags;
 
 			uint64_t _value = 0;
 			std::string _strValue = "";

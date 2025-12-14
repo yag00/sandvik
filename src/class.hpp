@@ -118,12 +118,12 @@ namespace sandvik {
 			 * @param name_ Name of the field.
 			 * @return Reference to the Field object.
 			 */
-			Field& getField(const std::string& name_);
+			Field& getField(const std::string& name_) const;
 			/** @brief Gets a class field by index.
 			 * @param idx_ Index of the field.
 			 * @return Reference to the Field object.
 			 */
-			Field& getField(uint32_t idx_);
+			Field& getField(uint32_t idx_) const;
 			/** @brief Gets the list of field names.
 			 * @return Vector of field names.
 			 */
