@@ -88,6 +88,47 @@ public class TestJNI {
     public native NativeTestObject nativeNewObjectV(String msg, int i, double d, float f, long l, short s, byte b, char c, boolean bool);
     public native NativeTestObject nativeNewObjectA(Object[] args);
 
+    // Call<X>Method tests
+    public native Object nativeCallObjectMethod(CallTarget target, Object arg);
+    public native Object nativeCallObjectMethodV(CallTarget target, Object arg);
+    public native Object nativeCallObjectMethodA(CallTarget target, Object arg);
+
+    public native boolean nativeCallBooleanMethod(CallTarget target, boolean v);
+    public native boolean nativeCallBooleanMethodV(CallTarget target, boolean v);
+    public native boolean nativeCallBooleanMethodA(CallTarget target, boolean v);
+
+    public native byte nativeCallByteMethod(CallTarget target, byte v);
+    public native byte nativeCallByteMethodV(CallTarget target, byte v);
+    public native byte nativeCallByteMethodA(CallTarget target, byte v);
+
+    public native char nativeCallCharMethod(CallTarget target, char v);
+    public native char nativeCallCharMethodV(CallTarget target, char v);
+    public native char nativeCallCharMethodA(CallTarget target, char v);
+
+    public native short nativeCallShortMethod(CallTarget target, short v);
+    public native short nativeCallShortMethodV(CallTarget target, short v);
+    public native short nativeCallShortMethodA(CallTarget target, short v);
+
+    public native int nativeCallIntMethod(CallTarget target, int v);
+    public native int nativeCallIntMethodV(CallTarget target, int v);
+    public native int nativeCallIntMethodA(CallTarget target, int v);
+
+    public native long nativeCallLongMethod(CallTarget target, long v);
+    public native long nativeCallLongMethodV(CallTarget target, long v);
+    public native long nativeCallLongMethodA(CallTarget target, long v);
+
+    public native float nativeCallFloatMethod(CallTarget target, float v);
+    public native float nativeCallFloatMethodV(CallTarget target, float v);
+    public native float nativeCallFloatMethodA(CallTarget target, float v);
+
+    public native double nativeCallDoubleMethod(CallTarget target, double v);
+    public native double nativeCallDoubleMethodV(CallTarget target, double v);
+    public native double nativeCallDoubleMethodA(CallTarget target, double v);
+
+    public native void nativeCallVoidMethod(CallTarget target, int marker);
+    public native void nativeCallVoidMethodV(CallTarget target, int marker);
+    public native void nativeCallVoidMethodA(CallTarget target, int marker);
+
     private void assertEquals(String expected, String actual) {
         if (!expected.equals(actual)) {
             System.out.println("FAIL: expected \"" + expected + "\", got \"" + actual + "\"");
@@ -425,6 +466,64 @@ public class TestJNI {
         assertEquals(true, obj.booleanValue);
     }
 
+    public void testCallMethods() {
+        CallTarget t = new CallTarget();
+
+        // Object
+        String s = "callObj";
+        assertEquals(s, nativeCallObjectMethod(t, s));
+        assertEquals(s, nativeCallObjectMethodV(t, s));
+        assertEquals(s, nativeCallObjectMethodA(t, s));
+
+        // boolean
+        assertEquals(true, nativeCallBooleanMethod(t, true));
+        assertEquals(true, nativeCallBooleanMethodV(t, true));
+        assertEquals(true, nativeCallBooleanMethodA(t, true));
+
+        // byte
+        assertEquals((byte)5, nativeCallByteMethod(t, (byte)5));
+        assertEquals((byte)5, nativeCallByteMethodV(t, (byte)5));
+        assertEquals((byte)5, nativeCallByteMethodA(t, (byte)5));
+
+        // char
+        assertEquals('K', nativeCallCharMethod(t, 'K'));
+        assertEquals('K', nativeCallCharMethodV(t, 'K'));
+        assertEquals('K', nativeCallCharMethodA(t, 'K'));
+
+        // short
+        assertEquals((short)123, nativeCallShortMethod(t, (short)123));
+        assertEquals((short)123, nativeCallShortMethodV(t, (short)123));
+        assertEquals((short)123, nativeCallShortMethodA(t, (short)123));
+
+        // int
+        assertEquals(777, nativeCallIntMethod(t, 777));
+        assertEquals(777, nativeCallIntMethodV(t, 777));
+        assertEquals(777, nativeCallIntMethodA(t, 777));
+
+        // long
+        assertEquals(1234567890123L, nativeCallLongMethod(t, 1234567890123L));
+        assertEquals(1234567890123L, nativeCallLongMethodV(t, 1234567890123L));
+        assertEquals(1234567890123L, nativeCallLongMethodA(t, 1234567890123L));
+
+        // float
+        assertEquals(3.14f, nativeCallFloatMethod(t, 3.14f));
+        assertEquals(3.14f, nativeCallFloatMethodV(t, 3.14f));
+        assertEquals(3.14f, nativeCallFloatMethodA(t, 3.14f));
+
+        // double
+        assertEquals(6.28, nativeCallDoubleMethod(t, 6.28));
+        assertEquals(6.28, nativeCallDoubleMethodV(t, 6.28));
+        assertEquals(6.28, nativeCallDoubleMethodA(t, 6.28));
+
+        // void (marker)
+        nativeCallVoidMethod(t, 42);
+        assertEquals(42, t.voidMarker);
+        nativeCallVoidMethodV(t, 43);
+        assertEquals(43, t.voidMarker);
+        nativeCallVoidMethodA(t, 44);
+        assertEquals(44, t.voidMarker);
+    }
+
     public void runTests() {
         testNativeHello();
         testNativeUnicodeStringTest();
@@ -441,6 +540,7 @@ public class TestJNI {
         testNativeNewObjectV();
         testNativeNewObjectA();
         testNativeThreadTest();
+        testCallMethods();
     }
 
     public boolean getSuccess() {

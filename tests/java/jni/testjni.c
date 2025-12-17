@@ -3,6 +3,7 @@
 #include <jni.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdarg.h>
 #include <stdlib.h>
 
 static jobject globalRef = NULL;
@@ -402,6 +403,258 @@ JNIEXPORT jobject JNICALL Java_TestJNI_nativeNewObjectA(JNIEnv* env, jobject thi
         (*env)->ThrowNew(env, (*env)->FindClass(env, "java/lang/InstantiationException"), "Failed to create NativeTestObject");
     }
     return obj;
+}
+
+// ------------ Call<X>Method tests -------------
+// Object
+JNIEXPORT jobject JNICALL Java_TestJNI_nativeCallObjectMethod(JNIEnv* env, jobject thiz, jobject target, jobject arg) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityObject", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jobject res = (*env)->CallObjectMethod(env, target, mid, arg);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jobject JNICALL Java_TestJNI_nativeCallObjectMethodV(JNIEnv* env, jobject thiz, jobject target, jobject arg) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityObject", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jobject res = (*env)->CallObjectMethodV(env, target, mid, arg);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jobject JNICALL Java_TestJNI_nativeCallObjectMethodA(JNIEnv* env, jobject thiz, jobject target, jobject arg) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityObject", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jvalue a[1]; a[0].l = arg;
+    jobject res = (*env)->CallObjectMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Boolean
+JNIEXPORT jboolean JNICALL Java_TestJNI_nativeCallBooleanMethod(JNIEnv* env, jobject thiz, jobject target, jboolean v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityBoolean", "(Z)Z");
+    jboolean res = (*env)->CallBooleanMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jboolean JNICALL Java_TestJNI_nativeCallBooleanMethodV(JNIEnv* env, jobject thiz, jobject target, jboolean v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityBoolean", "(Z)Z");
+    jboolean res = (*env)->CallBooleanMethodV(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jboolean JNICALL Java_TestJNI_nativeCallBooleanMethodA(JNIEnv* env, jobject thiz, jobject target, jboolean v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityBoolean", "(Z)Z");
+    jvalue a[1]; a[0].z = v;
+    jboolean res = (*env)->CallBooleanMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Byte
+JNIEXPORT jbyte JNICALL Java_TestJNI_nativeCallByteMethod(JNIEnv* env, jobject thiz, jobject target, jbyte v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityByte", "(B)B");
+    jbyte res = (*env)->CallByteMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jbyte JNICALL Java_TestJNI_nativeCallByteMethodV(JNIEnv* env, jobject thiz, jobject target, jbyte v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityByte", "(B)B");
+    jbyte res = (*env)->CallByteMethodV(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jbyte JNICALL Java_TestJNI_nativeCallByteMethodA(JNIEnv* env, jobject thiz, jobject target, jbyte v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityByte", "(B)B");
+    jvalue a[1]; a[0].b = v;
+    jbyte res = (*env)->CallByteMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Char
+JNIEXPORT jchar JNICALL Java_TestJNI_nativeCallCharMethod(JNIEnv* env, jobject thiz, jobject target, jchar v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityChar", "(C)C");
+    jchar res = (*env)->CallCharMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jchar JNICALL Java_TestJNI_nativeCallCharMethodV(JNIEnv* env, jobject thiz, jobject target, jchar v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityChar", "(C)C");
+    jchar res = (*env)->CallCharMethodV(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jchar JNICALL Java_TestJNI_nativeCallCharMethodA(JNIEnv* env, jobject thiz, jobject target, jchar v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityChar", "(C)C");
+    jvalue a[1]; a[0].c = v;
+    jchar res = (*env)->CallCharMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Short
+JNIEXPORT jshort JNICALL Java_TestJNI_nativeCallShortMethod(JNIEnv* env, jobject thiz, jobject target, jshort v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityShort", "(S)S");
+    jshort res = (*env)->CallShortMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jshort JNICALL Java_TestJNI_nativeCallShortMethodV(JNIEnv* env, jobject thiz, jobject target, jshort v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityShort", "(S)S");
+    jshort res = (*env)->CallShortMethodV(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jshort JNICALL Java_TestJNI_nativeCallShortMethodA(JNIEnv* env, jobject thiz, jobject target, jshort v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityShort", "(S)S");
+    jvalue a[1]; a[0].s = v;
+    jshort res = (*env)->CallShortMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Int
+JNIEXPORT jint JNICALL Java_TestJNI_nativeCallIntMethod(JNIEnv* env, jobject thiz, jobject target, jint v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityInt", "(I)I");
+    jint res = (*env)->CallIntMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jint JNICALL Java_TestJNI_nativeCallIntMethodV(JNIEnv* env, jobject thiz, jobject target, jint v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityInt", "(I)I");
+    jint res = (*env)->CallIntMethodV(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jint JNICALL Java_TestJNI_nativeCallIntMethodA(JNIEnv* env, jobject thiz, jobject target, jint v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityInt", "(I)I");
+    jvalue a[1]; a[0].i = v;
+    jint res = (*env)->CallIntMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Long
+JNIEXPORT jlong JNICALL Java_TestJNI_nativeCallLongMethod(JNIEnv* env, jobject thiz, jobject target, jlong v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityLong", "(J)J");
+    jlong res = (*env)->CallLongMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jlong JNICALL Java_TestJNI_nativeCallLongMethodV(JNIEnv* env, jobject thiz, jobject target, jlong v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityLong", "(J)J");
+    jlong res = (*env)->CallLongMethodV(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jlong JNICALL Java_TestJNI_nativeCallLongMethodA(JNIEnv* env, jobject thiz, jobject target, jlong v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityLong", "(J)J");
+    jvalue a[1]; a[0].j = v;
+    jlong res = (*env)->CallLongMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Float
+static jfloat callFloatMethodV_helper(JNIEnv* env, jobject obj, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jfloat res = (*env)->CallFloatMethodV(env, obj, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jfloat JNICALL Java_TestJNI_nativeCallFloatMethod(JNIEnv* env, jobject thiz, jobject target, jfloat v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityFloat", "(F)F");
+    jfloat res = (*env)->CallFloatMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jfloat JNICALL Java_TestJNI_nativeCallFloatMethodV(JNIEnv* env, jobject thiz, jobject target, jfloat v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityFloat", "(F)F");
+    jfloat res = callFloatMethodV_helper(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jfloat JNICALL Java_TestJNI_nativeCallFloatMethodA(JNIEnv* env, jobject thiz, jobject target, jfloat v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityFloat", "(F)F");
+    jvalue a[1]; a[0].f = v;
+    jfloat res = (*env)->CallFloatMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Double
+static jdouble callDoubleMethodV_helper(JNIEnv* env, jobject obj, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jdouble res = (*env)->CallDoubleMethodV(env, obj, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jdouble JNICALL Java_TestJNI_nativeCallDoubleMethod(JNIEnv* env, jobject thiz, jobject target, jdouble v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityDouble", "(D)D");
+    jdouble res = (*env)->CallDoubleMethod(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jdouble JNICALL Java_TestJNI_nativeCallDoubleMethodV(JNIEnv* env, jobject thiz, jobject target, jdouble v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityDouble", "(D)D");
+    jdouble res = callDoubleMethodV_helper(env, target, mid, v);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+JNIEXPORT jdouble JNICALL Java_TestJNI_nativeCallDoubleMethodA(JNIEnv* env, jobject thiz, jobject target, jdouble v) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityDouble", "(D)D");
+    jvalue a[1]; a[0].d = v;
+    jdouble res = (*env)->CallDoubleMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
+    return res;
+}
+
+// Void
+JNIEXPORT void JNICALL Java_TestJNI_nativeCallVoidMethod(JNIEnv* env, jobject thiz, jobject target, jint marker) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityVoid", "(I)V");
+    (*env)->CallVoidMethod(env, target, mid, marker);
+    (*env)->DeleteLocalRef(env, cls);
+}
+JNIEXPORT void JNICALL Java_TestJNI_nativeCallVoidMethodV(JNIEnv* env, jobject thiz, jobject target, jint marker) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityVoid", "(I)V");
+    (*env)->CallVoidMethodV(env, target, mid, marker);
+    (*env)->DeleteLocalRef(env, cls);
+}
+JNIEXPORT void JNICALL Java_TestJNI_nativeCallVoidMethodA(JNIEnv* env, jobject thiz, jobject target, jint marker) {
+    jclass cls = (*env)->GetObjectClass(env, target);
+    jmethodID mid = (*env)->GetMethodID(env, cls, "identityVoid", "(I)V");
+    jvalue a[1]; a[0].i = marker;
+    (*env)->CallVoidMethodA(env, target, mid, a);
+    (*env)->DeleteLocalRef(env, cls);
 }
 
 // ------------ Thread test -------------

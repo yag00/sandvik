@@ -869,7 +869,7 @@ jchar NativeInterface::CallCharMethod(JNIEnv *env, jobject obj, jmethodID method
 }
 jchar NativeInterface::CallCharMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	va_list args_copy;
-    va_copy(args_copy, args);
+	va_copy(args_copy, args);
 	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
 	va_end(args_copy);
 	return (jchar)result.getReturnValue();
