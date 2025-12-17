@@ -711,7 +711,6 @@ JThread &NativeInterface::__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID
 	// Call the method
 	auto &thread = vm.newThread(fmt::format("{}.{}", clazz.getFullname(), method.getName()));
 	auto &frame = thread.newFrame(method);
-	auto sig = method.getSignature();
 
 	// @todo: check that the return type is 'I' (int)
 	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
@@ -753,6 +752,60 @@ JThread &NativeInterface::__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID
 	return thread;
 }
 
+JThread &NativeInterface::__CallObjectMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
+	if (obj == nullptr) {
+		throw NullPointerException("CallObjectMethodA on null object");
+	}
+	auto jenv = static_cast<NativeInterface *>(env);
+	auto &vm = jenv->getVm();
+	auto jobj = native::getObject(obj);
+	// Find the method in the object's class
+	Class &clazz = jobj->getClass();
+	if (!clazz.hasMethod((uint32_t)(uintptr_t)methodID)) {
+		throw NoSuchMethodException(fmt::format("CallObjectMethodA: methodID {} not found in class {}", (size_t)methodID, clazz.getName()));
+	}
+	Method &method = clazz.getMethod((uint32_t)(uintptr_t)methodID);
+	// Call the method
+	auto &thread = vm.newThread(fmt::format("{}.{}", clazz.getFullname(), method.getName()));
+	auto &frame = thread.newFrame(method);
+
+	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
+	frame.setObjRegister(regidx++, jobj);  // this
+	// Set method arguments in the frame registers from jvalue array
+	int argIndex = 0;
+	for (auto arg : method.arguments()) {
+		switch (arg[0]) {
+			case 'Z':  // boolean
+			case 'B':  // byte
+			case 'C':  // char
+			case 'S':  // short
+			case 'I':  // int
+				frame.setObjRegister(regidx++, Object::make((int32_t)args[argIndex++].i));
+				break;
+			case 'J':  // long
+			case 'D':  // double
+			{
+				uint64_t value = (uint64_t)args[argIndex++].j;
+				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
+				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				break;
+			}
+			case 'F':  // float
+				frame.setObjRegister(regidx++, Object::make(args[argIndex++].i));
+				break;
+			case 'L':  // object
+			case '[':  // array
+				frame.setObjRegister(regidx++, native::getObject(args[argIndex++].l));
+				break;
+			default:
+				throw VmException(fmt::format("CallObjectMethodA: unknown argument type '{}'", arg));
+		}
+	}
+	thread.run(true);
+	// Get the return value
+	return thread;
+}
+
 jobject NativeInterface::CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
 	va_start(args, methodID);
@@ -768,7 +821,8 @@ jobject NativeInterface::CallObjectMethodV(JNIEnv *env, jobject obj, jmethodID m
 	return (jobject)(result.getReturnObject());
 }
 jobject NativeInterface::CallObjectMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallObjectMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jobject)(result.getReturnObject());
 }
 jboolean NativeInterface::CallBooleanMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -785,7 +839,8 @@ jboolean NativeInterface::CallBooleanMethodV(JNIEnv *env, jobject obj, jmethodID
 	return (jboolean)result.getReturnValue();
 }
 jboolean NativeInterface::CallBooleanMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallBooleanMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jboolean)result.getReturnValue();
 }
 jbyte NativeInterface::CallByteMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -802,7 +857,8 @@ jbyte NativeInterface::CallByteMethodV(JNIEnv *env, jobject obj, jmethodID metho
 	return (jbyte)result.getReturnValue();
 }
 jbyte NativeInterface::CallByteMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallByteMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jbyte)result.getReturnValue();
 }
 jchar NativeInterface::CallCharMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -819,7 +875,8 @@ jchar NativeInterface::CallCharMethodV(JNIEnv *env, jobject obj, jmethodID metho
 	return (jchar)result.getReturnValue();
 }
 jchar NativeInterface::CallCharMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallCharMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jchar)result.getReturnValue();
 }
 jshort NativeInterface::CallShortMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -836,7 +893,8 @@ jshort NativeInterface::CallShortMethodV(JNIEnv *env, jobject obj, jmethodID met
 	return (jshort)result.getReturnValue();
 }
 jshort NativeInterface::CallShortMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallShortMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jshort)result.getReturnValue();
 }
 jint NativeInterface::CallIntMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -853,7 +911,8 @@ jint NativeInterface::CallIntMethodV(JNIEnv *env, jobject obj, jmethodID methodI
 	return result.getReturnValue();
 }
 jint NativeInterface::CallIntMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallIntMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return result.getReturnValue();
 }
 jlong NativeInterface::CallLongMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -870,7 +929,8 @@ jlong NativeInterface::CallLongMethodV(JNIEnv *env, jobject obj, jmethodID metho
 	return (jlong)result.getReturnDoubleValue();
 }
 jlong NativeInterface::CallLongMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallLongMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jlong)result.getReturnDoubleValue();
 }
 jfloat NativeInterface::CallFloatMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -887,7 +947,8 @@ jfloat NativeInterface::CallFloatMethodV(JNIEnv *env, jobject obj, jmethodID met
 	return (jfloat)result.getReturnValue();
 }
 jfloat NativeInterface::CallFloatMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallFloatMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jfloat)result.getReturnValue();
 }
 jdouble NativeInterface::CallDoubleMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -904,7 +965,8 @@ jdouble NativeInterface::CallDoubleMethodV(JNIEnv *env, jobject obj, jmethodID m
 	return (jdouble)result.getReturnDoubleValue();
 }
 jdouble NativeInterface::CallDoubleMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallDoubleMethodA not implemented");
+	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
+	return (jdouble)result.getReturnDoubleValue();
 }
 void NativeInterface::CallVoidMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -919,7 +981,7 @@ void NativeInterface::CallVoidMethodV(JNIEnv *env, jobject obj, jmethodID method
 	va_end(args_copy);
 }
 void NativeInterface::CallVoidMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallVoidMethodA not implemented");
+	__CallObjectMethodA(env, obj, methodID, args);
 }
 
 jobject NativeInterface::CallNonvirtualObjectMethod(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) {

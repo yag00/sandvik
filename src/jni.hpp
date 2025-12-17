@@ -352,6 +352,7 @@ namespace sandvik {
 
 		private:
 			static JThread &__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID methodID, va_list &args);
+			static JThread &__CallObjectMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args);
 
 		private:
 			Vm &_vm;
