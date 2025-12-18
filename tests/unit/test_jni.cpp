@@ -45,10 +45,6 @@ TEST(JNI, JNI) {
 	std::ifstream outputFile("test_jni.out");
 	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)), std::istreambuf_iterator<char>());
 	outputFile.close();
-
-	// std::ifstream refFile("../tests/unit/test_jni.ref");
-	// std::string expectedOutput((std::istreambuf_iterator<char>(refFile)), std::istreambuf_iterator<char>());
-	// refFile.close();
-	// ASSERT_EQ(actualOutput, "ok\n") << "The actual output does not match the expected output.";
+	ASSERT_EQ(actualOutput, "ok\n") << "The actual output does not match the expected output.";
 	fclose(file);
 }

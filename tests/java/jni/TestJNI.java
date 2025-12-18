@@ -551,5 +551,6 @@ public class TestJNI {
         TestJNI test = new TestJNI();
         test.runTests();
         if (test.getSuccess()) System.out.println("ok");
+        else System.out.println("fail");
     }
 }
