@@ -417,7 +417,6 @@ void Interpreter::handleException(ObjectRef exception_) {
 			// uncaught exception
 			auto detailMessage = exception_->getField("detailMessage");
 			std::string msg = detailMessage->isString() ? detailMessage->str() : "";
-			logger.ferror("Unhandled exception {} : {}", exception_->getClass().getFullname(), msg);
 			throw JavaException(exception_->getClass().getFullname(), msg);
 		}
 	}

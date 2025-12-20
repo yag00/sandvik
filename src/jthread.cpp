@@ -103,6 +103,16 @@ void JThread::loop() {
 		_vm.stop();
 		// clear the stack, call to end() will be true
 		_stack.clear();
+	} catch (const JavaException& e) {
+		if (e.getMessage().empty()) {
+			logger.ferror("Unhandled Java exception of type {}", e.getExceptionType());
+		} else {
+			logger.ferror("Unhandled Java exception of type {}: {}", e.getExceptionType(), e.getMessage());
+		}
+		// terminate the whole VM on unhandled exception in thread
+		_vm.stop();
+		// clear the stack, call to end() will be true
+		_stack.clear();
 	}
 }
 
