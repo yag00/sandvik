@@ -25,9 +25,11 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
+#include "jthread.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
 
@@ -65,21 +67,11 @@ extern "C" {
 	 * Retrieves the class of the caller's caller's caller.
 	 */
 	JNIEXPORT jobject JNICALL Java_dalvik_system_VMStack_getStackClass2(JNIEnv* env, jclass) {
-		/*try {
-		    // Retrieve the third class in the stack trace
-		    auto stackClass = sandvik::native::getStackClass(3);  // Caller of the caller's caller
-		    if (!stackClass) {
-		        return nullptr;  // No class found at the specified stack depth
-		    }
-
-		    // Wrap the class in a java.lang.Class object
-		    return sandvik::native::wrapObject(stackClass);
-		} catch (const sandvik::VmException& e) {
-		    sandvik::native::throwJavaException(env, "java.lang.RuntimeException", e.what());
-		    return nullptr;
-		}*/
-		logger.fwarning("{} not implemented!", __FUNCTION__);
-		return nullptr;
+		auto jenv = native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+		auto& thread = jenv->getVm().currentThread();
+		auto& clazz = thread.getStackClass(2);
+		return (jobject)Object::makeConstClass(classloader, clazz);
 	}
 
 	/**
@@ -89,14 +81,6 @@ extern "C" {
 	 * Retrieves the first ClassLoader on the call stack that isn't the bootstrap class loader.
 	 */
 	JNIEXPORT jobject JNICALL Java_dalvik_system_VMStack_getClosestUserClassLoader(JNIEnv* env, jclass) {
-		/*try {
-		    // Traverse the stack to find the first non-bootstrap class loader
-		    auto closestClassLoader = sandvik::native::getClosestUserClassLoader();
-		    return sandvik::native::wrapObject(closestClassLoader);
-		} catch (const sandvik::VmException& e) {
-		    sandvik::native::throwJavaException(env, "java.lang.RuntimeException", e.what());
-		    return nullptr;
-		}*/
 		logger.fwarning("{} not implemented!", __FUNCTION__);
 		return nullptr;
 	}
@@ -108,20 +92,6 @@ extern "C" {
 	 * Retrieves the stack trace of the specified thread.
 	 */
 	JNIEXPORT jobjectArray JNICALL Java_dalvik_system_VMStack_getThreadStackTrace(JNIEnv* env, jclass, jobject threadObj) {
-		/*try {
-		    // Retrieve the thread object
-		    auto thread = sandvik::native::getThread(threadObj);
-		    if (!thread) {
-		        throw sandvik::VmException("Invalid thread object");
-		    }
-
-		    // Get the stack trace of the thread
-		    auto stackTrace = thread->getStackTrace();
-		    return sandvik::native::wrapObjectArray(stackTrace);
-		} catch (const sandvik::VmException& e) {
-		    sandvik::native::throwJavaException(env, "java.lang.RuntimeException", e.what());
-		    return nullptr;
-		}*/
 		logger.fwarning("{} not implemented!", __FUNCTION__);
 		return nullptr;
 	}
@@ -133,20 +103,6 @@ extern "C" {
 	 * Retrieves an annotated stack trace from the specified thread.
 	 */
 	JNIEXPORT jobjectArray JNICALL Java_dalvik_system_VMStack_getAnnotatedThreadStackTrace(JNIEnv* env, jclass, jobject threadObj) {
-		/*try {
-		    // Retrieve the thread object
-		    auto thread = sandvik::native::getThread(threadObj);
-		    if (!thread) {
-		        throw sandvik::VmException("Invalid thread object");
-		    }
-
-		    // Get the annotated stack trace of the thread
-		    auto annotatedStackTrace = thread->getAnnotatedStackTrace();
-		    return sandvik::native::wrapObjectArray(annotatedStackTrace);
-		} catch (const sandvik::VmException& e) {
-		    sandvik::native::throwJavaException(env, "java.lang.RuntimeException", e.what());
-		    return nullptr;
-		}*/
 		logger.fwarning("{} not implemented!", __FUNCTION__);
 		return nullptr;
 	}
@@ -158,31 +114,14 @@ extern "C" {
 	 * Fills the provided array with stack trace elements for the specified thread.
 	 */
 	JNIEXPORT jint JNICALL Java_dalvik_system_VMStack_fillStackTraceElements(JNIEnv* env, jclass, jobject threadObj, jobjectArray elements) {
-		/*try {
-		    // Retrieve the thread object
-		    auto thread = sandvik::native::getThread(threadObj);
-		    if (!thread) {
-		        throw sandvik::VmException("Invalid thread object");
-		    }
+		// auto jenv = native::getNativeInterface(env);
+		// auto& classloader = jenv->getClassLoader();
 
-		    // Retrieve the stack trace elements
-		    auto stackTrace = thread->getStackTrace();
-		    jsize length = env->GetArrayLength(elements);
-		    if (length < static_cast<jsize>(stackTrace.size())) {
-		        throw sandvik::VmException("Provided array is too small to hold the stack trace elements");
-		    }
+		auto threadRef = native::getObject(threadObj);
+		logger.fwarning("Filling stack trace elements for thread object: {}", threadRef->toString());
+		auto stackTraceElements = native::getArray(elements);
+		logger.fwarning("Provided stack trace elements array: {}", stackTraceElements->toString());
 
-		    // Fill the array with stack trace elements
-		    for (size_t i = 0; i < stackTrace.size(); ++i) {
-		        env->SetObjectArrayElement(elements, static_cast<jsize>(i), sandvik::native::wrapObject(stackTrace[i]));
-		    }
-
-		    // Return the number of elements filled
-		    return static_cast<jint>(stackTrace.size());
-		} catch (const sandvik::VmException& e) {
-		    sandvik::native::throwJavaException(env, "java.lang.RuntimeException", e.what());
-		    return 0;
-		}*/
 		logger.fwarning("{} not implemented!", __FUNCTION__);
 		return 0;
 	}
