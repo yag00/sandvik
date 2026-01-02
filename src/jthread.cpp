@@ -69,6 +69,13 @@ uint64_t JThread::stackDepth() const {
 	return _stack.size();
 }
 
+Class& JThread::getStackClass(uint32_t depth_) const {
+	if (depth_ >= _stack.size()) {
+		throw VmException(fmt::format("Stack depth {} out of range (max {})", depth_, _stack.size() - 1));
+	}
+	return _stack[_stack.size() - 1 - depth_]->getMethod().getClass();
+}
+
 Frame& JThread::newFrame(Method& method_) {
 	if (method_.getName() == "<clinit>") {
 		auto& clazz = method_.getClass();

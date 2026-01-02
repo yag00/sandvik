@@ -78,6 +78,12 @@ namespace sandvik {
 			 */
 			uint64_t stackDepth() const;
 
+			/** @brief Gets the class at the specified stack depth.
+			 * @param depth_ Stack depth
+			 * @return Reference to the class at the specified depth
+			 */
+			Class& getStackClass(uint32_t depth_) const;
+
 			/** @brief Gets the thread object.
 			 * @return Shared pointer to the thread object
 			 */
