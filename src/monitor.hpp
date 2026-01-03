@@ -65,6 +65,7 @@ namespace sandvik {
 			std::condition_variable _condition;       // used for monitor-enter/exit coordination
 			std::condition_variable _wait_condition;  // used for wait/notify
 			std::thread::id _owner;                   // Tracks the thread that owns the monitor
+			uint32_t _recursion = 0;
 	};
 }  // namespace sandvik
 

@@ -225,7 +225,9 @@ TEST(object, wait_notify) {
 
 	auto waiter = [obj, &counter, &done]() {
 		std::cout << "[waiter] Waiting...\n";
+		obj->monitorEnter();
 		obj->wait(); // wait indefinitely
+		obj->monitorExit();
 		std::cout << "[waiter] Woke up! Counter=" << counter << "\n";
 		done = true;
 	};

@@ -22,18 +22,35 @@ using namespace sandvik;
 
 void Monitor::enter() {
 	std::unique_lock lock(_mutex);
-	// Wait until the monitor is free
+	auto self = std::this_thread::get_id();
+
+	// Reentrant acquire
+	if (_owner == self) {
+		_recursion++;
+		return;
+	}
+
+	// Wait until monitor is free
 	_condition.wait(lock, [this]() { return _owner == std::thread::id(); });
-	_owner = std::this_thread::get_id();
+
+	_owner = self;
+	_recursion = 1;
 }
 
 void Monitor::exit() {
 	std::unique_lock lock(_mutex);
-	if (_owner != std::this_thread::get_id()) {
-		throw std::runtime_error("Cannot unlock an object not owned by the current thread.");
+	auto self = std::this_thread::get_id();
+
+	if (_owner != self) {
+		throw std::runtime_error("IllegalMonitorStateException: current thread does not own the monitor");
 	}
-	_owner = std::thread::id();  // Reset monitor ownership
-	_condition.notify_one();
+
+	_recursion--;
+
+	if (_recursion == 0) {
+		_owner = std::thread::id();
+		_condition.notify_one();
+	}
 }
 
 void Monitor::check() const {
@@ -51,21 +68,42 @@ void Monitor::check() const {
 	}
 }
 
-bool Monitor::wait(uint64_t timeout_) {
-	std::unique_lock lock(_mutex);
-	bool timed_out = false;
-	// Release ownership temporarily
+bool Monitor::wait(uint64_t timeout_ms) {
+	std::unique_lock<std::mutex> lock(_mutex);
+	auto self = std::this_thread::get_id();
+
+	// must own the monitor
+	if (_owner != self) {
+		throw std::runtime_error("wait() IllegalMonitorStateException");
+	}
+
+	// save recursion depth
+	uint32_t saved_recursion = _recursion;
+
+	// fully release the monitor
 	_owner = std::thread::id();
-	_condition.notify_one();  // allow others to enter during wait
-	if (timeout_ == 0) {
+	_recursion = 0;
+
+	// wake one entering thread (entry set)
+	_condition.notify_one();
+
+	bool timed_out = false;
+
+	// enter wait set
+	if (timeout_ms == 0) {
 		_wait_condition.wait(lock);
 	} else {
-		auto duration = std::chrono::milliseconds(timeout_);
-		timed_out = (_wait_condition.wait_for(lock, duration) == std::cv_status::timeout);
+		auto dur = std::chrono::milliseconds(timeout_ms);
+		timed_out = (_wait_condition.wait_for(lock, dur) == std::cv_status::timeout);
 	}
-	// Reacquire ownership before returning
+
+	// re-acquire the monitor (entry set)
 	_condition.wait(lock, [this]() { return _owner == std::thread::id(); });
-	_owner = std::this_thread::get_id();
+
+	// restore ownership + recursion
+	_owner = self;
+	_recursion = saved_recursion;
+
 	return !timed_out;
 }
 
