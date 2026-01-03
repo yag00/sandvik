@@ -137,5 +137,11 @@ public class RunAllTests {
 
         System.out.println("== Running TestFilledNewArray ==");
         TestFilledNewArray.main(new String[]{});
+
+        System.out.println("== Running TestMonitorReentrant ==");
+        TestMonitorReentrant.main(new String[]{});
+
+        System.out.println("== Running TestMonitorException ==");
+        TestMonitorException.main(new String[]{});
     }
 }

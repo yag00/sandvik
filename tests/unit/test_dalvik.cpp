@@ -296,3 +296,9 @@ TEST(VM, InvokeInterfaceRange) {
 TEST(VM, FilledNewArray) {
 	run_common_test("TestFilledNewArray");
 }
+TEST(VM, MonitorReentrant) {
+	run_common_test("TestMonitorReentrant");
+}
+TEST(VM, MonitorException) {
+	run_common_test("TestMonitorException");
+}
