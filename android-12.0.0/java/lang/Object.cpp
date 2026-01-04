@@ -58,16 +58,13 @@ JNIEXPORT void JNICALL Java_java_lang_Object_internalClone(JNIEnv* env, jobject 
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Object_notify(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
-
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Object_notifyAll(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT void JNICALL Java_java_lang_Object_notify(JNIEnv* env, jobject obj) {
+		auto this_ptr = sandvik::native::getObject(obj);
+		this_ptr->notify();
+	}
+	JNIEXPORT void JNICALL Java_java_lang_Object_notifyAll(JNIEnv* env, jobject obj) {
+		auto this_ptr = sandvik::native::getObject(obj);
+		this_ptr->notifyAll();
+	}
 
 }  // extern "C"
