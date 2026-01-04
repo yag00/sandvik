@@ -228,3 +228,7 @@ void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const 
 		}
 	}
 }
+
+bool Frame::isHandlingException(ObjectRef exception_) const {
+	return _exception == exception_;
+}

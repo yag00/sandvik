@@ -384,15 +384,27 @@ void Interpreter::handleException(ObjectRef exception_) {
 		throw VmException("throw operand is not an object!");
 	}
 
+	auto detailMessage = exception_->getField("detailMessage");
+	std::string msg = detailMessage->isString() ? detailMessage->str() : "";
+
 	while (true) {
+		if (_rt.stackDepth() == 0) {
+			// uncaught exception
+			logger.fdebug("Unhandled exception {} : {}", exception_->getClass().getFullname(), msg);
+			throw JavaException(exception_->getClass().getFullname(), msg);
+		}
+		auto& frame = _rt.currentFrame();
+		// do not re-handle same exception inside the same frame
+		if (frame.isHandlingException(exception_)) {
+			_rt.popFrame();
+			continue;
+		}
 		try {
-			auto& frame = _rt.currentFrame();
 			const auto& method = frame.getMethod();
 			uint32_t catchAllAddrress = 0;
-			auto exceptionHandler = method.getExceptionHandler(frame.pc() - 1, catchAllAddrress);
-			for (auto& exc : exceptionHandler) {
-				auto& classloader = _rt.getClassLoader();
-				const auto& exceptionType = classloader.resolveClass(frame.getDexIdx(), exc.first);
+			auto handlers = method.getExceptionHandler(frame.pc() - 1, catchAllAddrress);
+			for (auto& exc : handlers) {
+				const auto& exceptionType = _rt.getClassLoader().resolveClass(frame.getDexIdx(), exc.first);
 				if (exceptionType.isInstanceOf(exception_)) {
 					logger.fdebug("Catch exception {} at {:x}", exceptionType.getName(), exc.second);
 					frame.pc() = exc.second << 1;
@@ -412,12 +424,6 @@ void Interpreter::handleException(ObjectRef exception_) {
 		// No handler found - propagate to caller
 		if (_rt.stackDepth() > 0) {
 			_rt.popFrame();
-		}
-		if (_rt.stackDepth() == 0) {
-			// uncaught exception
-			auto detailMessage = exception_->getField("detailMessage");
-			std::string msg = detailMessage->isString() ? detailMessage->str() : "";
-			throw JavaException(exception_->getClass().getFullname(), msg);
 		}
 	}
 }

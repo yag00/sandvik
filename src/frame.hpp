@@ -133,6 +133,10 @@ namespace sandvik {
 			 *  @param exception_ Shared pointer to the exception Object.
 			 */
 			void setException(ObjectRef exception_);
+			/** @brief Checks if the frame is handling an exception.
+			 *  @return True if handling an exception, false otherwise.
+			 */
+			bool isHandlingException(ObjectRef exception_) const;
 
 			/** @brief Gets the program counter.
 			 *  @return Program counter.
