@@ -222,7 +222,7 @@ void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const 
 	visitor_(_objectReturn);
 	visitor_(_exception);
 	for (const auto& reg : _registers) {
-		if (reg && !reg->isNull()) {
+		if (reg) {
 			visitor_(reg);
 			reg->visitReferences(visitor_);
 		}

@@ -109,6 +109,7 @@ void GC::collect() {
 	logger.fdebug("GC: Starting garbage collection cycle... ({} objects)", _objects.size());
 
 	// Mark reachable objects:
+	Object::makeNull()->setMarked(true);  // ensure null object is always marked
 	//  scan each thread's stacks/frames
 	//  scan static fields in loaded classes
 	//  @todo : scan thread's local JNI handles table
@@ -136,5 +137,6 @@ void GC::track(std::unique_ptr<Object> obj_) {
 	if (_objects.size() > _limit) {
 		requestCollect();
 	}
+	std::unique_lock lock(_mtx);
 	_objects.push_back(std::move(obj_));
 }

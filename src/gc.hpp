@@ -21,6 +21,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -89,7 +90,7 @@ namespace sandvik {
 			void collect();
 
 			// tracked objects
-			std::vector<std::unique_ptr<Object>> _objects;
+			std::deque<std::unique_ptr<Object>> _objects;
 			// Vms
 			std::vector<Vm*> _vms;
 
