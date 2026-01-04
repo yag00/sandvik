@@ -236,6 +236,9 @@ TEST(VM, CollectionsLike) {
 TEST(VM, ExceptionsFlow) {
 	run_common_test("TestExceptionsFlow");
 }
+TEST(VM, TestExceptionsNoRehandle) {
+	run_common_test("TestExceptionsNoRehandle");
+}
 TEST(VM, Recursion) {
 	run_common_test("TestRecursion");
 }

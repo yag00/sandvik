@@ -78,6 +78,9 @@ public class RunAllTests {
         System.out.println("== Running TestExceptionsFlow==");
         TestExceptionsFlow.main(new String[]{});
 
+        System.out.println("== Running TestExceptionsNoRehandle==");
+        TestExceptionsNoRehandle.main(new String[]{});
+
         System.out.println("== Running TestRecursion==");
         TestRecursion.main(new String[]{});
 
