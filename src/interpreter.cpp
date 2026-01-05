@@ -724,8 +724,12 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(reg);
+
+	// check-cast null is LEGAL in Java and Dalvik.
 	if (obj->isNull()) {
-		throw NullPointerException("check_cast on null object");
+		// null can be cast to anything
+		frame.pc() += 3;
+		return;
 	}
 
 	auto& classloader = _rt.getClassLoader();
