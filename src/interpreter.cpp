@@ -2216,14 +2216,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 	}
 	// set result of the sput-object
 	auto value = frame.getObjRegister(src);
-	// @todo : this is a hack to handle setting null to an object field. Need to properly handle this case.
-	if (value->isNumberObject() && (value->getValue() == 0)) {
-		auto& fieldclass = classloader.getOrLoad(field.getFieldTypeClassname());
-		auto obj = Object::make(fieldclass);
-		field.setObjectValue(obj);
-	} else {
-		field.setObjectValue(value);
-	}
+	field.setObjectValue(value);
 
 	frame.pc() += 3;
 }
