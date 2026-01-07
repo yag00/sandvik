@@ -74,4 +74,14 @@ extern "C" {
 		jobject result = env->NewObject(structUtsnameClass, ctor, sysname, nodename, release, version, machine);
 		return result;
 	}
+	JNIEXPORT jlong JNICALL Java_libcore_io_Linux_sysconf(JNIEnv* env, jclass, jint name) {
+		errno = 0;
+		logger.fwarning("call sysconf(name={})", name);
+		long result = 0;  // sysconf(name);
+		if (result == -1 && errno != 0) {
+			logger.ferror("sysconf failed with error: {}", strerror(errno));
+			return -1;
+		}
+		return static_cast<jlong>(result);
+	}
 }  // extern "C"
