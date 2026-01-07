@@ -118,6 +118,16 @@ namespace sandvik {
 			 */
 			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
+			/** @brief Creates a new child thread (used to execute in thread method like clinit method).
+			 * @param name_ Name of the child thread
+			 * @return Reference to the created child thread
+			 */
+			JThread& newChild(const std::string& name_);
+			/** @brief Pops the last created child thread. */
+			void popChild();
+			/** @brief Runs in the current thread. */
+			void runInCurrentThread();
+
 		protected:
 			/** @brief thread loop function of the thread implemented by subclass. */
 			void loop() override;
@@ -132,6 +142,8 @@ namespace sandvik {
 			std::vector<std::unique_ptr<Frame>> _stack;
 			ObjectRef _objectReturn;
 			ObjectRef _thisThread;
+
+			std::vector<std::unique_ptr<JThread>> _childrenThreads;
 	};
 }  // namespace sandvik
 

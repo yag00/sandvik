@@ -70,10 +70,22 @@ uint64_t JThread::stackDepth() const {
 }
 
 Class& JThread::getStackClass(uint32_t depth_) const {
-	if (depth_ >= _stack.size()) {
-		throw VmException(fmt::format("Stack depth {} out of range (max {})", depth_, _stack.size() - 1));
+	if (_childrenThreads.size() > 0) {
+		uint32_t depth = depth_;
+		for (auto it = _childrenThreads.rbegin(); it != _childrenThreads.rend(); ++it) {
+			if (depth >= (*it)->stackDepth()) {
+				depth -= (*it)->stackDepth();
+			} else {
+				return (*it)->getStackClass(depth);
+			}
+		}
+		throw VmException("getStackClass: Stack depth {} out of range", depth_);
+	} else {
+		if (depth_ >= _stack.size()) {
+			throw VmException(fmt::format("Stack depth {} out of range (max {})", depth_, _stack.size() - 1));
+		}
+		return _stack[_stack.size() - 1 - depth_]->getMethod().getClass();
 	}
-	return _stack[_stack.size() - 1 - depth_]->getMethod().getClass();
 }
 
 Frame& JThread::newFrame(Method& method_) {
@@ -166,5 +178,30 @@ void JThread::visitReferences(const std::function<void(Object*)>& visitor_) cons
 	visitor_(_objectReturn);
 	for (const auto& frame : _stack) {
 		frame->visitReferences(visitor_);
+	}
+}
+
+JThread& JThread::newChild(const std::string& name_) {
+	auto child = std::make_unique<JThread>(_vm, _classloader, name_);
+	_childrenThreads.push_back(std::move(child));
+	return *(_childrenThreads.back());
+}
+
+void JThread::popChild() {
+	if (_childrenThreads.empty()) {
+		throw VmException("No child threads to pop");
+	}
+	_childrenThreads.pop_back();
+}
+
+void JThread::runInCurrentThread() {
+	while (!done()) {
+		try {
+			_interpreter->execute();
+		} catch (...) {
+			// clear the stack, call to end() will be true
+			_stack.clear();
+			throw;
+		}
 	}
 }

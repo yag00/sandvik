@@ -325,8 +325,10 @@ void Interpreter::executeClinit(Class& class_) const {
 		// Nothing to do
 		return;
 	}
-	// Create a new thread to execute the <clinit> method
-	auto& thread = _rt.vm().newThread(fmt::format("{}.{}", class_.getFullname(), "<clinit>"));
+	logger.fdebug("Executing <clinit> for class {}", class_.getFullname());
+	// Create a new "fake" thread to execute the <clinit> method (thread will be run in the current thread)
+	auto& currentThread = _rt.vm().currentThread();
+	auto& thread = currentThread.newChild(fmt::format("{}.{}", class_.getFullname(), "<clinit>"));
 	if (hasInitializeMethod) {
 		// push new frame with initializeSystemClass method (should be executed after <clinit>)
 		auto& initializeSystemClass = class_.getMethod("initializeSystemClass", "()V");
@@ -343,8 +345,9 @@ void Interpreter::executeClinit(Class& class_) const {
 		}
 		thread.newFrame(clinitMethod);
 	}
-	thread.run(true);
-	thread.join();
+	thread.runInCurrentThread();
+	currentThread.popChild();
+	logger.fdebug("Executing <clinit> for class {} OK", class_.getFullname());
 }
 
 void Interpreter::executeNativeMethod(const Method& method_, const std::vector<ObjectRef>& args_) {
