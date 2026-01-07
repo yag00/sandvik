@@ -31,7 +31,10 @@
 using namespace sandvik;
 
 Frame::Frame(Method& method_) : _method(method_) {
-	logger.fdebug("new Frame for method = {}.{} registers ={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
+	logger.fdebug("new Frame for method={}.{} registers={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
+	if (!method_.isStatic() && method_.getNbRegisters() == 0) {
+		throw VmException("Method {}.{} has zero registers", method_.getClass().getFullname(), method_.getName());
+	}
 	_exception = Object::makeNull();
 	_objectReturn = Object::makeNull();
 	increaseRegSize(method_.getNbRegisters());
