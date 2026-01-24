@@ -27,6 +27,7 @@
 #include "jni.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
+#include "stringpool.hpp"
 #include "system/logger.hpp"
 
 /** @todo implementation **/
@@ -154,15 +155,12 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_String_intern(JNIEnv* env, jobject obj) {
-		throw sandvik::VmException("Java_java_lang_String_intern not implemented!");
-		/*auto this_ptr = sandvik::native::getString(obj);
+		auto this_ptr = sandvik::native::getString(obj);
 		const auto& str = this_ptr->str();
-
-		// Intern pool is managed by sandvik::native::StringPool
-		sandvik::native::StringPool& pool = sandvik::native::getStringPool();
-		jobject interned = pool.intern(env, obj, str);
-
-		return interned;*/
+		auto jenv = sandvik::native::getNativeInterface(env);
+		sandvik::ClassLoader& classloader = jenv->getClassLoader();
+		auto& stringPool = sandvik::StringPool::getInstance();
+		return (jobject)stringPool.intern(classloader, str);
 	}
 
 }  // extern "C"

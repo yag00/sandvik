@@ -22,6 +22,7 @@
 
 #include "monitor.hpp"
 #include "object.hpp"
+#include "stringpool.hpp"
 #include "system/logger.hpp"
 #include "vm.hpp"
 
@@ -110,6 +111,7 @@ void GC::collect() {
 
 	// Mark reachable objects:
 	Object::makeNull()->setMarked(true);  // ensure null object is always marked
+	StringPool::getInstance().markAll();  // ensure all interned strings are always marked
 	//  scan each thread's stacks/frames
 	//  scan static fields in loaded classes
 	//  @todo : scan thread's local JNI handles table
