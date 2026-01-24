@@ -124,7 +124,7 @@ extern "C" {
 		auto& fieldTypeClass = classloader.getOrLoad(field.getType());
 		fieldObj->setField("type", Object::makeConstClass(classloader, fieldTypeClass));
 		fieldObj->setField("accessFlags", Object::make((uint64_t)field.getAccessFlags()));
-		fieldObj->setField("offset", Object::make((uint64_t)field.getIndex()));
+		fieldObj->setField("offset", Object::make((uint64_t)clazz.getFieldOffset(field.getName())));
 		return (jobject)fieldObj;
 	}
 
@@ -194,4 +194,22 @@ extern "C" {
 		throw VmException("Java_java_lang_Class_getDeclaredMethodInternal not implemented!");
 	}
 
+	JNIEXPORT jobject JNICALL Java_java_lang_Class_getComponentType(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto classObj = sandvik::native::getObject(obj);
+		auto& classloader = jenv->getClassLoader();
+		auto& classType = classObj->getClassType();
+		// Check if the class is an array
+		if (!classType.isArray()) {
+			return (jobject)Object::makeNull();
+		}
+		auto componentType = classObj->getField("componentType");
+		if (componentType->isNull()) {
+			auto& t = classloader.getOrLoad(classType.getArrayType());
+			auto componentClassObj = sandvik::Object::makeConstClass(classloader, t);
+			classObj->setField("componentType", componentClassObj);
+			return (jobject)componentClassObj;
+		}
+		return (jobject)componentType;
+	}
 }  // extern "C"
