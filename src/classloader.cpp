@@ -164,7 +164,6 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	// Handle native array types like [B, [I, etc., including multi-dimensional arrays
 	// Create a synthetic array Class object
 	if (dotclassname[0] == '[') {
-		logger.ferror("Created synthetic array class: {}", dotclassname);
 		// Determine component descriptor
 		std::string componentDesc = dotclassname.substr(1);
 		// Load component class (make sure it exists)

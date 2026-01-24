@@ -16,7 +16,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <pwd.h>
+#include <string.h>
+#include <unistd.h>
 
 #include <fmt/format.h>
 #include <sys/utsname.h>
@@ -83,5 +86,33 @@ extern "C" {
 			return -1;
 		}
 		return static_cast<jlong>(result);
+	}
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_writeBytes(JNIEnv* env, jclass, jobject fdObj, jbyteArray byteArray, jint offset, jint count) {
+		auto fdObject = sandvik::native::getObject(fdObj);
+		auto buffer = sandvik::native::getArray(byteArray);
+
+		int fd = fdObject->getField("descriptor")->getValue();
+		if (fd < 0) {
+			throw IOException("Bad file descriptor");
+		}
+		if (offset < 0 || count < 0) {
+			throw IllegalArgumentException("offset or byteCount < 0");
+		}
+		if (offset + count > buffer->getArrayLength()) {
+			throw ArrayIndexOutOfBoundsException();
+		}
+
+		uint8_t* data = new uint8_t[count];
+		for (int i = 0; i < count; ++i) {
+			data[i] = static_cast<uint8_t>(buffer->getElement(offset + i)->getValue());
+		}
+		ssize_t written = ::write(fd, data, count);
+		delete[] data;
+
+		if (written < 0) {
+			throw IOException(fmt::format("Write operation failed: {}", strerror(errno)));
+		}
+
+		return static_cast<jint>(written);
 	}
 }  // extern "C"

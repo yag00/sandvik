@@ -29,7 +29,7 @@
 #include "object.hpp"
 #include "system/logger.hpp"
 
-/** @todo implementation **/
+using namespace sandvik;
 
 extern "C" {
 
@@ -39,11 +39,18 @@ JNIEXPORT void JNICALL Java_java_lang_ref_Reference_getReferent(JNIEnv* env, job
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_ref_Reference_refersTo0(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jboolean JNICALL Java_java_lang_ref_Reference_refersTo0(JNIEnv* env, jobject refObj, jobject obj) {
+		try {
+			auto ref = sandvik::native::getObject(refObj);
+			auto target = sandvik::native::getObject(obj);
+			// retrieve the referent field
+			auto referent = ref->getField("referent");
+			// compares object identity (==)
+			return referent == target ? JNI_TRUE : JNI_FALSE;
+		} catch (...) {
+			return JNI_FALSE;
+		}
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_ref_Reference_clearReferent(JNIEnv* env, jobject obj) {

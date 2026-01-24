@@ -25,11 +25,13 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
+#include "jthread.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vm.hpp"
 
-/** @todo implementation **/
+using namespace sandvik;
 
 extern "C" {
 
@@ -39,11 +41,10 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_registerNatives(JNIEnv* env, jobjec
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Thread_currentThread(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jobject JNICALL Java_java_lang_Thread_currentThread(JNIEnv* env, jclass clazz) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		return (jobject)jenv->getVm().currentThread().getThreadObject();
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_Thread_yield(JNIEnv* env, jobject obj) {
