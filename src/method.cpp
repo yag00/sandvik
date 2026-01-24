@@ -187,6 +187,10 @@ bool Method::isHooked() const {
 	return _function != nullptr;
 }
 
+void Method::makeNative() {
+	_accessFlags |= ACCESS_FLAGS::ACC_NATIVE;
+}
+
 void Method::execute(Frame& frame_, std::vector<ObjectRef>& registers_) {
 	if (!_function) {
 		throw VmException("Method {}.{} has no implementation", _class.getFullname(), getName());

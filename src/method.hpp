@@ -181,6 +181,10 @@ namespace sandvik {
 			 */
 			bool isHooked() const;
 
+			/** @brief Makes the method native.
+			 */
+			void makeNative();
+
 			/** @brief Executes the method.
 			 * @param frame_ Reference to the Frame object.
 			 * @param registers_ Vector of Object references representing the registers.

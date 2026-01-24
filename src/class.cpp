@@ -121,6 +121,13 @@ std::string Class::getFullname() const {
 	return _fullname;
 }
 
+std::string Class::getArrayType() const {
+	if (!_isArray) {
+		throw VmException("Class {} is not an array", getFullname());
+	}
+	return _componentType;
+}
+
 bool Class::implements(const std::string& interface_) const {
 	for (const auto& interface : _interfaces) {
 		if (interface == interface_) {
@@ -177,6 +184,10 @@ bool Class::isInterface() const {
 bool Class::isAbstract() const {
 	return _isAbstract;
 }
+bool Class::isArray() const {
+	return _isArray;
+}
+
 bool Class::hasSuperClass() const {
 	if (_fullname == "java.lang.Object") {
 		return false;  // java.lang.Object has no super class
@@ -267,6 +278,17 @@ std::vector<std::string> Class::getFieldList() const {
 		fieldList.push_back(name);
 	}
 	return fieldList;
+}
+
+size_t Class::getFieldOffset(const std::string& name_) const {
+	size_t index = 0;
+	for (const auto& [name, field] : _fields) {
+		if (name == name_) {
+			return index;
+		}
+		index++;
+	}
+	throw VmException("Field not found: {}", name_);
 }
 
 Class& Class::getSuperClass() const {

@@ -47,19 +47,21 @@ Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_)
 		totalSize *= d;
 	}
 	_length = totalSize;
-	_data = std::make_shared<ObjectRefVector>();
-	_data->resize(totalSize);
-	std::generate(_data->begin(), _data->end(), []() { return Object::makeNull(); });
+	_data = std::shared_ptr<std::atomic<ObjectRef>[]>(new std::atomic<ObjectRef>[totalSize], std::default_delete<std::atomic<ObjectRef>[]>());
+	// Initialize elements to null
+	for (uint32_t i = 0; i < totalSize; ++i) {
+		_data[i].store(Object::makeNull(), std::memory_order_relaxed);
+	}
 }
 
-Array::Array(std::shared_ptr<ObjectRefVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_)
+Array::Array(std::shared_ptr<ObjectRefVector> data_, uint32_t size_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_)
     : Object(), _classtype(classtype_), _dimensions(dimensions_), _data(data_), _offset(offset_) {
 	uint32_t totalSize = 1;
 	for (auto d : _dimensions) {
 		totalSize *= d;
 	}
 	_length = totalSize;
-	if (_offset + _length > _data->size()) {
+	if (_offset + _length > size_) {
 		throw std::out_of_range("Subarray out of range");
 	}
 }
@@ -118,39 +120,54 @@ uint32_t Array::getArrayLength() const {
 }
 
 void Array::setElement(uint32_t idx_, ObjectRef value_) {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	if (_dimensions.size() != 1) {
 		throw std::invalid_argument("Use multi-dimensional setElement for arrays with more than one dimension");
 	}
 	if (idx_ >= getArrayLength()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	(*_data)[_offset + idx_] = value_;
+	_data[_offset + idx_] = value_;
 }
 
 ObjectRef Array::getElement(uint32_t idx_) const {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	if (_dimensions.size() != 1) {
 		return getArray(idx_);
 	}
 	if (idx_ >= getArrayLength()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	return (*_data)[_offset + idx_];
+	return _data[_offset + idx_];
 }
 
 void Array::setElement(const std::vector<uint32_t>& indices_, ObjectRef value_) {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	uint32_t idx = flattenIndex(indices_);
-	if (idx >= _data->size()) {
+	if (idx >= _length) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	(*_data)[idx] = value_;
+	_data[_offset + idx] = value_;
 }
 
 ObjectRef Array::getElement(const std::vector<uint32_t>& indices_) const {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	uint32_t idx = flattenIndex(indices_);
-	if (idx >= _data->size()) {
+	if (idx >= _length) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	return (*_data)[idx];
+	return _data[_offset + idx];
+}
+
+bool Array::compareAndSwapElement(uint32_t idx_, ObjectRef expected_, ObjectRef newValue_) {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
+	if (_dimensions.size() != 1) {
+		return false;
+	}
+	if (idx_ >= getArrayLength()) {
+		return false;
+	}
+	return _data[_offset + idx_].compare_exchange_strong(expected_, newValue_);
 }
 
 uint32_t Array::flattenIndex(const std::vector<uint32_t>& indices_) const {
@@ -184,7 +201,7 @@ ArrayRef Array::getArray(uint32_t idx_) const {
 	// Calculate the starting index of the sub-array in the flattened data
 	uint32_t startIdx = idx_ * subArraySize;
 	// Create a sub-array that references the original data
-	auto subArray = std::make_unique<Array>(_data, _classtype, std::vector<uint32_t>(_dimensions.begin() + 1, _dimensions.end()), _offset + startIdx);
+	auto subArray = std::make_unique<Array>(_data, _length, _classtype, std::vector<uint32_t>(_dimensions.begin() + 1, _dimensions.end()), _offset + startIdx);
 	auto ptr = subArray.get();
 	GC::getInstance().track(std::move(subArray));
 	return ptr;
@@ -193,7 +210,7 @@ ArrayRef Array::getArray(uint32_t idx_) const {
 ObjectRef Array::clone() const {
 	auto newArray = Array::make(_classtype, _dimensions);
 	for (uint32_t i = 0; i < _length; ++i) {
-		(*newArray->_data)[i] = (*_data)[_offset + i];
+		newArray->_data[i].store(_data[_offset + i].load(std::memory_order_relaxed), std::memory_order_relaxed);
 	}
 	return newArray;
 }
@@ -201,7 +218,7 @@ ObjectRef Array::clone() const {
 void Array::visitReferences(const std::function<void(Object*)>& visitor_) const {
 	Object::visitReferences(visitor_);
 	for (size_t i = 0; i < _length; ++i) {
-		Object* obj = (*_data)[_offset + i];
+		Object* obj = _data[_offset + i];
 		if (obj != nullptr) {
 			visitor_(obj);
 		}

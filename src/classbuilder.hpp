@@ -83,6 +83,17 @@ namespace sandvik {
 			void addInterface(const std::string& ifClassName_);
 			/** @brief Sets the class as an interface */
 			void setInterface();
+
+			/** @brief Sets whether the class represents an array
+			 * @param isArray_ True if the class is an array, false otherwise
+			 */
+			void setArray(bool isArray_);
+
+			/** @brief Sets the component type of the class (for arrays)
+			 * @param componentType_ Descriptor of the component type
+			 */
+			void setComponentType(const std::string& componentType_);
+
 			/** @brief Finalizes the class definition */
 			void finalize();
 

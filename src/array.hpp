@@ -19,6 +19,7 @@
 #ifndef __ARRAY_HPP__
 #define __ARRAY_HPP__
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
@@ -27,7 +28,7 @@
 
 namespace sandvik {
 	/** @brief Vector of Object references */
-	using ObjectRefVector = std::vector<ObjectRef>;
+	using ObjectRefVector = std::atomic<ObjectRef>[];
 	/** @brief Array reference type */
 	using ArrayRef = Array*;
 	/**
@@ -60,11 +61,12 @@ namespace sandvik {
 
 			/** @brief Constructor for subarray view
 			 * @param data_ Shared pointer to the data vector
+			 * @param size_ Size of the data vector
 			 * @param classtype_ Reference to the Class type of the array
 			 * @param dimensions_ Vector of dimensions for the array
 			 * @param offset_ Offset for the subarray
 			 */
-			Array(std::shared_ptr<ObjectRefVector> data_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
+			Array(std::shared_ptr<ObjectRefVector> data_, uint32_t size_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
 			~Array() override = default;
 
 			/** @brief Returns a string representation of the array. */
@@ -129,6 +131,14 @@ namespace sandvik {
 			 * @return ObjectRef at the specified indices.
 			 */
 			ObjectRef getElement(const std::vector<uint32_t>& indices_) const;
+
+			/** @brief Atomically compares and sets the element at the specified index.
+			 * @param idx_ Index of the element.
+			 * @param expected_ Expected ObjectRef value.
+			 * @param newValue_ New ObjectRef value to set if the current value matches the expected value.
+			 * @return true if the value was set, false otherwise.
+			 */
+			bool compareAndSwapElement(uint32_t idx_, ObjectRef expected_, ObjectRef newValue_);
 
 			/** @brief Clones the array.
 			 * @return Shared pointer to the cloned Array.

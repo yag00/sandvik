@@ -447,6 +447,17 @@ bool Object::weakCompareAndSet(int64_t expect, int64_t update) {
 	throw std::bad_cast();
 }
 
+bool Object::compareAndSwapField(size_t index_, ObjectRef expected_, ObjectRef newValue_) {
+	auto& field = getClass().getField(index_);
+	auto fieldName = field.getName();
+	auto it = _fields.find(fieldName);
+	if (it != _fields.end()) {
+		return it->second.compare_exchange_strong(expected_, newValue_);
+	} else {
+		return false;
+	}
+}
+
 bool Object::isArray() const {
 	return false;
 }
@@ -510,6 +521,16 @@ void Object::setField(const std::string& name_, ObjectRef value_) {
 	_fields[name_] = value_;
 }
 
+void Object::setField(size_t index_, ObjectRef value_) {
+	auto& field = getClass().getField(index_);
+	return setField(field.getName(), value_);
+}
+
+ObjectRef Object::getField(size_t index_) const {
+	auto& field = getClass().getField(index_);
+	return getField(field.getName());
+}
+
 void Object::setMarked(bool v_) {
 	_marked.store(v_, std::memory_order_relaxed);
 }
@@ -518,8 +539,9 @@ bool Object::isMarked() const {
 }
 void Object::visitReferences(const std::function<void(Object*)>& visitor_) const {
 	for (const auto& [name, obj] : _fields) {
-		visitor_(obj);
-		obj->visitReferences(visitor_);
+		auto o = obj.load();
+		visitor_(o);
+		o->visitReferences(visitor_);
 	}
 }
 

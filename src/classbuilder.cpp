@@ -73,6 +73,14 @@ void ClassBuilder::addField(const std::string& name_, const std::string& type_, 
 	}
 }
 
+void ClassBuilder::setArray(bool isArray_) {
+	_class->_isArray = isArray_;
+}
+
+void ClassBuilder::setComponentType(const std::string& componentType_) {
+	_class->_componentType = componentType_;
+}
+
 void ClassBuilder::finalize() {
 	_classLoader.addClass(std::move(_class));
 }

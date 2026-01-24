@@ -35,6 +35,7 @@
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 
 using namespace sandvik;
 
@@ -160,14 +161,36 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			// pass
 		}
 	}
-	// Handle native array types like [B, [I, etc.
-	if (dotclassname[0] == '[' && dotclassname.length() == 2) {
+	// Handle native array types like [B, [I, etc., including multi-dimensional arrays
+	// Create a synthetic array Class object
+	if (dotclassname[0] == '[') {
+		logger.ferror("Created synthetic array class: {}", dotclassname);
+		// Determine component descriptor
+		std::string componentDesc = dotclassname.substr(1);
+		// Load component class (make sure it exists)
+		if (componentDesc[0] == 'L') {
+			// Object array: [Ljava/lang/String;
+			componentDesc = componentDesc.substr(1, componentDesc.size() - 2);
+			getOrLoad(componentDesc);
+		} else if (componentDesc[0] == '[') {
+			// Multi-dimensional array
+			getOrLoad(componentDesc);
+		}
+
 		auto builder = ClassBuilder(*this, "", dotclassname);
 		builder.setSuperClass("java.lang.Object");
 		builder.addInterface("java.lang.Cloneable");
 		builder.addInterface("java.io.Serializable");
+		builder.setArray(true);
+		builder.setComponentType(componentDesc);
 		builder.finalize();
 		return *(_classes[dotclassname]);
+	}
+	// Handle primitive types
+	if (dotclassname.size() == 1) {
+		std::string type(1, dotclassname[0]);
+		auto primitiveType = get_primitive_type(type);
+		return getOrLoad(primitiveType);
 	}
 
 	// If the class is not found, throw an exception
@@ -300,6 +323,10 @@ void ClassLoader::linkClass(Class& class_) {
 			}
 			thisObj->setString(str);
 		});
+		return;
+	}
+	if (class_.getFullname() == "java.lang.Class") {
+		class_.getMethod("getComponentType", "()Ljava/lang/Class;").makeNative();
 		return;
 	}
 }
