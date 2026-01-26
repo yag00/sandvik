@@ -124,10 +124,12 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_setNativeName(JNIEnv* env, jobject 
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Thread_nativeGetStatus(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jint JNICALL Java_java_lang_Thread_nativeGetStatus(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto threadObj = sandvik::native::getObject(obj);
+		auto& vm = jenv->getVm();
+		auto& thread = vm.getThread(threadObj);
+		return static_cast<jint>(thread.getStatus());
+	}
 
 }  // extern "C"

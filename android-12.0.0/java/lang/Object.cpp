@@ -30,7 +30,7 @@
 #include "native_utils.hpp"
 #include "system/logger.hpp"
 
-/** @todo implementation **/
+using namespace sandvik;
 
 extern "C" {
 
@@ -52,11 +52,11 @@ JNIEXPORT void JNICALL Java_java_lang_Object_identityHashCodeNative(JNIEnv* env,
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Object_internalClone(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jobject JNICALL Java_java_lang_Object_internalClone(JNIEnv* env, jobject obj) {
+		auto this_ptr = sandvik::native::getObject(obj);
+		auto cloned_obj = this_ptr->clone();
+		return (jobject)cloned_obj;
+	}
 
 	JNIEXPORT void JNICALL Java_java_lang_Object_notify(JNIEnv* env, jobject obj) {
 		auto this_ptr = sandvik::native::getObject(obj);
