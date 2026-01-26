@@ -71,7 +71,27 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 	for (const auto& method : class_.methods()) {
 		const auto& name = method.name();
 		auto signature = get_method_descriptor(method);
-		_methods[name + signature] = std::make_unique<Method>(*this, method);
+		std::string key = name + signature;
+		auto it = _methods.find(key);
+		if (it == _methods.end()) {
+			// First time we see this method
+			_methods[key] = std::make_unique<Method>(*this, method);
+			continue;
+		}
+		// Merge with existing method
+		Method& existing = *it->second;
+
+		bool newHasCode = !method.bytecode().empty();
+		bool oldHasCode = existing.hasBytecode();
+
+		if (newHasCode && !oldHasCode) {
+			// Replace stub with real implementation
+			_methods[key] = std::make_unique<Method>(*this, method);
+			continue;
+		}
+
+		// Otherwise: keep existing method
+		logger.fwarning("Duplicate method found: {}{} in class {}", name, signature, getFullname());
 	}
 	// Initialize fields
 	for (const auto& field : class_.fields()) {
@@ -147,12 +167,24 @@ bool Class::implements(const Class& interface_) const {
 }
 
 bool Class::isInstanceOf(const std::string& classname_) const {
+	if (isArray()) {
+		// array type check
+		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
+			return true;
+		}
+	}
 	if (getFullname() == classname_) {
 		return true;
 	}
 	return false;
 }
 bool Class::isInstanceOf(const Class& class_) const {
+	if (isArray()) {
+		// array type check
+		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
+			return true;
+		}
+	}
 	if (getFullname() == class_.getFullname()) {
 		return true;
 	}
@@ -163,6 +195,12 @@ bool Class::isInstanceOf(ObjectRef const class_) const {
 		return false;
 	}
 	if (auto clazz = class_; clazz->isClass()) {
+		if (clazz->isArray()) {
+			// array type check
+			if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
+				return true;
+			}
+		}
 		// check class and super classes
 		while (true) {
 			if (clazz->getClass().getFullname() == getFullname()) {
