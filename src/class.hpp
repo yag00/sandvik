@@ -53,6 +53,9 @@ namespace sandvik {
 			Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
 			virtual ~Class();
 
+			/** @brief Gets the ClassLoader associated with the class. */
+			ClassLoader& getClassLoader() const;
+
 			/** @brief Prints debug information about the class. */
 			void debug() const;
 

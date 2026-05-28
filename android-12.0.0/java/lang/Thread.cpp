@@ -33,6 +33,13 @@
 
 using namespace sandvik;
 
+static constexpr int THREAD_STATUS_NEW = 0;
+static constexpr int THREAD_STATUS_RUNNABLE = 1;
+// static constexpr int THREAD_STATUS_BLOCKED = 2;
+static constexpr int THREAD_STATUS_WAITING = 3;
+// static constexpr int THREAD_STATUS_TIMED_WAITING = 4;
+static constexpr int THREAD_STATUS_TERMINATED = 5;
+
 extern "C" {
 
 #if 0
@@ -128,8 +135,23 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_setNativeName(JNIEnv* env, jobject 
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto threadObj = sandvik::native::getObject(obj);
 		auto& vm = jenv->getVm();
-		auto& thread = vm.getThread(threadObj);
-		return static_cast<jint>(thread.getStatus());
+		auto& thread = vm.getThread(threadObj->getField("name")->str());
+		auto status = thread.getState();
+		logger.fdebug("Thread {} status: {}", thread.getName(), static_cast<int>(status));
+		switch (status) {
+			case sandvik::Thread::ThreadState::NotStarted:
+				return static_cast<jint>(THREAD_STATUS_NEW);
+			case sandvik::Thread::ThreadState::Running:
+				return static_cast<jint>(THREAD_STATUS_RUNNABLE);
+			case sandvik::Thread::ThreadState::SuspendedRequested:
+				return static_cast<jint>(THREAD_STATUS_WAITING);
+			case sandvik::Thread::ThreadState::Suspended:
+				return static_cast<jint>(THREAD_STATUS_WAITING);
+			case sandvik::Thread::ThreadState::Stopped:
+				return static_cast<jint>(THREAD_STATUS_TERMINATED);
+			default:
+				return static_cast<jint>(-1);
+		}
 	}
 
 }  // extern "C"

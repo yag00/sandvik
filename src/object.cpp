@@ -359,6 +359,8 @@ ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, 
 
 ///////////////////////////////////////////////////////////////////////////////
 Object::Object() : _monitor(std::make_unique<Monitor>()) {
+	setField("shadow$_klass_", Object::makeNull());
+	setField("shadow$_monitor_", Object::makeNull());
 }
 
 bool Object::operator==(const Object& other) const {

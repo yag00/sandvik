@@ -110,6 +110,10 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 Class::~Class() {
 }
 
+ClassLoader& Class::getClassLoader() const {
+	return _classloader;
+}
+
 bool Class::isStaticInitialized() {
 	if (_isStaticInitialized) {
 		return true;
