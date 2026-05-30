@@ -326,24 +326,46 @@ void Interpreter::executeClinit(Class& class_) const {
 		return;
 	}
 	logger.fdebug("Executing <clinit> for class {}", class_.getFullname());
+	// lock the class to prevent concurrent initialization
+	class_.monitorEnter();
+	// auto unlock the class at the end of the function
+	struct MonitorGuard {
+			Class& class_;
+			~MonitorGuard() {
+				class_.monitorExit();
+			}
+	} guard{class_};
+
+	if (class_.isStaticInitialized()) {
+		return;
+	}
+
+	Method* initializeSystemClass = nullptr;
+	if (hasInitializeMethod) {
+		initializeSystemClass = &class_.getMethod("initializeSystemClass", "()V");
+	}
+	Method* clinitMethod = nullptr;
+	if (hasClinitMethod) {
+		clinitMethod = &class_.getMethod("<clinit>", "()V");
+		if (clinitMethod->isNative()) {
+			throw VmException("Native <clinit> method for class {} is not supported!", class_.getFullname());
+		}
+		if (!clinitMethod->hasBytecode()) {
+			throw VmException("<clinit> method for class {} has no bytecode!", class_.getFullname());
+		}
+	}
+	class_.setStaticInitialized();
+
 	// Create a new "fake" thread to execute the <clinit> method (thread will be run in the current thread)
 	auto& currentThread = _rt.vm().currentThread();
 	auto& thread = currentThread.newChild(fmt::format("{}.{}", class_.getFullname(), "<clinit>"));
-	if (hasInitializeMethod) {
+	if (initializeSystemClass != nullptr) {
 		// push new frame with initializeSystemClass method (should be executed after <clinit>)
-		auto& initializeSystemClass = class_.getMethod("initializeSystemClass", "()V");
-		thread.newFrame(initializeSystemClass);
+		thread.newFrame(*initializeSystemClass);
 	}
-	if (hasClinitMethod) {
+	if (clinitMethod != nullptr) {
 		// push new frame with <clinit> method
-		auto& clinitMethod = class_.getMethod("<clinit>", "()V");
-		if (clinitMethod.isNative()) {
-			throw VmException("Native <clinit> method for class {} is not supported!", class_.getFullname());
-		}
-		if (!clinitMethod.hasBytecode()) {
-			throw VmException("<clinit> method for class {} has no bytecode!", class_.getFullname());
-		}
-		thread.newFrame(clinitMethod);
+		thread.newFrame(*clinitMethod);
 	}
 	thread.runInCurrentThread();
 	currentThread.popChild();

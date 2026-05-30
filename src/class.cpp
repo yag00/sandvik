@@ -120,7 +120,7 @@ bool Class::isStaticInitialized() {
 	}
 	// Check if the class has a static initializer
 	for (const auto& [name, method] : _methods) {
-		if (method->isStatic() && method->getName() == "<clinit>") {
+		if (method->isStatic() && (method->getName() == "<clinit>" || method->getName() == "initializeSystemClass")) {
 			return _isStaticInitialized;
 		}
 	}

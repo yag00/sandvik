@@ -38,6 +38,8 @@ JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
 	_thisThread = Object::make(_classloader.getOrLoad("java/lang/Thread"));
 	_thisThread->setField("name", Object::make(_classloader, name_));
 	_thisThread->setField("priority", Object::make(5));  // normal priority
+	_thisThread->setField("daemon", Object::make(false));
+	_thisThread->setField("threadStatus", Object::make(0));  // NEW
 }
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
@@ -89,15 +91,6 @@ Class& JThread::getStackClass(uint32_t depth_) const {
 }
 
 Frame& JThread::newFrame(Method& method_) {
-	if (method_.getName() == "<clinit>") {
-		auto& clazz = method_.getClass();
-		if (!clazz.isStaticInitialized()) {
-			// method clinit has been pushed on the stack and will be executed, mark the class as initialized
-			clazz.setStaticInitialized();
-		} else {
-			logger.fwarning("Class {} already initialized", clazz.getFullname());
-		}
-	}
 	_stack.push_back(std::make_unique<Frame>(method_));
 	return *(_stack.back().get());
 }
