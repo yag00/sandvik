@@ -123,6 +123,7 @@ TEST(VM, Native) {
 	initializeVmRuntime(vm);
 	vm.loadDex("../tests/java/native/classes.dex");
 	vm.run("Native", {});
+	fflush(stdout);  // Ensure all output is flushed to the file
 
 	std::ifstream outputFile("test_native.out");
 	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)),

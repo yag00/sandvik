@@ -5,6 +5,7 @@
 #include <string.h>
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+    setvbuf(stdout, NULL, _IOLBF, 0);
     printf("JNI_OnLoad called: Native library loaded.\n");
     return JNI_VERSION_1_6; // Specify the JNI version your library supports
 }
@@ -27,6 +28,7 @@ JNIEXPORT jint JNICALL Java_Native_test(
     printf("  String: %s\n", str);
     printf("  Int a: %d\n", a);
     printf("  Int b: %d\n", b);
+    fflush(stdout);
 
     // Example calculation - you can replace this with your actual logic
     jint result = a + b;
@@ -47,6 +49,7 @@ JNIEXPORT jdouble JNICALL Java_Native_doubleadd(
     printf("  Double b: 0x%lx %f\n", *(uint64_t*)&b, b);
     jdouble result = a + b;
     printf("  Double r: 0x%lx %f\n", *(uint64_t*)&result, result);
+    fflush(stdout);
     return result;
 }
 JNIEXPORT jlong JNICALL Java_Native_longadd(
@@ -69,6 +72,7 @@ JNIEXPORT jfloat JNICALL Java_Native_floatadd(
     printf("  Float b: 0x%x %f\n", *(uint32_t*)&b, b);
     jfloat result = a + b;
     printf("  Float r: 0x%x %f\n", *(uint32_t*)&result, result);
+    fflush(stdout);
     return result;
 }
 JNIEXPORT jint JNICALL Java_Native_executeMethod(JNIEnv* env, jobject obj, jstring methodName, jint a, jint b) {
