@@ -19,6 +19,9 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include <chrono>
+#include <thread>
+
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
@@ -58,6 +61,15 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_yield(JNIEnv* env, jobject obj) {
     logger.fwarning("{} not implemented!", __FUNCTION__);
 }
 #endif
+
+	JNIEXPORT void JNICALL Java_java_lang_Thread_nativeCreate(JNIEnv* env, jclass clazz, jobject thread, jlong stacksize, jboolean daemon) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto threadObj = sandvik::native::getObject(thread);
+		auto& vm = jenv->getVm();
+		auto& newThread = vm.newThread(threadObj);
+		logger.ferror("Created thread: {} stacksize: {} daemon:{}", threadObj->getField("name")->str(), stacksize, daemon);
+		newThread.run();
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_Thread_start0(JNIEnv* env, jobject obj) {
@@ -137,7 +149,7 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_setNativeName(JNIEnv* env, jobject 
 		auto& vm = jenv->getVm();
 		auto& thread = vm.getThread(threadObj->getField("name")->str());
 		auto status = thread.getState();
-		logger.fdebug("Thread {} status: {}", thread.getName(), static_cast<int>(status));
+		logger.ferror("Thread {} status: {}", thread.getName(), static_cast<int>(status));
 		switch (status) {
 			case sandvik::Thread::ThreadState::NotStarted:
 				return static_cast<jint>(THREAD_STATUS_NEW);
@@ -151,6 +163,17 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_setNativeName(JNIEnv* env, jobject 
 				return static_cast<jint>(THREAD_STATUS_TERMINATED);
 			default:
 				return static_cast<jint>(-1);
+		}
+	}
+
+	JNIEXPORT void JNICALL Java_java_lang_Thread_sleep__Ljava_lang_Object_2JI(JNIEnv* env, jclass clazz, jobject lock, jlong millis, jint nanos) {
+		if (millis < 0 || nanos < 0 || nanos > 999999) {
+			throw IllegalArgumentException("timeout value is negative or nanos out of range");
+		}
+		logger.ferror("Thread sleep: millis: {} nanos: {}", millis, nanos);
+		auto duration = std::chrono::milliseconds(millis) + std::chrono::nanoseconds(nanos);
+		if (duration.count() > 0) {
+			std::this_thread::sleep_for(duration);
 		}
 	}
 

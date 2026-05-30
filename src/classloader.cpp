@@ -117,10 +117,12 @@ Class& ClassLoader::getMainActivityClass() {
 }
 
 void ClassLoader::addClass(std::unique_ptr<Class> class_) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	_classes[class_->getFullname()] = std::move(class_);
 }
 
 Class& ClassLoader::getOrLoad(const std::string& classname_) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	auto dotclassname = classname_;
 	std::replace(dotclassname.begin(), dotclassname.end(), '/', '.');
 	// Check if the class is already loaded
@@ -299,6 +301,7 @@ uint64_t ClassLoader::getDexIndex(const Dex& dex_) const {
 }
 
 void ClassLoader::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	for (const auto& [name, classPtr] : _classes) {
 		classPtr->visitReferences(visitor_);
 	}
