@@ -28,6 +28,7 @@
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vm.hpp"
 
 /** @todo implementation **/
 
@@ -75,10 +76,19 @@ JNIEXPORT void JNICALL Java_java_lang_Runtime_runFinalization0(JNIEnv* env, jobj
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Runtime_nativeLoad(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jstring JNICALL Java_java_lang_Runtime_nativeLoad__Ljava_lang_String_2Ljava_lang_ClassLoader_2Ljava_lang_Class_2(JNIEnv* env, jclass,
+	                                                                                                                           jstring filename, jobject,
+	                                                                                                                           jclass) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto filenameObj = sandvik::native::getString(filename);
+		const std::string& libName = filenameObj->str();
+		try {
+			jenv->getVm().loadLibrary(libName);
+			return nullptr;  // success
+		} catch (const std::exception& e) {
+			logger.error(e.what());
+			return env->NewStringUTF(e.what());
+		}
+	}
 
 }  // extern "C"

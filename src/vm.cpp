@@ -118,6 +118,15 @@ ClassLoader& Vm::getClassLoader() const {
 }
 
 void Vm::loadLibrary(const std::string& libName_) {
+	if (!libName_.empty()) {
+		const std::string requestedPath = SharedLibrary::getFullPath(libName_);
+		for (const auto& loaded : _sharedlibs) {
+			if (loaded->getFullPath() == requestedPath) {
+				logger.fdebug("Shared library already loaded {}, skipping", requestedPath);
+				return;
+			}
+		}
+	}
 	// Load the shared library
 	auto lib = std::make_unique<SharedLibrary>(libName_);
 	lib->load();

@@ -123,7 +123,12 @@ void ClassLoader::addClass(std::unique_ptr<Class> class_) {
 
 Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	auto dotclassname = classname_;
+	auto normalized = classname_;
+	// Accept object descriptors (e.g. Ljava/lang/String;) in addition to binary names.
+	if (normalized.size() > 2 && normalized.front() == 'L' && normalized.back() == ';') {
+		normalized = normalized.substr(1, normalized.size() - 2);
+	}
+	auto dotclassname = normalized;
 	std::replace(dotclassname.begin(), dotclassname.end(), '/', '.');
 	// Check if the class is already loaded
 	auto it = _classes.find(dotclassname);
@@ -145,7 +150,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	}
 	for (auto& classpath : _classpath) {
 		try {
-			auto slashclassname = classname_;
+			auto slashclassname = normalized;
 			std::replace(slashclassname.begin(), slashclassname.end(), '.', '/');
 			std::string fullPath = classpath;
 			if (fullPath.back() != '/') {

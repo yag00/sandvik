@@ -164,11 +164,11 @@ JNIEXPORT void JNICALL Java_java_lang_System_arraycopyBooleanUnchecked(JNIEnv* e
 		return result;
 	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_System_mapLibraryName(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jstring JNICALL Java_java_lang_System_mapLibraryName(JNIEnv* env, jclass, jstring libname) {
+		auto nameObj = sandvik::native::getString(libname);
+		std::string mapped = "lib" + nameObj->str() + ".so";
+		return env->NewStringUTF(mapped.c_str());
+	}
 
 	JNIEXPORT void JNICALL Java_java_lang_System_log(JNIEnv* env, jclass ignored, jchar type, jstring javaMessage, jthrowable exception) {
 		std::string priority;
