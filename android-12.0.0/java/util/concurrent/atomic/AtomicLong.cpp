@@ -32,8 +32,12 @@
 extern "C" {
 	JNIEXPORT void JNICALL Java_java_util_concurrent_atomic_AtomicLong_lazySet(JNIEnv* env, jobject obj, jlong newValue) {
 		auto* this_ptr = sandvik::native::getObject(obj);
-		auto value = this_ptr->getField("value");
-		value->setField("value", sandvik::Object::make(static_cast<uint64_t>(newValue)));
+		this_ptr->setField("value", sandvik::Object::make(static_cast<uint64_t>(static_cast<int64_t>(newValue))));
+	}
+
+	JNIEXPORT void JNICALL Java_java_util_concurrent_atomic_AtomicLong_set(JNIEnv* env, jobject obj, jlong newValue) {
+		auto* this_ptr = sandvik::native::getObject(obj);
+		this_ptr->setField("value", sandvik::Object::make(static_cast<uint64_t>(static_cast<int64_t>(newValue))));
 	}
 
 	JNIEXPORT jlong JNICALL Java_java_util_concurrent_atomic_AtomicLong_getAndSet(JNIEnv* env, jobject obj, jlong newValue) {
@@ -81,5 +85,9 @@ extern "C" {
 		auto* this_ptr = sandvik::native::getObject(obj);
 		auto value = this_ptr->getField("value");
 		return value->addAndGet(static_cast<int64_t>(delta));
+	}
+
+	JNIEXPORT jboolean JNICALL Java_java_util_concurrent_atomic_AtomicLong_VMSupportsCS8(JNIEnv* env, jclass clazz) {
+		return JNI_TRUE;
 	}
 }
