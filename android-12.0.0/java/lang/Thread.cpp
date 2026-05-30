@@ -66,6 +66,11 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_yield(JNIEnv* env, jobject obj) {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto threadObj = sandvik::native::getObject(thread);
 		auto& vm = jenv->getVm();
+		threadObj->setField("threadStatus", Object::make((uint64_t)THREAD_STATUS_RUNNABLE));
+		threadObj->setField("eetop", Object::make((uint64_t)1));
+		threadObj->setField("nativePeer", Object::make((uint64_t)1));
+		threadObj->setField("nativeThread", Object::make((uint64_t)1));
+		threadObj->setField("nativeTid", Object::make((uint64_t)1));
 		auto& newThread = vm.newThread(threadObj);
 		logger.ferror("Created thread: {} stacksize: {} daemon:{}", threadObj->getField("name")->str(), stacksize, daemon);
 		newThread.run();
@@ -170,7 +175,6 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_setNativeName(JNIEnv* env, jobject 
 		if (millis < 0 || nanos < 0 || nanos > 999999) {
 			throw IllegalArgumentException("timeout value is negative or nanos out of range");
 		}
-		logger.ferror("Thread sleep: millis: {} nanos: {}", millis, nanos);
 		auto duration = std::chrono::milliseconds(millis) + std::chrono::nanoseconds(nanos);
 		if (duration.count() > 0) {
 			std::this_thread::sleep_for(duration);

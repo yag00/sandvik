@@ -48,6 +48,8 @@ namespace sandvik {
 			 * @param thread_ Shared pointer to the Java Thread object
 			 */
 			explicit JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_);
+			/** @brief Destructor */
+			~JThread() override;
 
 			/** @brief Gets the VM instance.
 			 * @return Reference to the VM instance
@@ -129,6 +131,8 @@ namespace sandvik {
 			void runInCurrentThread();
 
 		protected:
+			/** @brief Hook called when underlying host thread is about to start. */
+			void onStart() override;
 			/** @brief thread loop function of the thread implemented by subclass. */
 			void loop() override;
 			/** @brief thread loop end condition. */
@@ -142,6 +146,7 @@ namespace sandvik {
 			std::vector<std::unique_ptr<Frame>> _stack;
 			ObjectRef _objectReturn;
 			ObjectRef _thisThread;
+			bool _terminationPublished = false;
 
 			std::vector<std::unique_ptr<JThread>> _childrenThreads;
 	};

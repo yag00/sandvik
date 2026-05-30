@@ -24,6 +24,7 @@ using namespace sandvik;
 Thread::Thread(const std::string& name_) : _name(name_) {
 }
 Thread::~Thread() {
+	stop();
 	if (_thread.joinable()) {
 		auto current = std::this_thread::get_id();
 		if (_thread.get_id() != current) {

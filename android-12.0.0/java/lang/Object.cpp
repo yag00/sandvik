@@ -67,4 +67,29 @@ JNIEXPORT void JNICALL Java_java_lang_Object_identityHashCodeNative(JNIEnv* env,
 		this_ptr->notifyAll();
 	}
 
+	JNIEXPORT void JNICALL Java_java_lang_Object_wait__J(JNIEnv* env, jobject obj, jlong millis) {
+		if (millis < 0) {
+			throw IllegalArgumentException("timeout value is negative");
+		}
+		auto this_ptr = sandvik::native::getObject(obj);
+		this_ptr->wait(static_cast<uint64_t>(millis));
+	}
+
+	JNIEXPORT void JNICALL Java_java_lang_Object_wait__JI(JNIEnv* env, jobject obj, jlong millis, jint nanos) {
+		if (millis < 0) {
+			throw IllegalArgumentException("timeout value is negative");
+		}
+		if (nanos < 0 || nanos > 999999) {
+			throw IllegalArgumentException("nanosecond timeout value out of range");
+		}
+
+		uint64_t timeoutMs = static_cast<uint64_t>(millis);
+		if (nanos >= 500000 || (nanos != 0 && timeoutMs == 0)) {
+			timeoutMs++;
+		}
+
+		auto this_ptr = sandvik::native::getObject(obj);
+		this_ptr->wait(timeoutMs);
+	}
+
 }  // extern "C"
