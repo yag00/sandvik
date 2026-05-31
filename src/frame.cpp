@@ -222,12 +222,15 @@ void Frame::debug() const {
 }
 
 void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	visitor_(_objectReturn);
-	visitor_(_exception);
+	if (_objectReturn != nullptr) {
+		visitor_(_objectReturn);
+	}
+	if (_exception != nullptr) {
+		visitor_(_exception);
+	}
 	for (const auto& reg : _registers) {
-		if (reg) {
+		if (reg != nullptr) {
 			visitor_(reg);
-			reg->visitReferences(visitor_);
 		}
 	}
 }

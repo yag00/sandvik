@@ -240,6 +240,9 @@ void JThread::visitReferences(const std::function<void(Object*)>& visitor_) cons
 	for (const auto& frame : _stack) {
 		frame->visitReferences(visitor_);
 	}
+	for (const auto& child : _childrenThreads) {
+		child->visitReferences(visitor_);
+	}
 }
 
 JThread& JThread::newChild(const std::string& name_) {

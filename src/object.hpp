@@ -428,6 +428,8 @@ namespace sandvik {
 		protected:
 			/** Check monitor ownership */
 			void monitorCheck() const;
+			/** Mutex protecting field map structure and lookups */
+			mutable std::mutex _fieldsMutex;
 			/** Map storing field names and their corresponding values. */
 			std::map<std::string, std::atomic<ObjectRef>, std::less<>> _fields;
 			/** Monitor for thread synchronization */
