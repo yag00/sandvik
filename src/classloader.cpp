@@ -323,7 +323,7 @@ void ClassLoader::linkClass(Class& class_) {
 			auto thisObj = args[0];
 			auto charArray = args[1];
 			auto offset = args[2]->getValue();
-			auto length = args[3]->getValue();
+			size_t length = args[3]->getValue();
 			std::string str = "";
 			for (size_t i = 0; i < length; ++i) {
 				str += static_cast<char>(((ArrayRef)charArray)->getElement(offset + i)->getValue());

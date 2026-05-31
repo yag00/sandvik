@@ -98,7 +98,7 @@ extern "C" {
 		if (offset < 0 || count < 0) {
 			throw IllegalArgumentException("offset or byteCount < 0");
 		}
-		if (offset + count > buffer->getArrayLength()) {
+		if (static_cast<size_t>(offset) + static_cast<size_t>(count) > static_cast<size_t>(buffer->getArrayLength())) {
 			throw ArrayIndexOutOfBoundsException();
 		}
 
