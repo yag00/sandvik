@@ -26,35 +26,28 @@
 #include <jni.hpp>
 #include <system/sharedlibrary.hpp>
 #include <system/logger.hpp>
+#include "common.hpp"
 
 using namespace sandvik;
 
-void initializeVmRuntime(Vm& vm) {
-	// Load the runtime libraries
-	vm.loadRt("../android-12.0.0-bin/core-oj.dex.jar");
-	vm.loadRt("../android-12.0.0-bin/core-libart.dex.jar");
-	vm.loadRt("../android-12.0.0-bin/icu-stubs.dex.jar");
-}
-
-
-TEST(VM, Add) {
+TEST(VM, HelloWorld) {
 	logger.setLevel(Logger::LogLevel::NONE);
 	Vm vm;
 
 	// Redirect stdout to output.txt
-	FILE* file = freopen("test_add.out", "w", stdout);
+	FILE* file = freopen("test_helloworld.out", "w", stdout);
 	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
 
 	initializeVmRuntime(vm);
-	vm.loadDex("../tests/java/add/classes.dex");
-	vm.run("Add", {"5", "10"});
+	vm.loadDex("../tests/java/hello/classes.dex");
+	vm.run("HelloWorld", {});
 
-	std::ifstream outputFile("test_add.out");
+	std::ifstream outputFile("test_helloworld.out");
 	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)),
 								std::istreambuf_iterator<char>());
 	outputFile.close();
 
-	std::ifstream refFile("../tests/unit/test_add.ref");
+	std::ifstream refFile("../tests/unit/test_helloworld.ref");
 	std::string expectedOutput((std::istreambuf_iterator<char>(refFile)),
 								std::istreambuf_iterator<char>());
 	refFile.close();
@@ -136,182 +129,4 @@ TEST(VM, Native) {
 	refFile.close();
 	ASSERT_EQ(actualOutput, expectedOutput) << "The actual output does not match the expected output.";
 	fclose(file);
-}
-
-
-void run_common_test(const std::string& mainclassname) {
-	logger.setLevel(Logger::LogLevel::NONE);
-	Vm vm;
-
-	// Redirect stdout to output.txt
-	auto filename = fmt::format("test_{}.out", mainclassname);
-	FILE* file = freopen(filename.c_str(), "w", stdout);
-	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
-
-	try {
-		initializeVmRuntime(vm);
-		vm.loadRt("../tests/java/unit/TestUnitDex.jar");
-		vm.run(mainclassname, {});
-	} catch (const std::exception& e) {
-		FAIL() << fmt::format("Exception thrown during test {}: {}", mainclassname, e.what());
-	}
-	std::ifstream outputFile(filename.c_str());
-	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)),
-							 std::istreambuf_iterator<char>());
-	outputFile.close();
-
-	ASSERT_EQ(actualOutput, "ok\n") << "The actual output does not match the expected output.";
-
-	fclose(file);
-}
-
-TEST(VM, DefaultMethods) {
-	run_common_test("TestDefaultMethods");
-}
-TEST(VM, AbstractClass) {
-	run_common_test("TestAbstractClass");
-}
-TEST(VM, MultiLevel) {
-	run_common_test("TestMultiLevel");
-}
-TEST(VM, InterfaceConstants) {
-	run_common_test("TestInterfaceConstants");
-}
-TEST(VM, InterfaceStatic) {
-	run_common_test("TestInterfaceStatic");
-}
-TEST(VM, MethodConflict) {
-	run_common_test("TestMethodConflict");
-}
-TEST(VM, Anonymous) {
-	run_common_test("TestAnonymous");
-}
-TEST(VM, Arithmetic) {
-	run_common_test("TestArithmetic");
-}
-TEST(VM, Arrays) {
-	run_common_test("TestArrays");
-}
-TEST(VM, Exceptions) {
-	run_common_test("TestExceptions");
-}
-TEST(VM, Loops) {
-	run_common_test("TestLoops");
-}
-TEST(VM, Strings) {
-	run_common_test("TestStrings");
-}
-TEST(VM, Statics) {
-	run_common_test("TestStatics");
-}
-TEST(VM, DeepLoops) {
-	run_common_test("TestDeepLoops");
-}
-TEST(VM, EdgeNumbers) {
-	run_common_test("TestEdgeNumbers");
-}
-TEST(VM, Final) {
-	run_common_test("TestFinal");
-}
-
-TEST(VM, SwitchCase) {
-	run_common_test("TestSwitchCase");
-}
-TEST(VM, LargeSwitchDense) {
-	run_common_test("TestLargeSwitchDense");
-}
-TEST(VM, LargeSwitchSparse) {
-	run_common_test("TestLargeSwitchSparse");
-}
-TEST(VM, Polymorphism) {
-	run_common_test("TestPolymorphism");
-}
-
-TEST(VM, Interfaces) {
-	run_common_test("TestInterfaces");
-}
-TEST(VM, Diamond) {
-	run_common_test("TestDiamond");
-}
-TEST(VM, InterfaceArray) {
-	run_common_test("TestInterfaceArray");
-}
-TEST(VM, InstanceOf) {
-	run_common_test("TestInstanceOf");
-}
-TEST(VM, CollectionsLike) {
-	run_common_test("TestCollectionsLike");
-}
-TEST(VM, ExceptionsFlow) {
-	run_common_test("TestExceptionsFlow");
-}
-TEST(VM, TestExceptionsNoRehandle) {
-	run_common_test("TestExceptionsNoRehandle");
-}
-TEST(VM, Recursion) {
-	run_common_test("TestRecursion");
-}
-TEST(VM, StringOps) {
-	run_common_test("TestStringOps");
-}
-TEST(VM, StaticInit) {
-	run_common_test("TestStaticInit");
-}
-TEST(VM, Enums) {
-	run_common_test("TestEnums");
-}
-//TEST(VM, Reflection) {
-//	run_common_test("TestReflection");
-//}
-TEST(VM, InnerClasses) {
-	run_common_test("TestInnerClasses");
-}
-TEST(VM, Autoboxing) {
-	run_common_test("TestAutoboxing");
-}
-TEST(VM, Varargs) {
-	run_common_test("TestVarargs");
-}
-TEST(VM, DeepStack) {
-	run_common_test("TestDeepStack");
-}
-TEST(VM, SwitchOnString) {
-	run_common_test("TestSwitchOnString");
-}
-TEST(VM, Thread) {
-	run_common_test("TestThread");
-}
-TEST(VM, Thread2) {
-	run_common_test("TestThread2");
-}
-TEST(VM, ThreadComplex) {
-	run_common_test("TestThreadComplex");
-}
-TEST(VM, InvokeSuper) {
-	run_common_test("TestInvokeSuper");
-}
-TEST(VM, AtomicInteger) {
-	run_common_test("TestAtomicInteger");
-}
-TEST(VM, AtomicLong) {
-	run_common_test("TestAtomicLong");
-}
-//TEST(VM, Regex) {
-//	disable for now, as icu classes are not implemented. Need to get the android icu jar or make a stub...
-//	run_common_test("TestRegex");
-//}
-TEST(VM, InvokeVirtualRange) {
-	run_common_test("TestInvokeVirtualRange");
-}
-TEST(VM, InvokeInterfaceRange) {
-	run_common_test("TestInvokeInterfaceRange");
-}
-TEST(VM, FilledNewArray) {
-	run_common_test("TestFilledNewArray");
-}
-TEST(VM, MonitorReentrant) {
-	run_common_test("TestMonitorReentrant");
-}
-TEST(VM, MonitorException) {
-	run_common_test("TestMonitorException");
 }
