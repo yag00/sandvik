@@ -196,7 +196,7 @@ namespace sandvik {
 
 			bool _stdout = true;
 			bool _time = false;
-			bool _threadname = false;
+			bool _logThreadName = false;
 			LogLevel _level = LogLevel::INFO;
 			std::ofstream _file;
 

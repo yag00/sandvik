@@ -126,6 +126,9 @@ std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t 
 }
 
 bool Method::hasBytecode() const {
+	if (isHooked()) {
+		return false;
+	}
 	return _bytecode.empty() == false;
 }
 
@@ -166,6 +169,9 @@ bool Method::isAbstract() const {
 }
 
 bool Method::isNative() const {
+	if (isHooked()) {
+		return false;
+	}
 	return _accessFlags & ACCESS_FLAGS::ACC_NATIVE;
 }
 
@@ -177,9 +183,25 @@ bool Method::isOverload() const {
 	return _class.isMethodOverloaded(getName());
 }
 
+bool Method::isHooked() const {
+	return _function != nullptr;
+}
+
+void Method::makeNative() {
+	_accessFlags |= ACCESS_FLAGS::ACC_NATIVE;
+}
+
 void Method::execute(Frame& frame_, std::vector<ObjectRef>& registers_) {
 	if (!_function) {
 		throw VmException("Method {}.{} has no implementation", _class.getFullname(), getName());
 	}
 	_function(frame_, registers_);
+}
+
+void Method::hook(std::function<void(Frame&, std::vector<ObjectRef>&)> function_) {
+	_function = function_;
+}
+
+void Method::unhook() {
+	_function = nullptr;
 }

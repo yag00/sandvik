@@ -22,15 +22,20 @@
 #include <filesystem>
 #include <sstream>
 
+#include "array.hpp"
 #include "class.hpp"
+#include "classbuilder.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
+#include "frame.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
 #include "loader/rtld.hpp"
 #include "method.hpp"
+#include "object.hpp"
 #include "system/logger.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 
 using namespace sandvik;
 
@@ -112,11 +117,18 @@ Class& ClassLoader::getMainActivityClass() {
 }
 
 void ClassLoader::addClass(std::unique_ptr<Class> class_) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	_classes[class_->getFullname()] = std::move(class_);
 }
 
 Class& ClassLoader::getOrLoad(const std::string& classname_) {
-	auto dotclassname = classname_;
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	auto normalized = classname_;
+	// Accept object descriptors (e.g. Ljava/lang/String;) in addition to binary names.
+	if (normalized.size() > 2 && normalized.front() == 'L' && normalized.back() == ';') {
+		normalized = normalized.substr(1, normalized.size() - 2);
+	}
+	auto dotclassname = normalized;
 	std::replace(dotclassname.begin(), dotclassname.end(), '/', '.');
 	// Check if the class is already loaded
 	auto it = _classes.find(dotclassname);
@@ -129,6 +141,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			if (classPtr->isExternal()) {
 				continue;
 			}
+			linkClass(*classPtr);
 			_classes[dotclassname] = std::move(classPtr);
 			return *(_classes[dotclassname]);
 		} catch (std::exception& e) {
@@ -137,7 +150,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	}
 	for (auto& classpath : _classpath) {
 		try {
-			auto slashclassname = classname_;
+			auto slashclassname = normalized;
 			std::replace(slashclassname.begin(), slashclassname.end(), '.', '/');
 			std::string fullPath = classpath;
 			if (fullPath.back() != '/') {
@@ -148,13 +161,44 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 				auto dex = std::make_unique<Dex>(fullPath);
 				_classes[dotclassname] = dex->findClass(*this, dotclassname);
 				_dexs.push_back(std::move(dex));
-				logger.fok("class {} loaded", dotclassname);
+				linkClass(*(_classes[dotclassname]));
 				return *(_classes[dotclassname]);
 			}
 		} catch (std::exception&) {
 			// pass
 		}
 	}
+	// Handle native array types like [B, [I, etc., including multi-dimensional arrays
+	// Create a synthetic array Class object
+	if (dotclassname[0] == '[') {
+		// Determine component descriptor
+		std::string componentDesc = dotclassname.substr(1);
+		// Load component class (make sure it exists)
+		if (componentDesc[0] == 'L') {
+			// Object array: [Ljava/lang/String;
+			componentDesc = componentDesc.substr(1, componentDesc.size() - 2);
+			getOrLoad(componentDesc);
+		} else if (componentDesc[0] == '[') {
+			// Multi-dimensional array
+			getOrLoad(componentDesc);
+		}
+
+		auto builder = ClassBuilder(*this, "", dotclassname);
+		builder.setSuperClass("java.lang.Object");
+		builder.addInterface("java.lang.Cloneable");
+		builder.addInterface("java.io.Serializable");
+		builder.setArray(true);
+		builder.setComponentType(componentDesc);
+		builder.finalize();
+		return *(_classes[dotclassname]);
+	}
+	// Handle primitive types
+	if (dotclassname.size() == 1) {
+		std::string type(1, dotclassname[0]);
+		auto primitiveType = get_primitive_type(type);
+		return getOrLoad(primitiveType);
+	}
+
 	// If the class is not found, throw an exception
 	throw VmException("ClassNotFoundError: {}", dotclassname);
 }
@@ -262,7 +306,49 @@ uint64_t ClassLoader::getDexIndex(const Dex& dex_) const {
 }
 
 void ClassLoader::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	for (const auto& [name, classPtr] : _classes) {
 		classPtr->visitReferences(visitor_);
+	}
+}
+
+void ClassLoader::linkClass(Class& class_) {
+	if (class_.getFullname() == "java.lang.String") {
+		auto& m = class_.getMethod("<init>", "([CII)V");
+		m.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
+			// args: this, char[], int, int
+			if (args.size() != 4) {
+				throw VmException("Invalid number of arguments for String.<init>");
+			}
+			auto thisObj = args[0];
+			auto charArray = args[1];
+			auto offset = args[2]->getValue();
+			size_t length = args[3]->getValue();
+			std::string str = "";
+			for (size_t i = 0; i < length; ++i) {
+				str += static_cast<char>(((ArrayRef)charArray)->getElement(offset + i)->getValue());
+			}
+			thisObj->setString(str);
+		});
+
+		auto& m2 = class_.getMethod("<init>", "(Ljava/lang/String;)V");
+		m2.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
+			// args: this, String
+			if (args.size() != 2) {
+				throw VmException("Invalid number of arguments for String.<init>");
+			}
+			auto thisObj = args[0];
+			auto otherStringObj = args[1];
+			if (!otherStringObj->isString()) {
+				throw VmException("Argument is not a String object");
+			}
+			thisObj->setString(otherStringObj->str());
+		});
+		return;
+	}
+
+	if (class_.getFullname() == "java.lang.Class") {
+		class_.getMethod("getComponentType", "()Ljava/lang/Class;").makeNative();
+		return;
 	}
 }

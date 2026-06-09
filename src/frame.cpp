@@ -31,7 +31,10 @@
 using namespace sandvik;
 
 Frame::Frame(Method& method_) : _method(method_) {
-	logger.fdebug("new Frame for method = {}.{} registers ={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
+	logger.fdebug("new Frame for method={}.{} registers={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
+	if (!method_.isStatic() && method_.getNbRegisters() == 0) {
+		throw VmException("Method {}.{} has zero registers", method_.getClass().getFullname(), method_.getName());
+	}
 	_exception = Object::makeNull();
 	_objectReturn = Object::makeNull();
 	increaseRegSize(method_.getNbRegisters());
@@ -219,12 +222,15 @@ void Frame::debug() const {
 }
 
 void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	visitor_(_objectReturn);
-	visitor_(_exception);
+	if (_objectReturn != nullptr) {
+		visitor_(_objectReturn);
+	}
+	if (_exception != nullptr) {
+		visitor_(_exception);
+	}
 	for (const auto& reg : _registers) {
-		if (reg) {
+		if (reg != nullptr) {
 			visitor_(reg);
-			reg->visitReferences(visitor_);
 		}
 	}
 }

@@ -359,6 +359,8 @@ ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, 
 
 ///////////////////////////////////////////////////////////////////////////////
 Object::Object() : _monitor(std::make_unique<Monitor>()) {
+	setField("shadow$_klass_", Object::makeNull());
+	setField("shadow$_monitor_", Object::makeNull());
 }
 
 bool Object::operator==(const Object& other) const {
@@ -447,6 +449,18 @@ bool Object::weakCompareAndSet(int64_t expect, int64_t update) {
 	throw std::bad_cast();
 }
 
+bool Object::compareAndSwapField(size_t index_, ObjectRef expected_, ObjectRef newValue_) {
+	auto& field = getClass().getField(index_);
+	auto fieldName = field.getName();
+	std::lock_guard lock(_fieldsMutex);
+	auto it = _fields.find(fieldName);
+	if (it != _fields.end()) {
+		return it->second.compare_exchange_strong(expected_, newValue_);
+	} else {
+		return false;
+	}
+}
+
 bool Object::isArray() const {
 	return false;
 }
@@ -498,16 +512,33 @@ int32_t Object::identityHashCode() const {
 
 ObjectRef Object::getField(const std::string& name_) const {
 	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
+	std::lock_guard lock(_fieldsMutex);
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
-		return it->second;
+		return it->second.load(std::memory_order_relaxed);
 	}
 	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->toString()));
 }
 
 void Object::setField(const std::string& name_, ObjectRef value_) {
 	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
-	_fields[name_] = value_;
+	std::lock_guard lock(_fieldsMutex);
+	auto it = _fields.find(name_);
+	if (it != _fields.end()) {
+		it->second.store(value_, std::memory_order_relaxed);
+		return;
+	}
+	_fields.try_emplace(name_, value_);
+}
+
+void Object::setField(size_t index_, ObjectRef value_) {
+	auto& field = getClass().getField(index_);
+	return setField(field.getName(), value_);
+}
+
+ObjectRef Object::getField(size_t index_) const {
+	auto& field = getClass().getField(index_);
+	return getField(field.getName());
 }
 
 void Object::setMarked(bool v_) {
@@ -516,10 +547,20 @@ void Object::setMarked(bool v_) {
 bool Object::isMarked() const {
 	return _marked.load(std::memory_order_relaxed);
 }
+
 void Object::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	for (const auto& [name, obj] : _fields) {
-		visitor_(obj);
-		obj->visitReferences(visitor_);
+	std::vector<ObjectRef> refs;
+	{
+		std::lock_guard lock(_fieldsMutex);
+		refs.reserve(_fields.size());
+		for (const auto& [name, obj] : _fields) {
+			refs.push_back(obj.load(std::memory_order_relaxed));
+		}
+	}
+	for (auto* o : refs) {
+		if (o != nullptr) {
+			visitor_(o);
+		}
 	}
 }
 

@@ -62,7 +62,7 @@ void Logger::removeThread(std::thread::id tid_) {
 }
 
 void Logger::displayThreadName(bool enable_) {
-	_threadname = enable_;
+	_logThreadName = enable_;
 }
 
 Logger::LogLevel Logger::getLevel() const {
@@ -195,7 +195,7 @@ void Logger::log(LogLevel level, const std::string &msg) {
 	level &= 0xF;
 
 	std::string threadname = "";
-	if (_threadname) {
+	if (_logThreadName) {
 		auto thread = _threads.find(std::this_thread::get_id());
 		if (thread != _threads.end()) {
 			// Prefix message with thread name

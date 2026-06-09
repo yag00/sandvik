@@ -41,6 +41,10 @@ Field::Field(Class& class_, const LIEF::DEX::Field& field_)
       _isStatic(field_.has(LIEF::DEX::ACC_STATIC)),
       _index(static_cast<uint32_t>(field_.index())),
       _obj(Object::makeNull()) {
+	_accessFlags = 0;
+	for (const auto& flag : field_.access_flags()) {
+		_accessFlags |= static_cast<uint32_t>(flag);
+	}
 }
 
 std::string Field::str() const {
@@ -78,6 +82,10 @@ std::string Field::getType() const {
 
 bool Field::isStatic() const {
 	return _isStatic;
+}
+
+uint32_t Field::getAccessFlags() const {
+	return _accessFlags;
 }
 
 uint32_t Field::getIntValue() const {
@@ -135,8 +143,7 @@ void Field::setObjectValue(ObjectRef value) {
 }
 
 void Field::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	if (_obj) {
+	if (_obj != nullptr) {
 		visitor_(_obj);
-		_obj->visitReferences(visitor_);
 	}
 }

@@ -19,9 +19,12 @@
 #include "gc.hpp"
 
 #include <algorithm>
+#include <functional>
+#include <unordered_set>
 
 #include "monitor.hpp"
 #include "object.hpp"
+#include "stringpool.hpp"
 #include "system/logger.hpp"
 #include "vm.hpp"
 
@@ -58,6 +61,7 @@ bool GC::done() {
 }
 
 uint64_t GC::getTrackedObjectCount() const {
+	std::lock_guard lock(_mtx);
 	return _objects.size();
 }
 
@@ -70,6 +74,7 @@ void GC::setLimit(uint64_t limit_) {
 }
 
 void GC::manageVm(Vm* vm_) {
+	std::lock_guard lock(_mtx);
 	bool startThread = _vms.empty();
 	_vms.push_back(vm_);
 	if (startThread && (getState() == ThreadState::NotStarted || getState() == ThreadState::Stopped)) {
@@ -78,6 +83,7 @@ void GC::manageVm(Vm* vm_) {
 }
 
 void GC::unmanageVm(Vm* vm_) {
+	std::lock_guard lock(_mtx);
 	std::erase(_vms, vm_);
 	if (_vms.empty()) {
 		_done.store(true);
@@ -87,11 +93,11 @@ void GC::unmanageVm(Vm* vm_) {
 }
 
 void GC::release() {
+	std::lock_guard lock(_mtx);
 	_objects.clear();
 }
 
 void GC::requestCollect() {
-	std::unique_lock lock(_mtx);
 	_gcRequested.store(true);
 	_cv.notify_all();
 	std::this_thread::yield();
@@ -102,20 +108,48 @@ uint64_t GC::getGcCycles() const {
 }
 
 void GC::collect() {
+	std::vector<Vm*> vms;
+	{
+		std::lock_guard lock(_mtx);
+		vms = _vms;
+	}
 	// Stop-the-world: suspend all application threads
-	for (auto& vm : _vms) {
+	for (auto& vm : vms) {
 		vm->suspend();
 	}
+
+	std::unique_lock lock(_mtx);
 	logger.fdebug("GC: Starting garbage collection cycle... ({} objects)", _objects.size());
+	std::unordered_set<Object*> tracked;
+	tracked.reserve(_objects.size());
+	for (const auto& obj : _objects) {
+		tracked.insert(obj.get());
+	}
 
 	// Mark reachable objects:
 	Object::makeNull()->setMarked(true);  // ensure null object is always marked
+	StringPool::getInstance().markAll();  // ensure all interned strings are always marked
 	//  scan each thread's stacks/frames
 	//  scan static fields in loaded classes
 	//  @todo : scan thread's local JNI handles table
 	//  @todo scan global JNI handles
-	for (auto& vm : _vms) {
-		vm->visitReferences([](Object* obj) { obj->setMarked(true); });
+	Object* nullObj = Object::makeNull();
+	std::function<void(Object*)> mark;
+	mark = [&mark, &tracked, nullObj](Object* obj) {
+		if (obj == nullptr) {
+			return;
+		}
+		if (obj != nullObj && tracked.find(obj) == tracked.end()) {
+			return;
+		}
+		if (obj->isMarked()) {
+			return;
+		}
+		obj->setMarked(true);
+		obj->visitReferences(mark);
+	};
+	for (auto& vm : vms) {
+		vm->visitReferences(mark);
 	}
 
 	// Sweeping: free unmarked objects
@@ -126,17 +160,22 @@ void GC::collect() {
 	}
 
 	logger.fdebug("GC: {} live objects", _objects.size());
+	lock.unlock();
 	// Resume the world
-	for (auto& vm : _vms) {
+	for (auto& vm : vms) {
 		vm->resume();
 	}
 	_cycles.fetch_add(1);
 }
 
 void GC::track(std::unique_ptr<Object> obj_) {
-	if (_objects.size() > _limit) {
+	bool shouldRequestCollect = false;
+	{
+		std::lock_guard lock(_mtx);
+		shouldRequestCollect = _objects.size() >= _limit;
+		_objects.push_back(std::move(obj_));
+	}
+	if (shouldRequestCollect) {
 		requestCollect();
 	}
-	std::unique_lock lock(_mtx);
-	_objects.push_back(std::move(obj_));
 }

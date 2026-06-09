@@ -325,26 +325,51 @@ void Interpreter::executeClinit(Class& class_) const {
 		// Nothing to do
 		return;
 	}
-	// Create a new thread to execute the <clinit> method
-	auto& thread = _rt.vm().newThread(fmt::format("{}.{}", class_.getFullname(), "<clinit>"));
-	if (hasInitializeMethod) {
-		// push new frame with initializeSystemClass method (should be executed after <clinit>)
-		auto& initializeSystemClass = class_.getMethod("initializeSystemClass", "()V");
-		thread.newFrame(initializeSystemClass);
+	logger.fdebug("Executing <clinit> for class {}", class_.getFullname());
+	// lock the class to prevent concurrent initialization
+	class_.monitorEnter();
+	// auto unlock the class at the end of the function
+	struct MonitorGuard {
+			Class& class_;
+			~MonitorGuard() {
+				class_.monitorExit();
+			}
+	} guard{class_};
+
+	if (class_.isStaticInitialized()) {
+		return;
 	}
+
+	Method* initializeSystemClass = nullptr;
+	if (hasInitializeMethod) {
+		initializeSystemClass = &class_.getMethod("initializeSystemClass", "()V");
+	}
+	Method* clinitMethod = nullptr;
 	if (hasClinitMethod) {
-		// push new frame with <clinit> method
-		auto& clinitMethod = class_.getMethod("<clinit>", "()V");
-		if (clinitMethod.isNative()) {
+		clinitMethod = &class_.getMethod("<clinit>", "()V");
+		if (clinitMethod->isNative()) {
 			throw VmException("Native <clinit> method for class {} is not supported!", class_.getFullname());
 		}
-		if (!clinitMethod.hasBytecode()) {
+		if (!clinitMethod->hasBytecode()) {
 			throw VmException("<clinit> method for class {} has no bytecode!", class_.getFullname());
 		}
-		thread.newFrame(clinitMethod);
 	}
-	thread.run(true);
-	thread.join();
+	class_.setStaticInitialized();
+
+	// Create a new "fake" thread to execute the <clinit> method (thread will be run in the current thread)
+	auto& currentThread = _rt.vm().currentThread();
+	auto& thread = currentThread.newChild(fmt::format("{}.{}", class_.getFullname(), "<clinit>"));
+	if (initializeSystemClass != nullptr) {
+		// push new frame with initializeSystemClass method (should be executed after <clinit>)
+		thread.newFrame(*initializeSystemClass);
+	}
+	if (clinitMethod != nullptr) {
+		// push new frame with <clinit> method
+		thread.newFrame(*clinitMethod);
+	}
+	thread.runInCurrentThread();
+	currentThread.popChild();
+	logger.fdebug("Executing <clinit> for class {} OK", class_.getFullname());
 }
 
 void Interpreter::executeNativeMethod(const Method& method_, const std::vector<ObjectRef>& args_) {
@@ -724,8 +749,12 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 	uint16_t typeIndex = *(const uint16_t*)&operand_[1];
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(reg);
+
+	// check-cast null is LEGAL in Java and Dalvik.
 	if (obj->isNull()) {
-		throw NullPointerException("check_cast on null object");
+		// null can be cast to anything
+		frame.pc() += 3;
+		return;
 	}
 
 	auto& classloader = _rt.getClassLoader();
@@ -2209,14 +2238,7 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 	}
 	// set result of the sput-object
 	auto value = frame.getObjRegister(src);
-	// @todo : this is a hack to handle setting null to an object field. Need to properly handle this case.
-	if (value->isNumberObject() && (value->getValue() == 0)) {
-		auto& fieldclass = classloader.getOrLoad(field.getFieldTypeClassname());
-		auto obj = Object::make(fieldclass);
-		field.setObjectValue(obj);
-	} else {
-		field.setObjectValue(value);
-	}
+	field.setObjectValue(value);
 
 	frame.pc() += 3;
 }
@@ -2385,6 +2407,10 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 	while (true) {
 		try {
 			vmethod = &instance->getMethod(methodname, signature);
+			if (!vmethod->isVirtual()) {
+				// throw exception here to go up the superclass chain
+				throw VmException();
+			}
 			break;  // Method found, exit loop
 		} catch (std::exception& e) {
 			logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
@@ -2406,7 +2432,7 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 	if (vmethod->isNative()) {
 		executeNativeMethod(*vmethod, args);
 	} else {
-		if (vmethod->getBytecode() == nullptr) {
+		if (!vmethod->hasBytecode()) {
 			vmethod->execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
@@ -2440,7 +2466,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	if (method.isNative()) {
 		executeNativeMethod(method, args);
 	} else {
-		if (method.getBytecode() == nullptr) {
+		if (!method.hasBytecode()) {
 			method.execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(method);
@@ -2635,7 +2661,7 @@ void Interpreter::invoke_direct_range(const uint8_t* operand_) {
 	if (method.isNative()) {
 		executeNativeMethod(method, args);
 	} else {
-		if (method.getBytecode() == nullptr) {
+		if (!method.hasBytecode()) {
 			method.execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(method);

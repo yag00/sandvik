@@ -33,11 +33,43 @@
 
 using namespace sandvik;
 
+static constexpr int THREAD_STATUS_NEW = 0;
+static constexpr int THREAD_STATUS_RUNNABLE = 1;
+static constexpr int THREAD_STATUS_TERMINATED = 5;
+
+namespace {
+	void notifyMonitorWaiters(ObjectRef obj) {
+		if (obj == nullptr || obj == Object::makeNull()) {
+			return;
+		}
+
+		bool monitorEntered = false;
+		try {
+			obj->monitorEnter();
+			monitorEntered = true;
+			obj->notifyAll();
+		} catch (...) {
+		}
+		if (monitorEntered) {
+			try {
+				obj->monitorExit();
+			} catch (...) {
+			}
+		}
+	}
+}  // namespace
+
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
     : Thread(name_), _vm(vm_), _classloader(classloader_), _interpreter(std::make_unique<Interpreter>(*this)), _objectReturn(Object::makeNull()) {
 	_thisThread = Object::make(_classloader.getOrLoad("java/lang/Thread"));
 	_thisThread->setField("name", Object::make(_classloader, name_));
 	_thisThread->setField("priority", Object::make(5));  // normal priority
+	_thisThread->setField("daemon", Object::make(false));
+	_thisThread->setField("threadStatus", Object::make(THREAD_STATUS_NEW));
+	_thisThread->setField("eetop", Object::make(0));
+	_thisThread->setField("nativePeer", Object::make(0));
+	_thisThread->setField("nativeThread", Object::make(0));
+	_thisThread->setField("nativeTid", Object::make(0));
 }
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
@@ -51,6 +83,18 @@ JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
 	auto& method = clazz.getMethod("run", "()V");
 	Frame& frame = newFrame(method);
 	frame.setObjRegister(method.getNbRegisters() - 1, target);
+}
+
+JThread::~JThread() {
+	// Ensure the worker thread exits while this derived object is still alive.
+	// Otherwise Thread's lambda may dispatch virtual calls (done/loop) on a partially
+	// destroyed JThread, which triggers "pure virtual method called".
+	stop();
+	try {
+		join();
+	} catch (const std::exception& ex) {
+		logger.fwarning("Failed to join JThread '{}': {}", getName(), ex.what());
+	}
 }
 
 Vm& JThread::vm() const {
@@ -69,16 +113,26 @@ uint64_t JThread::stackDepth() const {
 	return _stack.size();
 }
 
-Frame& JThread::newFrame(Method& method_) {
-	if (method_.getName() == "<clinit>") {
-		auto& clazz = method_.getClass();
-		if (!clazz.isStaticInitialized()) {
-			// method clinit has been pushed on the stack and will be executed, mark the class as initialized
-			clazz.setStaticInitialized();
-		} else {
-			logger.fwarning("Class {} already initialized", clazz.getFullname());
+Class& JThread::getStackClass(uint32_t depth_) const {
+	if (_childrenThreads.size() > 0) {
+		uint32_t depth = depth_;
+		for (auto it = _childrenThreads.rbegin(); it != _childrenThreads.rend(); ++it) {
+			if (depth >= (*it)->stackDepth()) {
+				depth -= (*it)->stackDepth();
+			} else {
+				return (*it)->getStackClass(depth);
+			}
 		}
+		throw VmException("getStackClass: Stack depth {} out of range", depth_);
+	} else {
+		if (depth_ >= _stack.size()) {
+			throw VmException(fmt::format("Stack depth {} out of range (max {})", depth_, _stack.size() - 1));
+		}
+		return _stack[_stack.size() - 1 - depth_]->getMethod().getClass();
 	}
+}
+
+Frame& JThread::newFrame(Method& method_) {
 	_stack.push_back(std::make_unique<Frame>(method_));
 	return *(_stack.back().get());
 }
@@ -116,8 +170,34 @@ void JThread::loop() {
 	}
 }
 
+void JThread::onStart() {
+	// Keep java.lang.Thread liveness/status coherent for isAlive()/join().
+	_thisThread->setField("threadStatus", Object::make((uint64_t)THREAD_STATUS_RUNNABLE));
+	_thisThread->setField("eetop", Object::make(1));
+	_thisThread->setField("nativePeer", Object::make(1));
+	_thisThread->setField("nativeThread", Object::make(1));
+	_thisThread->setField("nativeTid", Object::make(1));
+	_terminationPublished = false;
+}
+
 bool JThread::done() {
-	return _stack.empty() || !_vm.isRunning();
+	const bool finished = _stack.empty() || !_vm.isRunning();
+	if (finished && !_terminationPublished) {
+		_thisThread->setField("threadStatus", Object::make((uint64_t)THREAD_STATUS_TERMINATED));
+		_thisThread->setField("eetop", Object::make(0));
+		_thisThread->setField("nativePeer", Object::make(0));
+		_thisThread->setField("nativeThread", Object::make(0));
+		_thisThread->setField("nativeTid", Object::make(0));
+
+		// ART-style Thread.join() waits on Thread.lock, so wake that monitor too.
+		if (_thisThread->getClass().hasField("lock")) {
+			notifyMonitorWaiters(_thisThread->getField("lock"));
+		}
+		// Also wake waiters using `synchronized(thread)` semantics.
+		notifyMonitorWaiters(_thisThread);
+		_terminationPublished = true;
+	}
+	return finished;
 }
 
 ObjectRef JThread::getThreadObject() const {
@@ -159,5 +239,33 @@ void JThread::visitReferences(const std::function<void(Object*)>& visitor_) cons
 	visitor_(_objectReturn);
 	for (const auto& frame : _stack) {
 		frame->visitReferences(visitor_);
+	}
+	for (const auto& child : _childrenThreads) {
+		child->visitReferences(visitor_);
+	}
+}
+
+JThread& JThread::newChild(const std::string& name_) {
+	auto child = std::make_unique<JThread>(_vm, _classloader, name_);
+	_childrenThreads.push_back(std::move(child));
+	return *(_childrenThreads.back());
+}
+
+void JThread::popChild() {
+	if (_childrenThreads.empty()) {
+		throw VmException("No child threads to pop");
+	}
+	_childrenThreads.pop_back();
+}
+
+void JThread::runInCurrentThread() {
+	while (!done()) {
+		try {
+			_interpreter->execute();
+		} catch (...) {
+			// clear the stack, call to end() will be true
+			_stack.clear();
+			throw;
+		}
 	}
 }

@@ -48,6 +48,8 @@ namespace sandvik {
 			 * @param thread_ Shared pointer to the Java Thread object
 			 */
 			explicit JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_);
+			/** @brief Destructor */
+			~JThread() override;
 
 			/** @brief Gets the VM instance.
 			 * @return Reference to the VM instance
@@ -77,6 +79,12 @@ namespace sandvik {
 			 * @return Current stack depth
 			 */
 			uint64_t stackDepth() const;
+
+			/** @brief Gets the class at the specified stack depth.
+			 * @param depth_ Stack depth
+			 * @return Reference to the class at the specified depth
+			 */
+			Class& getStackClass(uint32_t depth_) const;
 
 			/** @brief Gets the thread object.
 			 * @return Shared pointer to the thread object
@@ -112,7 +120,19 @@ namespace sandvik {
 			 */
 			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
+			/** @brief Creates a new child thread (used to execute in thread method like clinit method).
+			 * @param name_ Name of the child thread
+			 * @return Reference to the created child thread
+			 */
+			JThread& newChild(const std::string& name_);
+			/** @brief Pops the last created child thread. */
+			void popChild();
+			/** @brief Runs in the current thread. */
+			void runInCurrentThread();
+
 		protected:
+			/** @brief Hook called when underlying host thread is about to start. */
+			void onStart() override;
 			/** @brief thread loop function of the thread implemented by subclass. */
 			void loop() override;
 			/** @brief thread loop end condition. */
@@ -126,6 +146,9 @@ namespace sandvik {
 			std::vector<std::unique_ptr<Frame>> _stack;
 			ObjectRef _objectReturn;
 			ObjectRef _thisThread;
+			bool _terminationPublished = false;
+
+			std::vector<std::unique_ptr<JThread>> _childrenThreads;
 	};
 }  // namespace sandvik
 

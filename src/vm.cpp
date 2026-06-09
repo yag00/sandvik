@@ -118,6 +118,15 @@ ClassLoader& Vm::getClassLoader() const {
 }
 
 void Vm::loadLibrary(const std::string& libName_) {
+	if (!libName_.empty()) {
+		const std::string requestedPath = SharedLibrary::getFullPath(libName_);
+		for (const auto& loaded : _sharedlibs) {
+			if (loaded->getFullPath() == requestedPath) {
+				logger.fdebug("Shared library already loaded {}, skipping", requestedPath);
+				return;
+			}
+		}
+	}
 	// Load the shared library
 	auto lib = std::make_unique<SharedLibrary>(libName_);
 	lib->load();
@@ -166,6 +175,15 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	logger.info("Running class: " + clazz_.getFullname());
 
 	JThread& mainThread = newThread("main");
+
+	// Initialize ThreadGroup for the main thread
+	// The main thread needs a group before Thread.init() runs,
+	// otherwise Thread.currentThread().getThreadGroup() returns null
+	// and group.addUnstarted() causes a NPE.
+	auto& tgClass = _classloader->getOrLoad("java.lang.ThreadGroup");
+	auto mainGroup = Object::make(tgClass);
+	mainGroup->setField("name", Object::make(*_classloader, "main"));
+	mainThread.getThreadObject()->setField("group", mainGroup);
 
 	uint32_t nbRegisters = 0;
 	if (clazz_.hasMethod("onCreate", "(Landroid/os/Bundle;)V")) {

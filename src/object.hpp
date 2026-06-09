@@ -326,6 +326,31 @@ namespace sandvik {
 			 */
 			ObjectRef getField(const std::string& name_) const;
 
+			/**
+			 * @brief Sets the value of a field by index.
+			 * @param index_ Index of the field.
+			 * @param value_ ObjectRef to set as the field value.
+			 */
+			void setField(size_t index_, ObjectRef value_);
+
+			/**
+			 * @brief Gets the value of a field by index.
+			 * @param index_ Index of the field.
+			 * @return ObjectRef of the field value.
+			 */
+			ObjectRef getField(size_t index_) const;
+			/**
+			 * @brief Atomically sets the field to the given new value
+			 * if the current field value == the expected value.
+			 *
+			 * @param index_ Index of the field.
+			 * @param expected_ The expected value.
+			 * @param newValue_ The new value.
+			 * @return true if successful. False return indicates that
+			 * the actual value was not equal to the expected value.
+			 */
+			bool compareAndSwapField(size_t index_, ObjectRef expected_, ObjectRef newValue_);
+
 			///@}
 
 			/**
@@ -403,8 +428,10 @@ namespace sandvik {
 		protected:
 			/** Check monitor ownership */
 			void monitorCheck() const;
+			/** Mutex protecting field map structure and lookups */
+			mutable std::mutex _fieldsMutex;
 			/** Map storing field names and their corresponding values. */
-			std::map<std::string, ObjectRef, std::less<>> _fields;
+			std::map<std::string, std::atomic<ObjectRef>, std::less<>> _fields;
 			/** Monitor for thread synchronization */
 			std::unique_ptr<Monitor> _monitor;
 			/** Mark bit for GC */

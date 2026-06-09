@@ -71,7 +71,27 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 	for (const auto& method : class_.methods()) {
 		const auto& name = method.name();
 		auto signature = get_method_descriptor(method);
-		_methods[name + signature] = std::make_unique<Method>(*this, method);
+		std::string key = name + signature;
+		auto it = _methods.find(key);
+		if (it == _methods.end()) {
+			// First time we see this method
+			_methods[key] = std::make_unique<Method>(*this, method);
+			continue;
+		}
+		// Merge with existing method
+		Method& existing = *it->second;
+
+		bool newHasCode = !method.bytecode().empty();
+		bool oldHasCode = existing.hasBytecode();
+
+		if (newHasCode && !oldHasCode) {
+			// Replace stub with real implementation
+			_methods[key] = std::make_unique<Method>(*this, method);
+			continue;
+		}
+
+		// Otherwise: keep existing method
+		logger.fwarning("Duplicate method found: {}{} in class {}", name, signature, getFullname());
 	}
 	// Initialize fields
 	for (const auto& field : class_.fields()) {
@@ -90,13 +110,17 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 Class::~Class() {
 }
 
+ClassLoader& Class::getClassLoader() const {
+	return _classloader;
+}
+
 bool Class::isStaticInitialized() {
 	if (_isStaticInitialized) {
 		return true;
 	}
 	// Check if the class has a static initializer
 	for (const auto& [name, method] : _methods) {
-		if (method->isStatic() && method->getName() == "<clinit>") {
+		if (method->isStatic() && (method->getName() == "<clinit>" || method->getName() == "initializeSystemClass")) {
 			return _isStaticInitialized;
 		}
 	}
@@ -121,6 +145,13 @@ std::string Class::getFullname() const {
 	return _fullname;
 }
 
+std::string Class::getArrayType() const {
+	if (!_isArray) {
+		throw VmException("Class {} is not an array", getFullname());
+	}
+	return _componentType;
+}
+
 bool Class::implements(const std::string& interface_) const {
 	for (const auto& interface : _interfaces) {
 		if (interface == interface_) {
@@ -140,12 +171,24 @@ bool Class::implements(const Class& interface_) const {
 }
 
 bool Class::isInstanceOf(const std::string& classname_) const {
+	if (isArray()) {
+		// array type check
+		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
+			return true;
+		}
+	}
 	if (getFullname() == classname_) {
 		return true;
 	}
 	return false;
 }
 bool Class::isInstanceOf(const Class& class_) const {
+	if (isArray()) {
+		// array type check
+		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
+			return true;
+		}
+	}
 	if (getFullname() == class_.getFullname()) {
 		return true;
 	}
@@ -156,6 +199,12 @@ bool Class::isInstanceOf(ObjectRef const class_) const {
 		return false;
 	}
 	if (auto clazz = class_; clazz->isClass()) {
+		if (clazz->isArray()) {
+			// array type check
+			if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
+				return true;
+			}
+		}
 		// check class and super classes
 		while (true) {
 			if (clazz->getClass().getFullname() == getFullname()) {
@@ -177,6 +226,10 @@ bool Class::isInterface() const {
 bool Class::isAbstract() const {
 	return _isAbstract;
 }
+bool Class::isArray() const {
+	return _isArray;
+}
+
 bool Class::hasSuperClass() const {
 	if (_fullname == "java.lang.Object") {
 		return false;  // java.lang.Object has no super class
@@ -244,7 +297,7 @@ bool Class::hasField(uint32_t idx_) const {
 	return true;
 }
 
-Field& Class::getField(const std::string& name_) {
+Field& Class::getField(const std::string& name_) const {
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
 		return *(it->second);
@@ -252,7 +305,7 @@ Field& Class::getField(const std::string& name_) {
 	throw VmException("Field not found: {}", name_);
 }
 
-Field& Class::getField(uint32_t idx_) {
+Field& Class::getField(uint32_t idx_) const {
 	if (idx_ >= _fields.size()) {
 		throw std::out_of_range(fmt::format("Field index out of range: {}", idx_));
 	}
@@ -267,6 +320,17 @@ std::vector<std::string> Class::getFieldList() const {
 		fieldList.push_back(name);
 	}
 	return fieldList;
+}
+
+size_t Class::getFieldOffset(const std::string& name_) const {
+	size_t index = 0;
+	for (const auto& [name, field] : _fields) {
+		if (name == name_) {
+			return index;
+		}
+		index++;
+	}
+	throw VmException("Field not found: {}", name_);
 }
 
 Class& Class::getSuperClass() const {

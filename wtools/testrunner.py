@@ -13,6 +13,8 @@ from waflib.Configure import conf
 from waflib.Errors import WafError
 from waflib import Logs
 
+DEFAULT_GTEST_TIMEOUT = 300
+
 class gtest(Task.Task):
     color = "BLUE"
     always_run = True
@@ -68,13 +70,18 @@ class gtest(Task.Task):
         lst = [x for x in lst if x]
 
         try:
+            timeout = getattr(self, "timeout", DEFAULT_GTEST_TIMEOUT)
             if self.verbose:
-                self.generator.bld.cmd_and_log(lst, cwd=wd, env=self._getenv())
+                self.generator.bld.cmd_and_log(lst, cwd=wd, env=self._getenv(), timeout=timeout)
             else:
-                self.generator.bld.cmd_and_log(lst, cwd=wd, env=self._getenv(), quiet=0)
+                self.generator.bld.cmd_and_log(lst, cwd=wd, env=self._getenv(), quiet=0, timeout=timeout)
         except WafError as e:
-            Logs.error(e.stdout)
-            Logs.error(e.stderr)
+            stdout = getattr(e, "stdout", None)
+            stderr = getattr(e, "stderr", None)
+            if stdout:
+                Logs.error(stdout)
+            if stderr:
+                Logs.error(stderr)
 
 
 @feature("gtest")
@@ -101,6 +108,7 @@ def process_test(self):
     tsk.args = ['--gtest_output={}:{}'.format('json', report.abspath())]
     tsk.libpath = getattr(self, "libpath", [])
     tsk.verbose = Options.options.verbose
+    tsk.timeout = getattr(self, "timeout", DEFAULT_GTEST_TIMEOUT)
     runafter = getattr(self, "after", None)
     if runafter != None:
         tsk.set_run_after(self.bld.get_tgen_by_name(runafter))

@@ -274,6 +274,15 @@ namespace sandvik {
 			}
 			~CloneNotSupportedException() noexcept override = default;
 	};
+	/** @brief IOException exception class */
+	class IOException : public JavaException {
+		public:
+			/** constructor
+			 * @param message Exception message. */
+			explicit IOException(const std::string& message = "") : JavaException("java.io.IOException", message) {
+			}
+			~IOException() noexcept override = default;
+	};
 }  // namespace sandvik
 
 #endif

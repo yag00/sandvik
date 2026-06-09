@@ -53,6 +53,9 @@ namespace sandvik {
 			Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
 			virtual ~Class();
 
+			/** @brief Gets the ClassLoader associated with the class. */
+			ClassLoader& getClassLoader() const;
+
 			/** @brief Prints debug information about the class. */
 			void debug() const;
 
@@ -75,6 +78,10 @@ namespace sandvik {
 			 * @return Full name of the class.
 			 */
 			std::string getFullname() const;
+			/** @brief Retrieves the full name of the class within the array.
+			 * @return The full name of the class.
+			 */
+			std::string getArrayType() const;
 
 			/** @brief Checks if a class method is overloaded.
 			 * @param name_ Name of the method.
@@ -118,16 +125,21 @@ namespace sandvik {
 			 * @param name_ Name of the field.
 			 * @return Reference to the Field object.
 			 */
-			Field& getField(const std::string& name_);
+			Field& getField(const std::string& name_) const;
 			/** @brief Gets a class field by index.
 			 * @param idx_ Index of the field.
 			 * @return Reference to the Field object.
 			 */
-			Field& getField(uint32_t idx_);
+			Field& getField(uint32_t idx_) const;
 			/** @brief Gets the list of field names.
 			 * @return Vector of field names.
 			 */
 			std::vector<std::string> getFieldList() const;
+			/** @brief Gets the offset of a field by name.
+			 * @param name_ Name of the field.
+			 * @return Offset of the field.
+			 */
+			size_t getFieldOffset(const std::string& name_) const;
 
 			/** @brief Checks if a class implements an interface.
 			 * @param interface_ Name of the interface.
@@ -166,6 +178,10 @@ namespace sandvik {
 			 * @return true if the class is an interface, false otherwise.
 			 */
 			bool isInterface() const;
+			/** @brief Checks if the class is an array.
+			 * @return true if the class is an array, false otherwise.
+			 */
+			bool isArray() const;
 			/** @brief Checks if the class has a superclass.
 			 * @return true if the class has a superclass, false otherwise.
 			 */
@@ -213,6 +229,9 @@ namespace sandvik {
 			bool _isAbstract;
 			bool _hasSuperClass;
 			std::string _superClassname;
+
+			bool _isArray = false;
+			std::string _componentType;
 
 			std::map<std::string, std::unique_ptr<Method>, std::less<>> _methods;
 			std::map<std::string, std::unique_ptr<Field>, std::less<>> _fields;
