@@ -109,25 +109,35 @@ To run the `HelloWorld` Java program:
 
 This will execute the `HelloWorld` class from the specified DEX file, showcasing the VM's ability to interpret and run Dalvik bytecode. The output should display the expected behavior of the test program, such as printing "Hello, World!" to the console:
 ```bash
-./wbuild/sandvik -i -c --log=INFO --dex tests/java/hello/classes.dex --main=HelloWorld
-[+]  === sandvik 1.0.0-983807d ===
-[*] VM instance created.
-[*] Running class: HelloWorld
-[*] 0000: sget-object v1, string@0                : 62 01 00 00                            HelloWorld::main([Ljava/lang/String;)V
-[java.lang.System.<clinit>] [*] 0000: const/4 v0, #0                          : 12 00                                  java.lang.System::<clinit>()V
-[java.lang.System.<clinit>] [*] 0001: sput-object v0, string@1                : 69 00 01 00                            java.lang.System::<clinit>()V
-[java.lang.System.<clinit>] [*] 0003: sput-object v0, string@2                : 69 00 02 00                            java.lang.System::<clinit>()V
-[java.lang.System.<clinit>] [*] 0005: sput-object v0, string@0                : 69 00 00 00                            java.lang.System::<clinit>()V
-[java.lang.System.<clinit>] [*] 0007: return-void                             : 0e                                     java.lang.System::<clinit>()V
-[java.lang.System.<clinit>] [*] 0000: invoke-static method@9                  : 71 00 09 00 00 00                      java.lang.System::initializeSystemClass()V
-[java.lang.System.<clinit>] [*] invoke-static java.lang.System.initializeStream()V ()
-[java.lang.System.<clinit>] [*] 0003: return-void                             : 0e                                     java.lang.System::initializeSystemClass()V
-[*] 0002: const-string v0, string@1               : 1a 00 01 00                            HelloWorld::main([Ljava/lang/String;)V
-[*] 0004: invoke-virtual {v1, v0}, method@2       : 6e 20 02 00 01 00                      HelloWorld::main([Ljava/lang/String;)V
-[*] invoke-virtual java.io.PrintStream.println(Ljava/lang/String;)V (this=Instance of java.io.PrintStream, String=Hello, World!)
+./wbuild/sandvik --log=NONE --jar android-12.0.0-bin/core-oj.dex.jar --jar android-12.0.0-bin/core-libart.dex.jar --jar android-12.0.0-bin/icu-stubs.dex.jar --dex tests/java/hello/classes.dex --main HelloWorld
+[+]  === sandvik 1.0.0 ===
 Hello, World!
-[*] 0007: return-void                             : 0e                                     HelloWorld::main([Ljava/lang/String;)V
-[*]  === end ===
+```
+
+Let's print instructions and calls :
+
+```bash
+./wbuild/sandvik -i -c --log=INFO --jar android-12.0.0-bin/core-oj.dex.jar --jar android-12.0.0-bin/core-libart.dex.jar --jar android-12.0.0-bin/icu-stubs.dex.jar --dex tests/java/hello/classes.dex --main HelloWorld
+
+...
+[*] 0002: const-string v0, string@1               : 1a 00 01 00                            HelloWorld::main([Ljava/lang/String;)V
+[*] 0004: invoke-virtual {v1, v0}, meth@2         : 6e 20 02 00 01 00                      HelloWorld::main([Ljava/lang/String;)V
+[*] invoke-virtual java.io.PrintStream.println(Ljava/lang/String;)V (this=java.io.PrintStream, "Hello, World!")
+[*] 0000: monitor-enter v1                        : 1d 01                                  java.io.PrintStream::println(Ljava/lang/String;)V
+[*] 0001: invoke-virtual {v1, v2}, meth@1590      : 6e 20 36 06 21 00                      java.io.PrintStream::println(Ljava/lang/String;)V
+[*] invoke-virtual java.io.PrintStream.print(Ljava/lang/String;)V (this=java.io.PrintStream, "Hello, World!")
+[*] 0000: if-nez v1, 0006 // +0004                : 39 01 04                               java.io.PrintStream::print(Ljava/lang/String;)V
+[*] 0004: invoke-direct {v0, v1}, meth@1609       : 70 20 49 06 10 00                      java.io.PrintStream::print(Ljava/lang/String;)V
+[*] invoke-direct java.io.PrintStream.write(Ljava/lang/String;)V (this=java.io.PrintStream, "Hello, World!")
+[*] 0000: monitor-enter v2                        : 1d 02                                  java.io.PrintStream::write(Ljava/lang/String;)V
+[*] 0001: invoke-direct {v2}, meth@1578           : 70 10 2a 06 02 00                      java.io.PrintStream::write(Ljava/lang/String;)V
+[*] invoke-direct java.io.PrintStream.ensureOpen()V (this=java.io.PrintStream)
+[*] 0000: iget-object v0, v2, type@700            : 54 20 bc 02                            java.io.PrintStream::ensureOpen()V
+[*] 0002: if-eqz v0, 0005 // +0003                : 38 00 03                               java.io.PrintStream::ensureOpen()V
+[*] 0004: return-void                             : 0e                                     java.io.PrintStream::ensureOpen()V
+[*] 0004: invoke-direct {v2}, meth@1582           : 70 10 2e 06 02 00                      java.io.PrintStream::write(Ljava/lang/String;)V
+[*] invoke-direct java.io.PrintStream.getTextOut()Ljava/io/BufferedWriter; (this=java.io.PrintStream)
+...
 ```
 
 ## Contributing
