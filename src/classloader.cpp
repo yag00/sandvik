@@ -349,6 +349,18 @@ void ClassLoader::linkClass(Class& class_) {
 
 	if (class_.getFullname() == "java.lang.Class") {
 		class_.getMethod("getComponentType", "()Ljava/lang/Class;").makeNative();
+		if (class_.hasMethod("getEnumConstantsShared", "()[Ljava/lang/Object;")) {
+			class_.getMethod("getEnumConstantsShared", "()[Ljava/lang/Object;").makeNative();
+		}
+		if (class_.hasMethod("getEnumConstantsShared", "()[Ljava/lang/Enum;")) {
+			class_.getMethod("getEnumConstantsShared", "()[Ljava/lang/Enum;").makeNative();
+		}
+		return;
+	}
+
+	if (class_.getFullname() == "java.lang.Object") {
+		class_.getMethod("getClass", "()Ljava/lang/Class;").makeNative();
+		class_.getMethod("hashCode", "()I").makeNative();
 		return;
 	}
 }

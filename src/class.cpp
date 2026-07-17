@@ -171,27 +171,35 @@ bool Class::implements(const Class& interface_) const {
 }
 
 bool Class::isInstanceOf(const std::string& classname_) const {
-	if (isArray()) {
-		// array type check
-		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
-			return true;
-		}
+	try {
+		const auto& targetClass = _classloader.getOrLoad(classname_);
+		return isInstanceOf(targetClass);
+	} catch (...) {
+		return false;
 	}
-	if (getFullname() == classname_) {
-		return true;
-	}
-	return false;
 }
 bool Class::isInstanceOf(const Class& class_) const {
-	if (isArray()) {
-		// array type check
+	// Arrays are always instances of Object, Cloneable and Serializable.
+	if (class_.isArray()) {
 		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
 			return true;
 		}
 	}
-	if (getFullname() == class_.getFullname()) {
-		return true;
+
+	const Class* current = &class_;
+	while (true) {
+		if (current->getFullname() == getFullname()) {
+			return true;
+		}
+		if (current->implements(*this)) {
+			return true;
+		}
+		if (!current->hasSuperClass()) {
+			break;
+		}
+		current = &current->getSuperClass();
 	}
+
 	return false;
 }
 bool Class::isInstanceOf(ObjectRef const class_) const {

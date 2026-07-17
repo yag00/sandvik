@@ -457,9 +457,6 @@ Method* Interpreter::resolveInterfaceMethod(Class& instance_, const std::string&
 	}
 
 	auto& iface = classloader.getOrLoad(ifclassname_);
-	if (!instance_.implements(iface)) {
-		return nullptr;
-	}
 
 	if (!iface.isStaticInitialized()) {
 		executeClinit(iface);
@@ -892,7 +889,9 @@ void Interpreter::array_length(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto obj = frame.getObjRegister(src);
 	if (obj->isNull()) {
-		throw NullPointerException("array_length on null object");
+		const auto& method = frame.getMethod();
+		throw NullPointerException(
+		    fmt::format("array_length on null object in {}.{}{}", method.getClass().getFullname(), method.getName(), method.getSignature()));
 	}
 	uint32_t length = obj->getArrayLength();
 	frame.setIntRegister(dest, length);
@@ -2396,7 +2395,9 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	auto args = getInvokeMethodArgs(operand_);
 	auto this_ptr = args[0];
 	if (this_ptr->isNull()) {
-		throw NullPointerException("invoke-virtual on null object");
+		const auto& caller = frame.getMethod();
+		throw NullPointerException(
+		    fmt::format("invoke-virtual on null object in {}.{}{}", caller.getClass().getFullname(), caller.getName(), caller.getSignature()));
 	}
 	if (!this_ptr->isClass()) {
 		throw VmException("invoke-virtual: this pointer is not an ObjectClass, got {}", this_ptr->toString());
@@ -2614,7 +2615,9 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 
 	auto this_ptr = args[0];
 	if (this_ptr->isNull()) {
-		throw NullPointerException("invoke-virtual/range on null object");
+		const auto& caller = frame.getMethod();
+		throw NullPointerException(
+		    fmt::format("invoke-virtual/range on null object in {}.{}{}", caller.getClass().getFullname(), caller.getName(), caller.getSignature()));
 	}
 	if (!this_ptr->isClass()) {
 		throw VmException("invoke-virtual/range: this pointer is not an ObjectClass, got {}", this_ptr->toString());
