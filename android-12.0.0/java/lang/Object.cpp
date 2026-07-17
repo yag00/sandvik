@@ -40,17 +40,30 @@ JNIEXPORT void JNICALL Java_java_lang_Object_registerNatives(JNIEnv* env, jobjec
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Object_hashCode(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jobject JNICALL Java_java_lang_Object_getClass(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+		auto this_ptr = sandvik::native::getObject(obj);
+		return (jobject)sandvik::Object::makeConstClass(classloader, this_ptr->getClass());
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Object_identityHashCodeNative(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jint JNICALL Java_java_lang_Object_hashCode(JNIEnv* env, jobject obj) {
+		(void)env;
+		if (obj == nullptr) {
+			return 0;
+		}
+		auto this_ptr = sandvik::native::getObject(obj);
+		return static_cast<jint>(this_ptr->identityHashCode());
+	}
+
+	JNIEXPORT jint JNICALL Java_java_lang_Object_identityHashCodeNative(JNIEnv* env, jobject obj) {
+		(void)env;
+		if (obj == nullptr) {
+			return 0;
+		}
+		auto this_ptr = sandvik::native::getObject(obj);
+		return static_cast<jint>(this_ptr->identityHashCode());
+	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Object_internalClone(JNIEnv* env, jobject obj) {
 		auto this_ptr = sandvik::native::getObject(obj);

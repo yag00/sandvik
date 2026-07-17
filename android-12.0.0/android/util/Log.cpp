@@ -37,4 +37,42 @@ extern "C" {
 		// return (level >= 2 && level <= 7) ? JNI_TRUE : JNI_FALSE;
 		return JNI_TRUE;
 	}
+
+	JNIEXPORT jint JNICALL Java_android_util_Log_logger_entry_max_payload_native(JNIEnv* env, jclass clazz) {
+		(void)env;
+		(void)clazz;
+		// Approximate linux logger payload max size used by framework log splitting heuristics.
+		return 4068;
+	}
+
+	JNIEXPORT jint JNICALL Java_android_util_Log_println_native(JNIEnv* env, jclass clazz, jint bufID, jint priority, jstring tag, jstring msg) {
+		(void)clazz;
+		(void)bufID;
+
+		auto sTag = sandvik::native::getString(tag);
+		auto sMsg = sandvik::native::getString(msg);
+		switch (priority) {
+			case 2:
+				logger.fdebug("[{}] {}", sTag->str(), sMsg->str());
+				break;
+			case 3:
+				logger.finfo("[{}] {}", sTag->str(), sMsg->str());
+				break;
+			case 4:
+				logger.finfo("[{}] {}", sTag->str(), sMsg->str());
+				break;
+			case 5:
+				logger.fwarning("[{}] {}", sTag->str(), sMsg->str());
+				break;
+			case 6:
+			case 7:
+				logger.ferror("[{}] {}", sTag->str(), sMsg->str());
+				break;
+			default:
+				logger.finfo("[{}] {}", sTag->str(), sMsg->str());
+				break;
+		}
+
+		return static_cast<jint>(sMsg->str().size());
+	}
 }  // extern "C"

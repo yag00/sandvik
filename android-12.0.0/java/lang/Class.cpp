@@ -20,6 +20,7 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
@@ -171,7 +172,11 @@ extern "C" {
 	}
 
 	JNIEXPORT jint JNICALL Java_java_lang_Class_getInnerClassFlags(JNIEnv* env, jobject obj, jint defaultValue) {
-		throw VmException("Java_java_lang_Class_getInnerClassFlags not implemented!");
+		(void)env;
+		(void)obj;
+		// Fallback to the caller-provided metadata when InnerClass attributes are unavailable.
+		logger.fwarning("Java_java_lang_Class_getInnerClassFlags: InnerClass attributes unavailable, returning default value {}", defaultValue);
+		return defaultValue;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredAnnotation(JNIEnv* env, jobject obj, jobject annotationClass) {
@@ -211,5 +216,27 @@ extern "C" {
 			return (jobject)componentClassObj;
 		}
 		return (jobject)componentType;
+	}
+
+	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getEnumConstantsShared(JNIEnv* env, jobject obj) {
+		(void)env;
+		auto classObj = sandvik::native::getObject(obj);
+		const auto& enumType = classObj->getClassType();
+
+		if (enumType.hasField("$VALUES")) {
+			auto values = enumType.getField("$VALUES").getObjectValue();
+			if (!values->isNull()) {
+				return (jobjectArray)values;
+			}
+		}
+		if (enumType.hasField("ENUM$VALUES")) {
+			auto values = enumType.getField("ENUM$VALUES").getObjectValue();
+			if (!values->isNull()) {
+				return (jobjectArray)values;
+			}
+		}
+
+		// Fallback: return an empty array with the concrete enum component type.
+		return (jobjectArray)Array::make(enumType, 0);
 	}
 }  // extern "C"
