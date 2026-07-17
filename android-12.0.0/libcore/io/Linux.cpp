@@ -115,4 +115,11 @@ extern "C" {
 
 		return static_cast<jint>(written);
 	}
+
+	// Places a process into a process group, used during zygote and child process setup.
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_setpgid(JNIEnv* env, jobject thiz, jint pid, jint pgid) {
+		(void)env;
+		(void)thiz;
+		(void)setpgid(static_cast<pid_t>(pid), static_cast<pid_t>(pgid));
+	}
 }  // extern "C"

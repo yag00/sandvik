@@ -66,4 +66,11 @@ extern "C" {
 		}
 		return (jobjectArray)array;
 	}
+
+	// Reports runtime pointer width so framework code can select 32-bit or 64-bit behavior.
+	JNIEXPORT jboolean JNICALL Java_dalvik_system_VMRuntime_is64Bit(JNIEnv* env, jobject thiz) {
+		(void)env;
+		(void)thiz;
+		return sizeof(void*) == 8 ? JNI_TRUE : JNI_FALSE;
+	}
 }  // extern "C"
