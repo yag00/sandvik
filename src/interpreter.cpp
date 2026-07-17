@@ -404,6 +404,71 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	}
 }
 
+Method* Interpreter::resolveInterfaceHierarchyMethod(Class& interfaceClass_, const std::string& methodname_, const std::string& signature_,
+                                                     std::unordered_set<std::string>& visited_) const {
+	if (!visited_.insert(interfaceClass_.getFullname()).second) {
+		return nullptr;
+	}
+
+	try {
+		auto& method = interfaceClass_.getMethod(methodname_, signature_);
+		if (!method.isStatic()) {
+			return &method;
+		}
+	} catch (...) {
+	}
+
+	auto& classloader = _rt.getClassLoader();
+	for (const auto& parentInterfaceName : interfaceClass_.getInterfaces()) {
+		auto& parentInterface = classloader.getOrLoad(parentInterfaceName);
+		if (!parentInterface.isStaticInitialized()) {
+			executeClinit(parentInterface);
+		}
+		if (auto* method = resolveInterfaceHierarchyMethod(parentInterface, methodname_, signature_, visited_)) {
+			return method;
+		}
+	}
+
+	return nullptr;
+}
+
+Method* Interpreter::resolveInterfaceMethod(Class& instance_, const std::string& ifclassname_, const std::string& methodname_,
+                                            const std::string& signature_) const {
+	auto& classloader = _rt.getClassLoader();
+
+	Class* current = &instance_;
+	while (current) {
+		try {
+			auto& method = current->getMethod(methodname_, signature_);
+			if (!method.isStatic()) {
+				return &method;
+			}
+		} catch (...) {
+		}
+
+		if (current->hasSuperClass()) {
+			current = &classloader.getOrLoad(current->getSuperClassname());
+			if (!current->isStaticInitialized()) {
+				executeClinit(*current);
+			}
+		} else {
+			current = nullptr;
+		}
+	}
+
+	auto& iface = classloader.getOrLoad(ifclassname_);
+	if (!instance_.implements(iface)) {
+		return nullptr;
+	}
+
+	if (!iface.isStaticInitialized()) {
+		executeClinit(iface);
+	}
+
+	std::unordered_set<std::string> visited;
+	return resolveInterfaceHierarchyMethod(iface, methodname_, signature_, visited);
+}
+
 void Interpreter::handleException(ObjectRef exception_) {
 	if (!exception_->isClass()) {
 		throw VmException("throw operand is not an object!");
@@ -2508,25 +2573,11 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 
 	logger.fdebug("invoke-interface {}->{}{} for class {}", ifclassname, methodname, signature, instance->getFullname());
 
-	Method* vmethod = nullptr;
-	Class* current = instance;
-	while (current) {
-		try {
-			vmethod = &current->getMethod(methodname, signature);
-			break;  // Method found, exit loop
-		} catch (...) {
-			// not found in this class
-			if (current->hasSuperClass()) {
-				current = &classloader.getOrLoad(current->getSuperClassname());
-				if (!current->isStaticInitialized()) {
-					executeClinit(*current);
-				}
-			} else {
-				current = nullptr;
-			}
-		}
-	}
+	Method* vmethod = resolveInterfaceMethod(*instance, ifclassname, methodname, signature);
 	if (vmethod) {
+		if (vmethod->isStatic()) {
+			throw VmException("invoke-interface: method {}->{}{} is static", ifclassname, methodname, signature);
+		}
 		if (!vmethod->isVirtual()) {
 			logger.ferror("invoke-interface: {}->{}{} not virtual", ifclassname, methodname, signature);
 		}
@@ -2706,25 +2757,11 @@ void Interpreter::invoke_interface_range(const uint8_t* operand_) {
 	std::string ifclassname, methodname, signature;
 	classloader.findMethod(frame.getDexIdx(), methodRef, ifclassname, methodname, signature);
 
-	Method* vmethod = nullptr;
-	Class* current = instance;
-	while (current) {
-		try {
-			vmethod = &current->getMethod(methodname, signature);
-			break;  // Method found, exit loop
-		} catch (...) {
-			// not found in this class
-			if (current->hasSuperClass()) {
-				current = &classloader.getOrLoad(current->getSuperClassname());
-				if (!current->isStaticInitialized()) {
-					executeClinit(*current);
-				}
-			} else {
-				current = nullptr;
-			}
-		}
-	}
+	Method* vmethod = resolveInterfaceMethod(*instance, ifclassname, methodname, signature);
 	if (vmethod) {
+		if (vmethod->isStatic()) {
+			throw VmException("invoke-interface/range: method {}->{}{} is static", ifclassname, methodname, signature);
+		}
 		if (!vmethod->isVirtual()) {
 			logger.ferror("invoke-interface/range: {}->{}{} not virtual", ifclassname, methodname, signature);
 		}

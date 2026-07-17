@@ -346,6 +346,10 @@ std::string Class::getSuperClassname() const {
 	return _superClassname;
 }
 
+const std::vector<std::string>& Class::getInterfaces() const {
+	return _interfaces;
+}
+
 bool Class::isExternal() const {
 	if (isAbstract()) {
 		return false;

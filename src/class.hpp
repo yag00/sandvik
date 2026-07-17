@@ -194,6 +194,10 @@ namespace sandvik {
 			 * @return Superclass name.
 			 */
 			std::string getSuperClassname() const;
+			/** @brief Gets interfaces directly declared by the class or interface.
+			 * @return List of fully qualified interface names.
+			 */
+			const std::vector<std::string>& getInterfaces() const;
 
 			/** @brief Enters the monitor.
 			 *

@@ -25,6 +25,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "object.hpp"
@@ -490,6 +491,10 @@ namespace sandvik {
 			void handleException(ObjectRef exception_);
 			void executeClinit(Class& class_) const;
 			void executeNativeMethod(const Method& method_, const std::vector<ObjectRef>& args_);
+			Method* resolveInterfaceMethod(Class& instance_, const std::string& ifclassname_, const std::string& methodname_,
+			                               const std::string& signature_) const;
+			Method* resolveInterfaceHierarchyMethod(Class& interfaceClass_, const std::string& methodname_, const std::string& signature_,
+			                                        std::unordered_set<std::string>& visited_) const;
 
 			std::vector<ObjectRef> getInvokeMethodArgs(const uint8_t* operand_) const;
 
