@@ -349,6 +349,9 @@ void ClassLoader::linkClass(Class& class_) {
 
 	if (class_.getFullname() == "java.lang.Class") {
 		class_.getMethod("getComponentType", "()Ljava/lang/Class;").makeNative();
+		if (class_.hasMethod("getSuperclass", "()Ljava/lang/Class;")) {
+			class_.getMethod("getSuperclass", "()Ljava/lang/Class;").makeNative();
+		}
 		if (class_.hasMethod("getEnumConstantsShared", "()[Ljava/lang/Object;")) {
 			class_.getMethod("getEnumConstantsShared", "()[Ljava/lang/Object;").makeNative();
 		}

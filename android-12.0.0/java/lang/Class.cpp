@@ -218,6 +218,18 @@ extern "C" {
 		return (jobject)componentType;
 	}
 
+	JNIEXPORT jobject JNICALL Java_java_lang_Class_getSuperclass(JNIEnv* env, jobject obj) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto classObj = sandvik::native::getObject(obj);
+		auto& classType = classObj->getClassType();
+		if (!classType.hasSuperClass()) {
+			return (jobject)Object::makeNull();
+		}
+		auto& classloader = jenv->getClassLoader();
+		auto& superClass = classType.getSuperClass();
+		return (jobject)Object::makeConstClass(classloader, superClass);
+	}
+
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getEnumConstantsShared(JNIEnv* env, jobject obj) {
 		(void)env;
 		auto classObj = sandvik::native::getObject(obj);
