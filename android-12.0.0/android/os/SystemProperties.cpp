@@ -18,6 +18,7 @@
 
 #include <jni/jni.h>
 
+#include "jni.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
@@ -31,6 +32,18 @@ extern "C" {
 		(void)clazz;
 
 		auto keyStr = sandvik::native::getString(key)->str();
+		if (keyStr == "ro.product.cpu.abilist64") {
+			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), std::string("x86_64"));
+		}
+		if (keyStr == "ro.product.cpu.abilist32") {
+			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), std::string("x86"));
+		}
+		if (keyStr == "ro.product.cpu.abilist") {
+			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), std::string("x86_64,x86"));
+		}
+		if (keyStr == "ro.product.cpu.abi") {
+			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), std::string("x86_64"));
+		}
 		logger.fwarning("SystemProperties.native_get called with key: {}, returning default value", keyStr);
 		return def;
 	}
