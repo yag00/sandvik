@@ -22,6 +22,7 @@
 
 #include <fmt/format.h>
 
+#include <bit>
 #include <stdexcept>
 
 #include "jni/jni.h"
@@ -41,6 +42,20 @@
 #include "vm.hpp"
 
 using namespace sandvik;
+
+namespace {
+	uint32_t getIncomingRegisterStart(const Method &method, bool hasThis = true) {
+		uint32_t paramWords = hasThis ? 1u : 0u;
+		for (const auto &arg : method.arguments()) {
+			paramWords += (arg[0] == 'J' || arg[0] == 'D') ? 2u : 1u;
+		}
+		if (paramWords > method.getNbRegisters()) {
+			throw VmException(
+			    fmt::format("Method {} has invalid register layout: registers={}, paramWords={}", method.getName(), method.getNbRegisters(), paramWords));
+		}
+		return method.getNbRegisters() - paramWords;
+	}
+}  // namespace
 
 SandvikVM::SandvikVM(Vm &vm_) : _vm(vm_) {
 	_interface = std::make_unique<JNIInvokeInterface_>();
@@ -477,7 +492,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 	auto &frame = thread.newFrame(method);
 	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
-	auto regidx = 0;
+	auto regidx = getIncomingRegisterStart(method, true);
 	frame.setObjRegister(regidx++, obj);  // this
 	// Set method arguments in the frame registers from varargs
 	va_list args;
@@ -489,7 +504,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			case 'C':  // char
 			case 'S':  // short
 			case 'I':  // int
-				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int32_t)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<int32_t>(va_arg(args, int))));
 				break;
 			case 'J':  // long
 			{
@@ -500,18 +515,16 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			}
 			case 'F':  // float
 			{
-				// float is promoted to double in varargs
-				float f = (float)va_arg(args, double);
-				uint32_t value = *(uint32_t *)&f;
-				frame.setObjRegister(regidx++, Object::make(value));
+				float value = static_cast<float>(va_arg(args, double));
+				frame.setObjRegister(regidx++, Object::make(std::bit_cast<uint32_t>(value)));
 				break;
 			}
 			case 'D':  // double
 			{
-				double d = va_arg(args, double);
-				uint64_t value = *(uint64_t *)&d;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				double value = va_arg(args, double);
+				uint64_t bits = std::bit_cast<uint64_t>(value);
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(bits & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((bits >> 32) & 0xFFFFFFFF)));
 				break;
 			}
 			case 'L':  // object
@@ -548,9 +561,8 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
 	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
 	auto &frame = thread.newFrame(method);
-	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
-	auto regidx = 0;
+	auto regidx = getIncomingRegisterStart(method, true);
 	frame.setObjRegister(regidx++, obj);  // this
 	// Set method arguments in the frame registers from varargs
 	for (auto arg : method.arguments()) {
@@ -560,29 +572,27 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 			case 'C':  // char
 			case 'S':  // short
 			case 'I':  // int
-				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int32_t)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<int32_t>(va_arg(args, int))));
 				break;
 			case 'J':  // long
 			{
-				uint64_t value = (uint64_t)va_arg(args, int64_t);
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				uint64_t value = static_cast<uint64_t>(va_arg(args, int64_t));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
 				break;
 			}
 			case 'F':  // float
 			{
-				// float is promoted to double in varargs
-				float f = (float)va_arg(args, double);
-				uint32_t value = *(uint32_t *)&f;
-				frame.setObjRegister(regidx++, Object::make(value));
+				float value = static_cast<float>(va_arg(args, double));
+				frame.setObjRegister(regidx++, Object::make(std::bit_cast<uint32_t>(value)));
 				break;
 			}
 			case 'D':  // double
 			{
-				double d = va_arg(args, double);
-				uint64_t value = *(uint64_t *)&d;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				double value = va_arg(args, double);
+				uint64_t bits = std::bit_cast<uint64_t>(value);
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(bits & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((bits >> 32) & 0xFFFFFFFF)));
 				break;
 			}
 			case 'L':  // object
@@ -596,6 +606,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 				throw VmException(fmt::format("NewObjectV: unknown argument type '{}'", arg));
 		}
 	}
+	va_end(args);
 	thread.run(true);
 	// return new object
 	return (jobject)obj;
@@ -618,8 +629,7 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
 	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
 	auto &frame = thread.newFrame(method);
-	auto sig = method.getSignature();
-	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
+	auto regidx = getIncomingRegisterStart(method, true);
 	frame.setObjRegister(regidx++, obj);  // this
 
 	// Set method arguments in the frame registers from jvalue array
@@ -635,19 +645,19 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 				break;
 			case 'J':  // long
 			{
-				uint64_t value = (uint64_t)args[argIndex++].j;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				uint64_t value = static_cast<uint64_t>(args[argIndex++].j);
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
 				break;
 			}
 			case 'F':  // float
-				frame.setObjRegister(regidx++, Object::make(args[argIndex++].i));
+				frame.setObjRegister(regidx++, Object::make(std::bit_cast<uint32_t>(args[argIndex++].f)));
 				break;
 			case 'D':  // double
 			{
-				uint64_t value = (uint64_t)args[argIndex++].j;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				uint64_t value = std::bit_cast<uint64_t>(args[argIndex++].d);
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
 				break;
 			}
 			case 'L':  // object
@@ -667,7 +677,7 @@ jclass NativeInterface::GetObjectClass(JNIEnv *env, jobject obj) {
 	if (!jobj->isClass()) {
 		throw ClassCastException("GetObjectClass: object is not a class object");
 	}
-	return (jclass)obj;
+	return (jclass)Object::make(jobj->getClass());
 }
 
 jboolean NativeInterface::IsInstanceOf(JNIEnv *env, jobject obj, jclass clazz) {
@@ -713,7 +723,7 @@ JThread &NativeInterface::__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID
 	auto &frame = thread.newFrame(method);
 
 	// @todo: check that the return type is 'I' (int)
-	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
+	auto regidx = getIncomingRegisterStart(method, true);
 	frame.setObjRegister(regidx++, jobj);  // this
 	// Set method arguments in the frame registers
 	for (auto arg : method.arguments()) {
@@ -726,21 +736,31 @@ JThread &NativeInterface::__CallObjectMethod(JNIEnv *env, jobject obj, jmethodID
 				frame.setObjRegister(regidx++, Object::make((int32_t)va_arg(args, int)));
 				break;
 			case 'J':  // long
-				// frame.setObjRegister(nbRegisters, (int64_t)va_arg(args, int64_t));
-				logger.fwarning("CallIntMethod: long arguments not yet supported");
+			{
+				uint64_t value = static_cast<uint64_t>(va_arg(args, int64_t));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
 				break;
+			} break;
 			case 'F':  // float
-				// frame.setObjRegister(nbRegisters, (float)va_arg(args, float));
-				logger.fwarning("CallIntMethod: float arguments not yet supported");
+			{
+				float value = static_cast<float>(va_arg(args, double));
+				frame.setObjRegister(regidx++, Object::make(std::bit_cast<uint32_t>(value)));
 				break;
+			}
 			case 'D':  // double
-				// frame.setObjRegister(nbRegisters, (double)va_arg(args, double));
-				logger.fwarning("CallIntMethod: double arguments not yet supported");
+			{
+				double value = va_arg(args, double);
+				uint64_t bits = std::bit_cast<uint64_t>(value);
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(bits & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((bits >> 32) & 0xFFFFFFFF)));
 				break;
+			}
 			case 'L':  // object
 			case '[':  // array
 			{
-				logger.fwarning("CallIntMethod: object/array arguments not yet supported");
+				auto argobj = va_arg(args, jobject);
+				frame.setObjRegister(regidx++, native::getObject(argobj));
 				break;
 			}
 			default:
@@ -769,7 +789,7 @@ JThread &NativeInterface::__CallObjectMethodA(JNIEnv *env, jobject obj, jmethodI
 	auto &thread = vm.newThread(fmt::format("{}.{}", clazz.getFullname(), method.getName()));
 	auto &frame = thread.newFrame(method);
 
-	auto regidx = method.getNbRegisters() - 1 - method.getNbArguments();
+	auto regidx = getIncomingRegisterStart(method, true);
 	frame.setObjRegister(regidx++, jobj);  // this
 	// Set method arguments in the frame registers from jvalue array
 	int argIndex = 0;
@@ -780,19 +800,25 @@ JThread &NativeInterface::__CallObjectMethodA(JNIEnv *env, jobject obj, jmethodI
 			case 'C':  // char
 			case 'S':  // short
 			case 'I':  // int
-				frame.setObjRegister(regidx++, Object::make((int32_t)args[argIndex++].i));
+				frame.setObjRegister(regidx++, Object::make(static_cast<int32_t>(args[argIndex++].i)));
 				break;
 			case 'J':  // long
-			case 'D':  // double
 			{
-				uint64_t value = (uint64_t)args[argIndex++].j;
-				frame.setObjRegister(regidx++, Object::make(value & 0xFFFFFFFF));
-				frame.setObjRegister(regidx++, Object::make((value >> 32) & 0xFFFFFFFF));
+				uint64_t value = static_cast<uint64_t>(args[argIndex++].j);
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
 				break;
 			}
 			case 'F':  // float
-				frame.setObjRegister(regidx++, Object::make(args[argIndex++].i));
+				frame.setObjRegister(regidx++, Object::make(std::bit_cast<uint32_t>(args[argIndex++].f)));
 				break;
+			case 'D':  // double
+			{
+				uint64_t value = std::bit_cast<uint64_t>(args[argIndex++].d);
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
+				break;
+			}
 			case 'L':  // object
 			case '[':  // array
 				frame.setObjRegister(regidx++, native::getObject(args[argIndex++].l));
@@ -937,36 +963,36 @@ jfloat NativeInterface::CallFloatMethod(JNIEnv *env, jobject obj, jmethodID meth
 	va_start(args, methodID);
 	const auto &result = __CallObjectMethod(env, obj, methodID, args);
 	va_end(args);
-	return (jfloat)result.getReturnValue();
+	return std::bit_cast<jfloat>(static_cast<uint32_t>(result.getReturnValue()));
 }
 jfloat NativeInterface::CallFloatMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	va_list args_copy;
 	va_copy(args_copy, args);
 	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
 	va_end(args_copy);
-	return (jfloat)result.getReturnValue();
+	return std::bit_cast<jfloat>(static_cast<uint32_t>(result.getReturnValue()));
 }
 jfloat NativeInterface::CallFloatMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
-	return (jfloat)result.getReturnValue();
+	return std::bit_cast<jfloat>(static_cast<uint32_t>(result.getReturnValue()));
 }
 jdouble NativeInterface::CallDoubleMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
 	va_start(args, methodID);
 	const auto &result = __CallObjectMethod(env, obj, methodID, args);
 	va_end(args);
-	return (jdouble)result.getReturnDoubleValue();
+	return std::bit_cast<jdouble>(static_cast<uint64_t>(result.getReturnDoubleValue()));
 }
 jdouble NativeInterface::CallDoubleMethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args) {
 	va_list args_copy;
 	va_copy(args_copy, args);
 	const auto &result = __CallObjectMethod(env, obj, methodID, args_copy);
 	va_end(args_copy);
-	return (jdouble)result.getReturnDoubleValue();
+	return std::bit_cast<jdouble>(static_cast<uint64_t>(result.getReturnDoubleValue()));
 }
 jdouble NativeInterface::CallDoubleMethodA(JNIEnv *env, jobject obj, jmethodID methodID, const jvalue *args) {
 	const auto &result = __CallObjectMethodA(env, obj, methodID, args);
-	return (jdouble)result.getReturnDoubleValue();
+	return std::bit_cast<jdouble>(static_cast<uint64_t>(result.getReturnDoubleValue()));
 }
 void NativeInterface::CallVoidMethod(JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
@@ -1202,7 +1228,7 @@ jfloat NativeInterface::GetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID
 		throw ClassCastException("GetFloatField: field is not float");
 	}
 	uint32_t value = jobj->getField(field.getName())->getValue();
-	return *(float *)&value;
+	return std::bit_cast<jfloat>(value);
 }
 
 jdouble NativeInterface::GetDoubleField(JNIEnv *env, jobject obj, jfieldID fieldID) {
@@ -1216,7 +1242,7 @@ jdouble NativeInterface::GetDoubleField(JNIEnv *env, jobject obj, jfieldID field
 		throw ClassCastException("GetDoubleField: field is not double");
 	}
 	uint64_t value = jobj->getField(field.getName())->getLongValue();
-	return *(double *)&value;
+	return std::bit_cast<jdouble>(value);
 }
 
 void NativeInterface::SetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID, jobject val) {
@@ -1317,7 +1343,7 @@ void NativeInterface::SetFloatField(JNIEnv *env, jobject obj, jfieldID fieldID, 
 	if (field.getType() != "F") {
 		throw ClassCastException("SetFloatField: field is not float");
 	}
-	uint32_t value = *((uint32_t *)&val);
+	uint32_t value = std::bit_cast<uint32_t>(val);
 	jobj->setField(field.getName(), Object::make(value));
 }
 
@@ -1331,7 +1357,7 @@ void NativeInterface::SetDoubleField(JNIEnv *env, jobject obj, jfieldID fieldID,
 	if (field.getType() != "D") {
 		throw ClassCastException("SetDoubleField: field is not double");
 	}
-	uint64_t value = *((uint64_t *)&val);
+	uint64_t value = std::bit_cast<uint64_t>(val);
 	jobj->setField(field.getName(), Object::make(value));
 }
 
@@ -1600,7 +1626,7 @@ jfloat NativeInterface::GetStaticFloatField(JNIEnv *env, jclass clazz, jfieldID 
 		throw ClassCastException("GetStaticFloatField: field is not static float");
 	}
 	uint32_t value = field.getIntValue();
-	return *(jfloat *)&value;
+	return std::bit_cast<jfloat>(value);
 }
 
 jdouble NativeInterface::GetStaticDoubleField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
@@ -1617,7 +1643,7 @@ jdouble NativeInterface::GetStaticDoubleField(JNIEnv *env, jclass clazz, jfieldI
 		throw ClassCastException("GetStaticDoubleField: field is not static double");
 	}
 	uint64_t value = field.getLongValue();
-	return *(jdouble *)&value;
+	return std::bit_cast<jdouble>(value);
 }
 
 void NativeInterface::SetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID, jobject value) {
@@ -1745,7 +1771,7 @@ void NativeInterface::SetStaticFloatField(JNIEnv *env, jclass clazz, jfieldID fi
 	if (!field.isStatic() || field.getType() != "F") {
 		throw ClassCastException("SetStaticFloatField: field is not static float");
 	}
-	uint32_t val = *((uint32_t *)&value);
+	uint32_t val = std::bit_cast<uint32_t>(value);
 	field.setIntValue(val);
 }
 
@@ -1762,7 +1788,7 @@ void NativeInterface::SetStaticDoubleField(JNIEnv *env, jclass clazz, jfieldID f
 	if (!field.isStatic() || field.getType() != "D") {
 		throw ClassCastException("SetStaticDoubleField: field is not static double");
 	}
-	uint64_t val = *((uint64_t *)&value);
+	uint64_t val = std::bit_cast<uint64_t>(value);
 	field.setLongValue(val);
 }
 
