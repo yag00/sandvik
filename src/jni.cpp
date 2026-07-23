@@ -55,6 +55,8 @@ namespace {
 		}
 		return method.getNbRegisters() - paramWords;
 	}
+
+	thread_local jthrowable pendingException = nullptr;
 }  // namespace
 
 SandvikVM::SandvikVM(Vm &vm_) : _vm(vm_) {
@@ -404,26 +406,50 @@ jobject NativeInterface::ToReflectedField(JNIEnv *env, jclass cls, jfieldID fiel
 }
 
 jint NativeInterface::Throw(JNIEnv *env, jthrowable obj) {
-	logger.fwarning("JNI Throw: throwing exception not implemented");
+	if (obj == nullptr) {
+		return JNI_ERR;
+	}
 	auto o = native::getObject(obj);
-	logger.fwarning("JNI Throw: throwing exception object {} not implemented", o->toString());
+	pendingException = obj;
+	logger.fwarning("JNI Throw: pending exception {}", o->toString());
 	return JNI_OK;
 }
 
 jint NativeInterface::ThrowNew(JNIEnv *env, jclass clazz, const char *msg) {
-	logger.fwarning("JNI ThrowNew: throwing exception not implemented");
+	if (clazz == nullptr) {
+		return JNI_ERR;
+	}
+	auto jenv = static_cast<NativeInterface *>(env);
 	auto clsObj = native::getObject(clazz);
-	logger.fwarning("JNI Throw: throwing exception object {}({}) not implemented", clsObj->toString(), msg ? msg : "null");
+	if (!clsObj->isClass()) {
+		throw ClassCastException("ThrowNew: clazz is not a class object");
+	}
+	auto &exClass = clsObj->getClass();
+	auto &classloader = jenv->getClassLoader();
+	auto &exceptionClass = classloader.getOrLoad(exClass.getFullname());
+	auto exceptionObject = Object::make(exceptionClass);
+	auto message = msg ? std::string(msg) : std::string();
+	if (message.empty()) {
+		exceptionObject->setField("detailMessage", Object::makeNull());
+	} else {
+		exceptionObject->setField("detailMessage", Object::make(classloader, message));
+	}
+	pendingException = (jthrowable)exceptionObject;
+	logger.fwarning("JNI ThrowNew: pending exception {}({})", exClass.getFullname(), msg ? msg : "null");
 	return JNI_OK;
 }
 jthrowable NativeInterface::ExceptionOccurred(JNIEnv *env) {
-	throw VmException("ExceptionOccurred not implemented");
+	return pendingException;
 }
 void NativeInterface::ExceptionDescribe(JNIEnv *env) {
-	throw VmException("ExceptionDescribe not implemented");
+	if (pendingException == nullptr) {
+		return;
+	}
+	auto obj = native::getObject(pendingException);
+	logger.fwarning("JNI ExceptionDescribe: {}", obj->toString());
 }
 void NativeInterface::ExceptionClear(JNIEnv *env) {
-	logger.fwarning("ExceptionClear not implemented");
+	pendingException = nullptr;
 }
 void NativeInterface::FatalError(JNIEnv *env, const char *msg) {
 	throw VmException("FatalError not implemented");
@@ -2464,8 +2490,7 @@ void NativeInterface::DeleteWeakGlobalRef(JNIEnv *env, jweak ref) {
 }
 
 jboolean NativeInterface::ExceptionCheck(JNIEnv *env) {
-	logger.fwarning("ExceptionCheck not implemented");
-	return JNI_FALSE;
+	return pendingException != nullptr ? JNI_TRUE : JNI_FALSE;
 }
 
 jobject NativeInterface::NewDirectByteBuffer(JNIEnv *env, void *address, jlong capacity) {
