@@ -85,12 +85,16 @@ jint SandvikVM::DestroyJavaVM(JavaVM *vm) {
 }
 
 jint SandvikVM::AttachCurrentThread(JavaVM *vm, void **penv, void *args) {
-	logger.fwarning("AttachCurrentThread called - not implemented");
+	if (penv == nullptr) {
+		return JNI_ERR;
+	}
+	auto sandvikVm = static_cast<SandvikVM *>(vm);
+	*penv = static_cast<void *>(sandvikVm->getVm().getJNIEnv());
 	return JNI_OK;
 }
 
 jint SandvikVM::DetachCurrentThread(JavaVM *vm) {
-	logger.fwarning("DetachCurrentThread called - not implemented");
+	// No-op: thread lifecycle is managed by the VM
 	return JNI_OK;
 }
 
@@ -108,8 +112,7 @@ jint SandvikVM::GetEnv(JavaVM *vm, void **penv, jint version) {
 }
 
 jint SandvikVM::AttachCurrentThreadAsDaemon(JavaVM *vm, void **penv, void *args) {
-	logger.fwarning("AttachCurrentThreadAsDaemon called - not implemented");
-	return JNI_ERR;
+	return AttachCurrentThread(vm, penv, args);
 }
 
 NativeInterface::NativeInterface(Vm &vm_) : _vm(vm_), _classloader(vm_.getClassLoader()) {
@@ -419,13 +422,13 @@ jint NativeInterface::ThrowNew(JNIEnv *env, jclass clazz, const char *msg) {
 	if (clazz == nullptr) {
 		return JNI_ERR;
 	}
-	auto jenv = static_cast<NativeInterface *>(env);
 	auto clsObj = native::getObject(clazz);
 	if (!clsObj->isClass()) {
 		throw ClassCastException("ThrowNew: clazz is not a class object");
 	}
+	auto *this_ptr = static_cast<NativeInterface *>(env);
+	auto &classloader = this_ptr->getClassLoader();
 	auto &exClass = clsObj->getClass();
-	auto &classloader = jenv->getClassLoader();
 	auto &exceptionClass = classloader.getOrLoad(exClass.getFullname());
 	auto exceptionObject = Object::make(exceptionClass);
 	auto message = msg ? std::string(msg) : std::string();
