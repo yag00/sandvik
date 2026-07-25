@@ -26,6 +26,7 @@
 #include <jni.hpp>
 #include <system/sharedlibrary.hpp>
 #include <system/logger.hpp>
+#include "common.hpp"
 
 using namespace sandvik;
 
@@ -37,6 +38,7 @@ TEST(JNI, JNI) {
 	FILE* file = freopen("test_jni.out", "w", stdout);
 	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
 
+	initializeVmRuntime(vm);
 	vm.loadRt();
 	vm.loadDex("../tests/java/jni/classes.dex");
 	vm.run("TestJNI", {});
