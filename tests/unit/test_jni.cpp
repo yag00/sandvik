@@ -1,52 +1,79 @@
-/*
- * This file is part of Sandvik project.
- * Copyright (C) 2025 Christophe Duvernois
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
-#include <string.h>
 #include <gtest/gtest.h>
-#include <fmt/core.h>
-#include <fmt/ostream.h>
-
+#include <fstream>
+#include <string>
 #include <vm.hpp>
 #include <classloader.hpp>
 #include <jni.hpp>
-#include <system/sharedlibrary.hpp>
 #include <system/logger.hpp>
 #include "common.hpp"
 
 using namespace sandvik;
 
-TEST(JNI, JNI) {
-	logger.setLevel(Logger::LogLevel::NONE);
-	Vm vm;
+class JNITestFixture : public ::testing::Test {
+protected:
+    Vm vm;
 
-	// Redirect stdout to output.txt
-	FILE* file = freopen("test_jni.out", "w", stdout);
-	ASSERT_NE(file, nullptr) << "Failed to redirect stdout";
+    void SetUp() override {
+        logger.setLevel(Logger::LogLevel::NONE);
+        initializeVmRuntime(vm);
+        vm.loadRt();
+        vm.loadDex("../tests/java/jni/classes.dex");
+    }
 
-	initializeVmRuntime(vm);
-	vm.loadRt();
-	vm.loadDex("../tests/java/jni/classes.dex");
-	vm.run("TestJNI", {});
+    void runJNITestClass(const std::string &className, const std::string &outFile) {
+        FILE* file = freopen(outFile.c_str(), "w", stdout);
+        ASSERT_NE(file, nullptr) << "Failed to redirect stdout for " << className;
 
-	// Compare output with reference file
-	std::ifstream outputFile("test_jni.out");
-	std::string actualOutput((std::istreambuf_iterator<char>(outputFile)), std::istreambuf_iterator<char>());
-	outputFile.close();
-	ASSERT_EQ(actualOutput, "ok\n") << "The actual output does not match the expected output.";
-	fclose(file);
+        vm.run(className, {});
+
+        fflush(stdout);
+        fclose(file);
+
+        // Verify Output
+        std::ifstream outputFile(outFile);
+        std::string actualOutput((std::istreambuf_iterator<char>(outputFile)), std::istreambuf_iterator<char>());
+        outputFile.close();
+
+        EXPECT_EQ(actualOutput, "ok\n") << "Test failed for class: " << className;
+    }
+};
+
+TEST_F(JNITestFixture, NativeHelloWorld) {
+    runJNITestClass("TestJNIHelloWorld", "test_jni_helloworld.out");
+}
+
+TEST_F(JNITestFixture, NativeStrings) {
+    runJNITestClass("TestJNIStrings", "test_jni_strings.out");
+}
+
+TEST_F(JNITestFixture, NativeTypes) {
+    runJNITestClass("TestJNITypes", "test_jni_types.out");
+}
+
+TEST_F(JNITestFixture, NativeFields) {
+    runJNITestClass("TestJNIFields", "test_jni_fields.out");
+}
+
+TEST_F(JNITestFixture, NativeMethods) {
+    runJNITestClass("TestJNIMethods", "test_jni_methods.out");
+}
+
+TEST_F(JNITestFixture, NativeObjects) {
+    runJNITestClass("TestJNIObjects", "test_jni_objects.out");
+}
+
+TEST_F(JNITestFixture, NativeArrays) {
+    runJNITestClass("TestJNIArrays", "test_jni_arrays.out");
+}
+
+TEST_F(JNITestFixture, NativeExceptions) {
+    runJNITestClass("TestJNIExceptions", "test_jni_exceptions.out");
+}
+
+TEST_F(JNITestFixture, NativeReferences) {
+    runJNITestClass("TestJNIRefs", "test_jni_refs.out");
+}
+
+TEST_F(JNITestFixture, NativeThreads) {
+    runJNITestClass("TestJNIThreads", "test_jni_threads.out");
 }
