@@ -3,6 +3,7 @@
 
 #include "jni_common.h"
 
+// Call<X>Method tests
 JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallObjectMethod(JNIEnv* env, jobject thiz, jobject target, jobject arg);
 JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallObjectMethodV(JNIEnv* env, jobject thiz, jobject target, jobject arg);
 JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallObjectMethodA(JNIEnv* env, jobject thiz, jobject target, jobject arg);
@@ -43,6 +44,7 @@ JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallVoidMethod(JNIEnv* env, job
 JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallVoidMethodV(JNIEnv* env, jobject thiz, jobject target, jint marker);
 JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallVoidMethodA(JNIEnv* env, jobject thiz, jobject target, jint marker);
 
+// CallNonVirtual<X>Method tests
 JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallNonvirtualObjectMethod(JNIEnv* env, jobject thiz, jobject target, jobject arg);
 JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallNonvirtualObjectMethodV(JNIEnv* env, jobject thiz, jobject target, jobject arg);
 JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallNonvirtualObjectMethodA(JNIEnv* env, jobject thiz, jobject target, jobject arg);
@@ -82,5 +84,47 @@ JNIEXPORT jdouble JNICALL Java_TestJNIMethods_nativeCallNonvirtualDoubleMethodA(
 JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallNonvirtualVoidMethod(JNIEnv* env, jobject thiz, jobject target, jint marker);
 JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallNonvirtualVoidMethodV(JNIEnv* env, jobject thiz, jobject target, jint marker);
 JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallNonvirtualVoidMethodA(JNIEnv* env, jobject thiz, jobject target, jint marker);
+
+// CallStatic<X>Method tests
+JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallStaticObjectMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jobject arg);
+JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallStaticObjectMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jobject arg);
+JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallStaticObjectMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jobject arg);
+
+JNIEXPORT jboolean JNICALL Java_TestJNIMethods_nativeCallStaticBooleanMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jboolean arg);
+JNIEXPORT jboolean JNICALL Java_TestJNIMethods_nativeCallStaticBooleanMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jboolean arg);
+JNIEXPORT jboolean JNICALL Java_TestJNIMethods_nativeCallStaticBooleanMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jboolean arg);
+
+JNIEXPORT jbyte JNICALL Java_TestJNIMethods_nativeCallStaticByteMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jbyte arg);
+JNIEXPORT jbyte JNICALL Java_TestJNIMethods_nativeCallStaticByteMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jbyte arg);
+JNIEXPORT jbyte JNICALL Java_TestJNIMethods_nativeCallStaticByteMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jbyte arg);
+
+JNIEXPORT jchar JNICALL Java_TestJNIMethods_nativeCallStaticCharMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jchar arg);
+JNIEXPORT jchar JNICALL Java_TestJNIMethods_nativeCallStaticCharMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jchar arg);
+JNIEXPORT jchar JNICALL Java_TestJNIMethods_nativeCallStaticCharMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jchar arg);
+
+JNIEXPORT jshort JNICALL Java_TestJNIMethods_nativeCallStaticShortMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jshort arg);
+JNIEXPORT jshort JNICALL Java_TestJNIMethods_nativeCallStaticShortMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jshort arg);
+JNIEXPORT jshort JNICALL Java_TestJNIMethods_nativeCallStaticShortMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jshort arg);
+
+JNIEXPORT jint JNICALL Java_TestJNIMethods_nativeCallStaticIntMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jint arg);
+JNIEXPORT jint JNICALL Java_TestJNIMethods_nativeCallStaticIntMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jint arg);
+JNIEXPORT jint JNICALL Java_TestJNIMethods_nativeCallStaticIntMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jint arg);
+
+JNIEXPORT jlong JNICALL Java_TestJNIMethods_nativeCallStaticLongMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jlong arg);
+JNIEXPORT jlong JNICALL Java_TestJNIMethods_nativeCallStaticLongMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jlong arg);
+JNIEXPORT jlong JNICALL Java_TestJNIMethods_nativeCallStaticLongMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jlong arg);
+
+JNIEXPORT jfloat JNICALL Java_TestJNIMethods_nativeCallStaticFloatMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jfloat arg);
+JNIEXPORT jfloat JNICALL Java_TestJNIMethods_nativeCallStaticFloatMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jfloat arg);
+JNIEXPORT jfloat JNICALL Java_TestJNIMethods_nativeCallStaticFloatMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jfloat arg);
+
+JNIEXPORT jdouble JNICALL Java_TestJNIMethods_nativeCallStaticDoubleMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jdouble arg);
+JNIEXPORT jdouble JNICALL Java_TestJNIMethods_nativeCallStaticDoubleMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jdouble arg);
+JNIEXPORT jdouble JNICALL Java_TestJNIMethods_nativeCallStaticDoubleMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jdouble arg);
+
+JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallStaticVoidMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jint arg);
+JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallStaticVoidMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jint arg);
+JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallStaticVoidMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jint arg);
+
 
 #endif

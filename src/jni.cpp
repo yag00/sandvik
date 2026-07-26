@@ -843,6 +843,77 @@ static JThread &invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jme
 	return thread;
 }
 
+template <typename ArgFetcher>
+static JThread &invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
+	if (clazz == nullptr) {
+		throw NullPointerException(fmt::format("{}: clazz cannot be null for static invocation", callerName));
+	}
+
+	auto jenv = static_cast<NativeInterface *>(env);
+	auto &vm = jenv->getVm();
+
+	auto clsObj = native::getObject(clazz);
+	if (!clsObj || !clsObj->isClass()) {
+		throw ClassCastException(fmt::format("{}: clazz is not a valid class object", callerName));
+	}
+	Class *cls = nullptr;
+	try {
+		cls = const_cast<Class *>(&clsObj->getClassType());
+	} catch (const std::bad_cast &) {
+		cls = &clsObj->getClass();
+	}
+	uint32_t methodKey = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(methodID));
+	if (!cls->hasMethod(methodKey)) {
+		throw NoSuchMethodException(fmt::format("{}: static methodID {} not found in class {}", callerName, (size_t)methodID, cls->getName()));
+	}
+	Method &method = cls->getMethod(methodKey);
+	if (!method.isStatic()) {
+		throw NoSuchMethodException(fmt::format("{}: method {} is not static in class {}", callerName, method.getName(), cls->getName()));
+	}
+
+	auto &thread = vm.newThread(fmt::format("{}.{}", cls->getFullname(), method.getName()));
+	auto &frame = thread.newFrame(method);
+	auto regidx = getIncomingRegisterStart(method, false);
+
+	for (const auto &arg : method.arguments()) {
+		switch (arg[0]) {
+			case 'Z':  // boolean
+			case 'B':  // byte
+			case 'C':  // char
+			case 'S':  // short
+			case 'I':  // int
+				frame.setObjRegister(regidx++, Object::make(fetchArg.getInt()));
+				break;
+			case 'J':  // long
+			{
+				uint64_t value = static_cast<uint64_t>(fetchArg.getLong());
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF)));
+				break;
+			}
+			case 'F':  // float
+				frame.setObjRegister(regidx++, Object::make(std::bit_cast<uint32_t>(fetchArg.getFloat())));
+				break;
+			case 'D':  // double
+			{
+				uint64_t bits = std::bit_cast<uint64_t>(fetchArg.getDouble());
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>(bits & 0xFFFFFFFF)));
+				frame.setObjRegister(regidx++, Object::make(static_cast<uint32_t>((bits >> 32) & 0xFFFFFFFF)));
+				break;
+			}
+			case 'L':  // object
+			case '[':  // array
+				frame.setObjRegister(regidx++, native::getObject(fetchArg.getObject()));
+				break;
+			default:
+				throw VmException(fmt::format("{}: unknown argument type '{}'", callerName, arg));
+		}
+	}
+
+	thread.run(true);
+	return thread;
+}
+
 // -----------------------------------------------------------------------------
 // JNI API Implementations
 // -----------------------------------------------------------------------------
@@ -1470,10 +1541,15 @@ jmethodID NativeInterface::GetStaticMethodID(JNIEnv *env, jclass clazz, const ch
 		throw NullPointerException("GetStaticMethodID: class, name, or sig is null");
 	}
 	try {
-		auto &cls = clsObj->getClass();
-		const auto &method = cls.getMethod(name, sig);
+		Class *cls = nullptr;
+		try {
+			cls = const_cast<Class *>(&clsObj->getClassType());
+		} catch (const std::bad_cast &) {
+			cls = &clsObj->getClass();
+		}
+		const auto &method = cls->getMethod(name, sig);
 		if (!method.isStatic()) {
-			throw NoSuchMethodException(fmt::format("GetStaticMethodID: method '{}' with signature '{}' is not static in class {}", name, sig, cls.getName()));
+			throw NoSuchMethodException(fmt::format("GetStaticMethodID: method '{}' with signature '{}' is not static in class {}", name, sig, cls->getName()));
 		}
 		return (jmethodID)(uintptr_t)method.getIndex();
 	} catch (const std::invalid_argument &) {
@@ -1482,103 +1558,190 @@ jmethodID NativeInterface::GetStaticMethodID(JNIEnv *env, jclass clazz, const ch
 }
 
 jobject NativeInterface::CallStaticObjectMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticObjectMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticObjectMethod", VaListFetcher{args});
+	va_end(args);
+	return (jobject)(result.getReturnObject());
 }
 jobject NativeInterface::CallStaticObjectMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticObjectMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticObjectMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return (jobject)(result.getReturnObject());
 }
 jobject NativeInterface::CallStaticObjectMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticObjectMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticObjectMethodA", JValueFetcher{args});
+	return (jobject)(result.getReturnObject());
 }
 
 jboolean NativeInterface::CallStaticBooleanMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticBooleanMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticBooleanMethod", VaListFetcher{args});
+	va_end(args);
+	return (jboolean)(result.getReturnValue());
 }
 jboolean NativeInterface::CallStaticBooleanMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticBooleanMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticBooleanMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return (jboolean)(result.getReturnValue());
 }
 jboolean NativeInterface::CallStaticBooleanMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticBooleanMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticBooleanMethodA", JValueFetcher{args});
+	return (jboolean)(result.getReturnValue());
 }
 
 jbyte NativeInterface::CallStaticByteMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticByteMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticByteMethod", VaListFetcher{args});
+	va_end(args);
+	return (jbyte)(result.getReturnValue());
 }
 jbyte NativeInterface::CallStaticByteMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticByteMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticByteMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return (jbyte)(result.getReturnValue());
 }
 jbyte NativeInterface::CallStaticByteMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticByteMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticByteMethodA", JValueFetcher{args});
+	return (jbyte)(result.getReturnValue());
 }
 
 jchar NativeInterface::CallStaticCharMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticCharMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticCharMethod", VaListFetcher{args});
+	va_end(args);
+	return (jchar)(result.getReturnValue());
 }
 jchar NativeInterface::CallStaticCharMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticCharMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticCharMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return (jchar)(result.getReturnValue());
 }
 jchar NativeInterface::CallStaticCharMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticCharMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticCharMethodA", JValueFetcher{args});
+	return (jchar)(result.getReturnValue());
 }
 
 jshort NativeInterface::CallStaticShortMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticShortMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticShortMethod", VaListFetcher{args});
+	va_end(args);
+	return (jshort)(result.getReturnValue());
 }
 jshort NativeInterface::CallStaticShortMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticShortMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticShortMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return (jshort)(result.getReturnValue());
 }
 jshort NativeInterface::CallStaticShortMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticShortMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticShortMethodA", JValueFetcher{args});
+	return (jshort)(result.getReturnValue());
 }
 
 jint NativeInterface::CallStaticIntMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticIntMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticIntMethod", VaListFetcher{args});
+	va_end(args);
+	return (jint)(result.getReturnValue());
 }
 jint NativeInterface::CallStaticIntMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticIntMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticIntMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return (jint)(result.getReturnValue());
 }
 jint NativeInterface::CallStaticIntMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticIntMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticIntMethodA", JValueFetcher{args});
+	return (jint)(result.getReturnValue());
 }
 
 jlong NativeInterface::CallStaticLongMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticLongMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticLongMethod", VaListFetcher{args});
+	va_end(args);
+	return (jlong)(result.getReturnDoubleValue());
 }
 jlong NativeInterface::CallStaticLongMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticLongMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticLongMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return (jlong)(result.getReturnDoubleValue());
 }
 jlong NativeInterface::CallStaticLongMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticLongMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticLongMethodA", JValueFetcher{args});
+	return (jlong)(result.getReturnDoubleValue());
 }
 
 jfloat NativeInterface::CallStaticFloatMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticFloatMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticFloatMethod", VaListFetcher{args});
+	va_end(args);
+	return std::bit_cast<jfloat>(static_cast<uint32_t>(result.getReturnValue()));
 }
 jfloat NativeInterface::CallStaticFloatMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticFloatMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticFloatMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return std::bit_cast<jfloat>(static_cast<uint32_t>(result.getReturnValue()));
 }
 jfloat NativeInterface::CallStaticFloatMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticFloatMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticFloatMethodA", JValueFetcher{args});
+	return std::bit_cast<jfloat>(static_cast<uint32_t>(result.getReturnValue()));
 }
 
 jdouble NativeInterface::CallStaticDoubleMethod(JNIEnv *env, jclass clazz, jmethodID methodID, ...) {
-	throw VmException("CallStaticDoubleMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticDoubleMethod", VaListFetcher{args});
+	va_end(args);
+	return std::bit_cast<jdouble>(static_cast<uint64_t>(result.getReturnDoubleValue()));
 }
 jdouble NativeInterface::CallStaticDoubleMethodV(JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticDoubleMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticDoubleMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
+	return std::bit_cast<jdouble>(static_cast<uint64_t>(result.getReturnDoubleValue()));
 }
 jdouble NativeInterface::CallStaticDoubleMethodA(JNIEnv *env, jclass clazz, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticDoubleMethodA not implemented");
+	const auto &result = invokeStaticMethodInternal(env, clazz, methodID, "CallStaticDoubleMethodA", JValueFetcher{args});
+	return std::bit_cast<jdouble>(static_cast<uint64_t>(result.getReturnDoubleValue()));
 }
 
 void NativeInterface::CallStaticVoidMethod(JNIEnv *env, jclass cls, jmethodID methodID, ...) {
-	throw VmException("CallStaticVoidMethod not implemented");
+	va_list args;
+	va_start(args, methodID);
+	invokeStaticMethodInternal(env, cls, methodID, "CallStaticVoidMethod", VaListFetcher{args});
+	va_end(args);
 }
 void NativeInterface::CallStaticVoidMethodV(JNIEnv *env, jclass cls, jmethodID methodID, va_list args) {
-	throw VmException("CallStaticVoidMethodV not implemented");
+	va_list args_copy;
+	va_copy(args_copy, args);
+	invokeStaticMethodInternal(env, cls, methodID, "CallStaticVoidMethodV", VaListFetcher{args_copy});
+	va_end(args_copy);
 }
 void NativeInterface::CallStaticVoidMethodA(JNIEnv *env, jclass cls, jmethodID methodID, const jvalue *args) {
-	throw VmException("CallStaticVoidMethodA not implemented");
+	invokeStaticMethodInternal(env, cls, methodID, "CallStaticVoidMethodA", JValueFetcher{args});
 }
 
 jfieldID NativeInterface::GetStaticFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {

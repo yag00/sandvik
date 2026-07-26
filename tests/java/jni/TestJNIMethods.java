@@ -86,6 +86,47 @@ public class TestJNIMethods extends BaseJNITest {
     public native void nativeCallNonvirtualVoidMethodV(CallTarget target, int marker);
     public native void nativeCallNonvirtualVoidMethodA(CallTarget target, int marker);
 
+    // CallStatic<X>Method tests
+    public static native Object nativeCallStaticObjectMethod(Class cls, Object arg);
+    public static native Object nativeCallStaticObjectMethodV(Class cls, Object arg);
+    public static native Object nativeCallStaticObjectMethodA(Class cls, Object arg);
+
+    public static native boolean nativeCallStaticBooleanMethod(Class cls, boolean v);
+    public static native boolean nativeCallStaticBooleanMethodV(Class cls, boolean v);
+    public static native boolean nativeCallStaticBooleanMethodA(Class cls, boolean v);
+
+    public static native byte nativeCallStaticByteMethod(Class cls, byte v);
+    public static native byte nativeCallStaticByteMethodV(Class cls, byte v);
+    public static native byte nativeCallStaticByteMethodA(Class cls, byte v);
+
+    public static native char nativeCallStaticCharMethod(Class cls, char v);
+    public static native char nativeCallStaticCharMethodV(Class cls, char v);
+    public static native char nativeCallStaticCharMethodA(Class cls, char v);
+
+    public static native short nativeCallStaticShortMethod(Class cls, short v);
+    public static native short nativeCallStaticShortMethodV(Class cls, short v);
+    public static native short nativeCallStaticShortMethodA(Class cls, short v);
+
+    public static native int nativeCallStaticIntMethod(Class cls, int v);
+    public static native int nativeCallStaticIntMethodV(Class cls, int v);
+    public static native int nativeCallStaticIntMethodA(Class cls, int v);
+
+    public static native long nativeCallStaticLongMethod(Class cls, long v);
+    public static native long nativeCallStaticLongMethodV(Class cls, long v);
+    public static native long nativeCallStaticLongMethodA(Class cls, long v);
+
+    public static native float nativeCallStaticFloatMethod(Class cls, float v);
+    public static native float nativeCallStaticFloatMethodV(Class cls, float v);
+    public static native float nativeCallStaticFloatMethodA(Class cls, float v);
+
+    public static native double nativeCallStaticDoubleMethod(Class cls, double v);
+    public static native double nativeCallStaticDoubleMethodV(Class cls, double v);
+    public static native double nativeCallStaticDoubleMethodA(Class cls, double v);
+
+    public static native void nativeCallStaticVoidMethod(Class cls, int marker);
+    public static native void nativeCallStaticVoidMethodV(Class cls, int marker);
+    public static native void nativeCallStaticVoidMethodA(Class cls, int marker);
+
     public void testCallMethods() {
         CallTarget t = new CallTarget();
         String s = "callObj";
@@ -182,10 +223,59 @@ public class TestJNIMethods extends BaseJNITest {
         assertEquals(57, t.voidMarker);
     }
 
+    public void testCallStaticMethods() {
+        Class<CallTarget> cls = CallTarget.class;
+        String s = "callObjStatic";
+
+        assertEquals(s, nativeCallStaticObjectMethod(cls, s));
+        assertEquals(s, nativeCallStaticObjectMethodV(cls, s));
+        assertEquals(s, nativeCallStaticObjectMethodA(cls, s));
+
+        assertEquals(true, nativeCallStaticBooleanMethod(cls, true));
+        assertEquals(true, nativeCallStaticBooleanMethodV(cls, true));
+        assertEquals(true, nativeCallStaticBooleanMethodA(cls, true));
+
+        assertEquals((byte)5, nativeCallStaticByteMethod(cls, (byte)5));
+        assertEquals((byte)5, nativeCallStaticByteMethodV(cls, (byte)5));
+        assertEquals((byte)5, nativeCallStaticByteMethodA(cls, (byte)5));
+
+        assertEquals('K', nativeCallStaticCharMethod(cls, 'K'));
+        assertEquals('K', nativeCallStaticCharMethodV(cls, 'K'));
+        assertEquals('K', nativeCallStaticCharMethodA(cls, 'K'));
+
+        assertEquals((short)123, nativeCallStaticShortMethod(cls, (short)123));
+        assertEquals((short)123, nativeCallStaticShortMethodV(cls, (short)123));
+        assertEquals((short)123, nativeCallStaticShortMethodA(cls, (short)123));
+
+        assertEquals(777, nativeCallStaticIntMethod(cls, 777));
+        assertEquals(777, nativeCallStaticIntMethodV(cls, 777));
+        assertEquals(777, nativeCallStaticIntMethodA(cls, 777));
+
+        assertEquals(1234567890123L, nativeCallStaticLongMethod(cls, 1234567890123L));
+        assertEquals(1234567890123L, nativeCallStaticLongMethodV(cls, 1234567890123L));
+        assertEquals(1234567890123L, nativeCallStaticLongMethodA(cls, 1234567890123L));
+
+        assertEquals(3.14f, nativeCallStaticFloatMethod(cls, 3.14f));
+        assertEquals(3.14f, nativeCallStaticFloatMethodV(cls, 3.14f));
+        assertEquals(3.14f, nativeCallStaticFloatMethodA(cls, 3.14f));
+
+        assertEquals(6.28, nativeCallStaticDoubleMethod(cls, 6.28));
+        assertEquals(6.28, nativeCallStaticDoubleMethodV(cls, 6.28));
+        assertEquals(6.28, nativeCallStaticDoubleMethodA(cls, 6.28));
+
+        nativeCallStaticVoidMethod(cls, 99);
+        assertEquals(99, CallTarget.staticVoidMarker);
+        nativeCallStaticVoidMethodV(cls, 100);
+        assertEquals(100, CallTarget.staticVoidMarker);
+        nativeCallStaticVoidMethodA(cls, 101);
+        assertEquals(101, CallTarget.staticVoidMarker);
+    }
+
     public static void main(String[] args) {
         TestJNIMethods test = new TestJNIMethods();
         test.testCallMethods();
         test.testCallNonvirtualMethods();
+        test.testCallStaticMethods();
         System.out.println(test.getSuccess() ? "ok" : "fail");
     }
 }

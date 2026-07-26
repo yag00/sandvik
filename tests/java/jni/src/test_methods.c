@@ -1,5 +1,6 @@
 #include "test_methods.h"
 
+// Call<X>Method tests
 // Object
 static jobject callObjectMethodV_helper(JNIEnv* env, jobject obj, jmethodID mid, ...) {
     va_list ap;
@@ -306,6 +307,7 @@ JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallVoidMethodA(JNIEnv* env, jo
     (*env)->DeleteLocalRef(env, cls);
 }
 
+// CallNonvirtual<X>Method tests
 // Object
 static jobject callNonvirtualObjectMethodV_helper(JNIEnv* env, jobject obj, jmethodID mid, ...) {
     va_list ap;
@@ -610,4 +612,251 @@ JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallNonvirtualVoidMethodA(JNIEn
     jvalue a[1]; a[0].i = marker;
     (*env)->CallNonvirtualVoidMethodA(env, target, cls, mid, a);
     (*env)->DeleteLocalRef(env, cls);
+}
+
+// CallStatic<X>Method tests
+// Object
+static jobject callStaticObjectMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jobject res = (*env)->CallStaticObjectMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallStaticObjectMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jobject arg) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityObject", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jobject res = (*env)->CallStaticObjectMethod(env, targetClass, mid, arg);
+    return res;
+}
+JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallStaticObjectMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jobject arg) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityObject", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jobject res = callStaticObjectMethodV_helper(env, targetClass, mid, arg);
+    return res;
+}
+JNIEXPORT jobject JNICALL Java_TestJNIMethods_nativeCallStaticObjectMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jobject arg) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityObject", "(Ljava/lang/Object;)Ljava/lang/Object;");
+    jvalue a[1]; a[0].l = arg;
+    jobject res = (*env)->CallStaticObjectMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Boolean
+static jboolean callStaticBooleanMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jboolean res = (*env)->CallStaticBooleanMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jboolean JNICALL Java_TestJNIMethods_nativeCallStaticBooleanMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jboolean v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityBoolean", "(Z)Z");
+    jboolean res = (*env)->CallStaticBooleanMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jboolean JNICALL Java_TestJNIMethods_nativeCallStaticBooleanMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jboolean v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityBoolean", "(Z)Z");
+    jboolean res = callStaticBooleanMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jboolean JNICALL Java_TestJNIMethods_nativeCallStaticBooleanMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jboolean v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityBoolean", "(Z)Z");
+    jvalue a[1]; a[0].z = v;
+    jboolean res = (*env)->CallStaticBooleanMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Byte
+static jbyte callStaticByteMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jbyte res = (*env)->CallStaticByteMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jbyte JNICALL Java_TestJNIMethods_nativeCallStaticByteMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jbyte v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityByte", "(B)B");
+    jbyte res = (*env)->CallStaticByteMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jbyte JNICALL Java_TestJNIMethods_nativeCallStaticByteMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jbyte v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityByte", "(B)B");
+    jbyte res = callStaticByteMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jbyte JNICALL Java_TestJNIMethods_nativeCallStaticByteMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jbyte v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityByte", "(B)B");
+    jvalue a[1]; a[0].b = v;
+    jbyte res = (*env)->CallStaticByteMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Char
+static jchar callStaticCharMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jchar res = (*env)->CallStaticCharMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jchar JNICALL Java_TestJNIMethods_nativeCallStaticCharMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jchar v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityChar", "(C)C");
+    jchar res = (*env)->CallStaticCharMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jchar JNICALL Java_TestJNIMethods_nativeCallStaticCharMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jchar v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityChar", "(C)C");
+    jchar res = callStaticCharMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jchar JNICALL Java_TestJNIMethods_nativeCallStaticCharMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jchar v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityChar", "(C)C");
+    jvalue a[1]; a[0].c = v;
+    jchar res = (*env)->CallStaticCharMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Short
+static jshort callStaticShortMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jshort res = (*env)->CallStaticShortMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jshort JNICALL Java_TestJNIMethods_nativeCallStaticShortMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jshort v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityShort", "(S)S");
+    jshort res = (*env)->CallStaticShortMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jshort JNICALL Java_TestJNIMethods_nativeCallStaticShortMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jshort v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityShort", "(S)S");
+    jshort res = callStaticShortMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jshort JNICALL Java_TestJNIMethods_nativeCallStaticShortMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jshort v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityShort", "(S)S");
+    jvalue a[1]; a[0].s = v;
+    jshort res = (*env)->CallStaticShortMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Int
+static jint callStaticIntMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jint res = (*env)->CallStaticIntMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jint JNICALL Java_TestJNIMethods_nativeCallStaticIntMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jint v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityInt", "(I)I");
+    jint res = (*env)->CallStaticIntMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jint JNICALL Java_TestJNIMethods_nativeCallStaticIntMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jint v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityInt", "(I)I");
+    jint res = callStaticIntMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jint JNICALL Java_TestJNIMethods_nativeCallStaticIntMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jint v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityInt", "(I)I");
+    jvalue a[1]; a[0].i = v;
+    jint res = (*env)->CallStaticIntMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Long
+static jlong callStaticLongMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jlong res = (*env)->CallStaticLongMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jlong JNICALL Java_TestJNIMethods_nativeCallStaticLongMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jlong v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityLong", "(J)J");
+    jlong res = (*env)->CallStaticLongMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jlong JNICALL Java_TestJNIMethods_nativeCallStaticLongMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jlong v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityLong", "(J)J");
+    jlong res = callStaticLongMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jlong JNICALL Java_TestJNIMethods_nativeCallStaticLongMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jlong v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityLong", "(J)J");
+    jvalue a[1]; a[0].j = v;
+    jlong res = (*env)->CallStaticLongMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Float
+static jfloat callStaticFloatMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jfloat res = (*env)->CallStaticFloatMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jfloat JNICALL Java_TestJNIMethods_nativeCallStaticFloatMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jfloat v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityFloat", "(F)F");
+    jfloat res = (*env)->CallStaticFloatMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jfloat JNICALL Java_TestJNIMethods_nativeCallStaticFloatMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jfloat v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityFloat", "(F)F");
+    jfloat res = callStaticFloatMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jfloat JNICALL Java_TestJNIMethods_nativeCallStaticFloatMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jfloat v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityFloat", "(F)F");
+    jvalue a[1]; a[0].f = v;
+    jfloat res = (*env)->CallStaticFloatMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Double
+static jdouble callStaticDoubleMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    jdouble res = (*env)->CallStaticDoubleMethodV(env, cls, mid, ap);
+    va_end(ap);
+    return res;
+}
+JNIEXPORT jdouble JNICALL Java_TestJNIMethods_nativeCallStaticDoubleMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jdouble v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityDouble", "(D)D");
+    jdouble res = (*env)->CallStaticDoubleMethod(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jdouble JNICALL Java_TestJNIMethods_nativeCallStaticDoubleMethodV(JNIEnv*env, jclass callerClass, jclass targetClass, jdouble v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityDouble", "(D)D");
+    jdouble res = callStaticDoubleMethodV_helper(env, targetClass, mid, v);
+    return res;
+}
+JNIEXPORT jdouble JNICALL Java_TestJNIMethods_nativeCallStaticDoubleMethodA(JNIEnv*env, jclass callerClass, jclass targetClass, jdouble v) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityDouble", "(D)D");
+    jvalue a[1]; a[0].d = v;
+    jdouble res = (*env)->CallStaticDoubleMethodA(env, targetClass, mid, a);
+    return res;
+}
+
+// Void
+static void callStaticVoidMethodV_helper(JNIEnv* env, jclass cls, jmethodID mid, ...) {
+    va_list ap;
+    va_start(ap, mid);
+    (*env)->CallStaticVoidMethodV(env, cls, mid, ap);
+    va_end(ap);
+}
+JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallStaticVoidMethod(JNIEnv* env, jclass callerClass, jclass targetClass, jint marker) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityVoid", "(I)V");
+    (*env)->CallStaticVoidMethod(env, targetClass, mid, marker);
+}
+JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallStaticVoidMethodV(JNIEnv* env, jclass callerClass, jclass targetClass, jint marker) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityVoid", "(I)V");
+    callStaticVoidMethodV_helper(env, targetClass, mid, marker);
+}
+JNIEXPORT void JNICALL Java_TestJNIMethods_nativeCallStaticVoidMethodA(JNIEnv* env, jclass callerClass, jclass targetClass, jint marker) {
+    jmethodID mid = (*env)->GetStaticMethodID(env, targetClass, "staticIdentityVoid", "(I)V");
+    jvalue a[1]; a[0].i = marker;
+    (*env)->CallStaticVoidMethodA(env, targetClass, mid, a);
 }
