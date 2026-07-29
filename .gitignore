@@ -1,8 +1,12 @@
+.vscode/
+
 .lock*
 .waf3*
-wbuild
-delivery
-ext
+
+wbuild/
+delivery/
+ext/
+
 **/*.pyc
-__pycache__
 **/*.class
+__pycache__/
