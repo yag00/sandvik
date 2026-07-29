@@ -291,10 +291,12 @@ bool Class::hasField(const std::string& name_) const {
 }
 
 bool Class::hasField(uint32_t idx_) const {
-	if (idx_ >= _fields.size()) {
-		return false;
+	for (const auto& [name, field] : _fields) {
+		if (field->getIndex() == idx_) {
+			return true;
+		}
 	}
-	return true;
+	return false;
 }
 
 Field& Class::getField(const std::string& name_) const {
@@ -306,12 +308,12 @@ Field& Class::getField(const std::string& name_) const {
 }
 
 Field& Class::getField(uint32_t idx_) const {
-	if (idx_ >= _fields.size()) {
-		throw std::out_of_range(fmt::format("Field index out of range: {}", idx_));
+	for (const auto& [name, field] : _fields) {
+		if (field->getIndex() == idx_) {
+			return *field;
+		}
 	}
-	auto it = _fields.begin();
-	std::advance(it, idx_);
-	return *(it->second);
+	throw std::out_of_range(fmt::format("Field index not found: {}", idx_));
 }
 
 std::vector<std::string> Class::getFieldList() const {
