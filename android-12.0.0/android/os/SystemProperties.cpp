@@ -43,6 +43,9 @@ extern "C" {
 		if (keyStr == "ro.product.cpu.abi") {
 			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), std::string("x86_64"));
 		}
+		if (keyStr == "ro.build.date.utc") {
+			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), std::string("1735689600"));
+		}
 		logger.fwarning("SystemProperties.native_getString called with key: {}, returning default value", keyStr);
 		return def;
 	}
