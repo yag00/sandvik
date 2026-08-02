@@ -25,9 +25,8 @@
 
 extern "C" {
 
-	// Resolves a system property key with a Java-provided default fallback.
-	JNIEXPORT jstring JNICALL Java_android_os_SystemProperties_native_get__Ljava_lang_String_2Ljava_lang_String_2(JNIEnv* env, jclass clazz, jstring key,
-	                                                                                                              jstring def) {
+	// Resolves a String system property key with a Java-provided default fallback.
+	JNIEXPORT jstring JNICALL Java_android_os_SystemProperties_native_get__Ljava_lang_String_2Ljava_lang_String_2(JNIEnv* env, jclass clazz, jstring key, jstring def) {
 		(void)env;
 		(void)clazz;
 
@@ -44,10 +43,11 @@ extern "C" {
 		if (keyStr == "ro.product.cpu.abi") {
 			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), std::string("x86_64"));
 		}
-		logger.fwarning("SystemProperties.native_get called with key: {}, returning default value", keyStr);
+		logger.fwarning("SystemProperties.native_getString called with key: {}, returning default value", keyStr);
 		return def;
 	}
 
+	// Resolves an Integer system property key with a Java-provided default fallback.
 	JNIEXPORT jint JNICALL Java_android_os_SystemProperties_native_get_int__Ljava_lang_String_2I(JNIEnv* env, jclass clazz, jstring key, jint def) {
 		(void)env;
 		(void)clazz;
@@ -56,9 +56,11 @@ extern "C" {
 		if (keyStr == "ro.hw_timeout_multiplier") {
 			return (jint)4;
 		}
+		logger.fwarning("SystemProperties.native_getInt called with key: {}, returning default value", keyStr);
 		return def;
 	}
 
+	// Resolves a Boolean system property key with a Java-provided default fallback.
 	JNIEXPORT jboolean JNICALL Java_android_os_SystemProperties_native_get_boolean__Ljava_lang_String_2Z(JNIEnv* env, jclass clazz, jstring key, jboolean def) {
 		(void)env;
 		(void)clazz;
@@ -67,6 +69,7 @@ extern "C" {
 		if (keyStr == "ro.treble.enabled") {
 			return (jboolean) true;
 		}
+		logger.fwarning("SystemProperties.native_getBoolean called with key: {}, returning default value", keyStr);
 		return def;
 	}
 
