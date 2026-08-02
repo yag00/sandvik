@@ -32,4 +32,14 @@ extern "C" {
 		return static_cast<jlong>(ts.tv_sec) * 1000LL + static_cast<jlong>(ts.tv_nsec / 1000000LL);
 	}
 
+	// Returns monotonic uptime in milliseconds used by framework boot timing.
+	JNIEXPORT jlong JNICALL Java_android_os_SystemClock_uptimeMillis(JNIEnv* env, jclass clazz) {
+		(void)env;
+		(void)clazz;
+
+		timespec ts{};
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		return static_cast<jlong>(ts.tv_sec) * 1000LL + static_cast<jlong>(ts.tv_nsec / 1000000LL);
+	}
+
 }  // extern "C"
