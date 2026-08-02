@@ -24,21 +24,24 @@ It is a work in progress, aiming to become a full-featured Dalvik Virtual Machin
 ### Installation
 
 1. Build the project:
-	```bash
-	./waf configure
-	./waf build
-	./waf install
-	```
+
+   ```bash
+   ./waf configure
+   ./waf build
+   ./waf install
+   ```
 
 2. Run the tests:
-	```bash
-	./waf --tests
-	```
+
+   ```bash
+   ./waf --tests
+   ```
 
 3. Run the VM:
-	```bash
-	./sandvik
-	```
+
+   ```bash
+   ./sandvik
+   ```
 
 ## Usage
 
@@ -49,65 +52,69 @@ Sandvik can be used to run Dalvik bytecode files (`.dex`) or Android application
 ```
 
 ### Options
+
 - `-h, --help`
-	Display available options.
+  Display available options.
 
 - `--version`
-	Display the version of this program.
+  Display the version of this program.
 
 - `--log=[level]`
-	Set the log level. Available levels: `NONE`, `DEBUG`, `INFO`, `WARN`, `ERROR`.
+  Set the log level. Available levels: `NONE`, `DEBUG`, `INFO`, `WARN`, `ERROR`.
 
 - `--logfile=[logfile]`
-	Set the log output file.
+  Set the log output file.
 
 - `--no-console`
-	Disable console output.
+  Disable console output.
 
 - `-i, --instructions`
-	Enable instruction trace (prints per-instruction VM execution details).
+  Enable instruction trace (prints per-instruction VM execution details).
 
 - `-c, --calltrace`
-	Enable call trace (prints method entry/exit and call details).
+  Enable call trace (prints method entry/exit and call details).
 
 - `--dex=[file]`
-	Specify the DEX file to load.
+  Specify the DEX file to load.
 
 - `--apk=[file]`
-	Specify the APK file to load.
+  Specify the APK file to load.
 
 - `--jar=[file]`
-	Specify the Jar files to load.
+  Specify the Jar files to load.
 
 - `--main=[classname]`
-	Specify the main class to run.
+  Specify the main class to run.
 
 - `--runtime=[runtime]`
-	Specify path to override the default Java runtime.
+  Specify path to override the default Java runtime.
 
 - `args...`
-	Positional arguments for the Java program.
+  Positional arguments for the Java program.
 
 - `"--"`
-	Can be used to terminate flag options and force all following arguments to be treated as positional options.
+  Can be used to terminate flag options and force all following arguments to be treated as positional options.
 
 ### Examples
 
 To run the `HelloWorld` Java program:
 
 1. Compile the Java source file:
-	```bash
-	javac HelloWorld.java
-	```
+
+   ```bash
+   javac HelloWorld.java
+   ```
 
 2. Convert the compiled `.class` file to Dalvik bytecode using the `d8` tool:
-	```bash
-	d8 HelloWorld.class
-	```
+
+   ```bash
+   d8 HelloWorld.class
+   ```
 
 3. Run the generated `classes.dex` file with Sandvik:
 
 This will execute the `HelloWorld` class from the specified DEX file, showcasing the VM's ability to interpret and run Dalvik bytecode. The output should display the expected behavior of the test program, such as printing "Hello, World!" to the console:
+
 ```bash
 ./wbuild/sandvik --log=NONE --jar android-12.0.0-bin/core-oj.dex.jar --jar android-12.0.0-bin/core-libart.dex.jar --jar android-12.0.0-bin/icu-stubs.dex.jar --dex tests/java/hello/classes.dex --main HelloWorld
 [+]  === sandvik 1.0.0 ===
