@@ -48,4 +48,26 @@ extern "C" {
 		return def;
 	}
 
+	JNIEXPORT jint JNICALL Java_android_os_SystemProperties_native_get_int__Ljava_lang_String_2I(JNIEnv* env, jclass clazz, jstring key, jint def) {
+		(void)env;
+		(void)clazz;
+
+		auto keyStr = sandvik::native::getString(key)->str();
+		if (keyStr == "ro.hw_timeout_multiplier") {
+			return (jint)4;
+		}
+		return def;
+	}
+
+	JNIEXPORT jboolean JNICALL Java_android_os_SystemProperties_native_get_boolean__Ljava_lang_String_2Z(JNIEnv* env, jclass clazz, jstring key, jboolean def) {
+		(void)env;
+		(void)clazz;
+
+		auto keyStr = sandvik::native::getString(key)->str();
+		if (keyStr == "ro.treble.enabled") {
+			return (jboolean) true;
+		}
+		return def;
+	}
+
 }  // extern "C"
