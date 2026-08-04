@@ -963,8 +963,32 @@ void Interpreter::filled_new_array(const uint8_t* operand_) {
 }
 // filled-new-array/range {vCCCC .. vNNNN}, type@BBBB
 void Interpreter::filled_new_array_range(const uint8_t* operand_) {
-	// We have not found Java code generating this instruction yet due to recent d8 compiler.
-	throw VmException("filled_new_array_range not implemented");
+	// NOT TESTED: We have not found Java code generating this instruction yet due to recent d8 compiler.
+	const uint8_t count = operand_[0];
+	const uint16_t typeIndex = *reinterpret_cast<const uint16_t*>(&operand_[1]);
+	const uint16_t startReg = *reinterpret_cast<const uint16_t*>(&operand_[3]);
+
+	auto& frame = _rt.currentFrame();
+	auto& classloader = _rt.getClassLoader();
+
+	auto arrayType = classloader.resolveArray(frame.getDexIdx(), typeIndex);
+	if (arrayType.empty()) {
+		throw VmException("filled-new-array/range: cannot resolve array type for index {}", typeIndex);
+	}
+
+	std::vector<ObjectRef> args;
+	args.reserve(count);
+	for (uint8_t i = 0; i < count; ++i) {
+		args.push_back(frame.getObjRegister(startReg + i));
+	}
+
+	const auto& compClass = classloader.getOrLoad(arrayType[0].first);
+	auto array = Array::make(compClass, count);
+	for (uint8_t i = 0; i < args.size(); ++i) {
+		array->setElement(i, args[i]);
+	}
+	frame.setReturnObject(array);
+	frame.pc() += 5;
 }
 // fill-array-data vAA, +BBBBBBBB
 void Interpreter::fill_array_data(const uint8_t* operand_) {
