@@ -97,6 +97,10 @@ std::string ClassLoader::getClassPath() const {
 	return oss.str();
 }
 
+const std::vector<std::string>& ClassLoader::getClassPathEntries() const {
+	return _classpath;
+}
+
 std::string ClassLoader::getMainActivity() const {
 	for (const auto& apk : _apks) {
 		if (!apk->getMainActivity().empty()) {
@@ -119,6 +123,16 @@ Class& ClassLoader::getMainActivityClass() {
 void ClassLoader::addClass(std::unique_ptr<Class> class_) {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	_classes[class_->getFullname()] = std::move(class_);
+}
+
+bool ClassLoader::isLoaded(const std::string& classname_) const {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	auto normalized = classname_;
+	if (normalized.size() > 2 && normalized.front() == 'L' && normalized.back() == ';') {
+		normalized = normalized.substr(1, normalized.size() - 2);
+	}
+	std::replace(normalized.begin(), normalized.end(), '/', '.');
+	return _classes.find(normalized) != _classes.end();
 }
 
 Class& ClassLoader::getOrLoad(const std::string& classname_) {

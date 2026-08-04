@@ -61,6 +61,10 @@ namespace sandvik {
 			 * @return classpath string
 			 */
 			std::string getClassPath() const;
+			/** @brief Gets the boot classpath entries.
+			 * @return Vector of classpath entries.
+			 */
+			const std::vector<std::string>& getClassPathEntries() const;
 			/** @brief Get main activity class name
 			 * @return main activity class name
 			 */
@@ -69,13 +73,16 @@ namespace sandvik {
 			 * @return reference to main activity class
 			 */
 			Class& getMainActivityClass();
-
+			/** @brief Check if class is loaded
+			 * @param classname_ class name
+			 * @return true if class is loaded, false otherwise
+			 */
+			bool isLoaded(const std::string& classname_) const;
 			/** @brief Get or load class by name
 			 * @param classname_ class name
 			 * @return reference to class
 			 */
 			Class& getOrLoad(const std::string& classname_);
-
 			/** @brief Resolve method by dex and index
 			 * @param dex_ dex index
 			 * @param idx_ method index
@@ -150,7 +157,6 @@ namespace sandvik {
 			 * @return dex index
 			 */
 			uint64_t getDexIndex(const Dex& dex_) const;
-
 			/** Visit outgoing references
 			 * @param visitor_ function to call for each referenced object
 			 */
