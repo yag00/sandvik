@@ -161,7 +161,6 @@ namespace sandvik {
 
 			std::unique_ptr<NativeInterface> _jnienv;
 			std::map<std::string, std::string, std::less<>> _properties;
-			bool _isPrimitiveClassInitialized = false;
 			std::atomic<bool> _isRunning{false};
 
 			mutable std::mutex _mutex;

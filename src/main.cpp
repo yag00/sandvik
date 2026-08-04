@@ -51,7 +51,6 @@ int main(int argc, char** argv) {
 	args::ValueFlagList<std::string> jarFiles(parser, "file", "Specify the Jar files to load", {"jar"});
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
-	args::ValueFlag<std::string> runTime(parser, "runtime", "Specify path to override the default java runtime", {"runtime"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
 
 	try {
@@ -119,8 +118,6 @@ int main(int argc, char** argv) {
 	}
 
 	Vm vm;
-	// load runtime
-	vm.loadRt(args::get(runTime));
 	// load dex files
 	for (const auto& dexFile : args::get(dexFiles)) {
 		vm.loadDex(dexFile);
