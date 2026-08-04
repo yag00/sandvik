@@ -304,6 +304,9 @@ bool Class::hasField(uint32_t idx_) const {
 			return true;
 		}
 	}
+	if (hasSuperClass()) {
+		return getSuperClass().hasField(idx_);
+	}
 	return false;
 }
 
@@ -320,6 +323,9 @@ Field& Class::getField(uint32_t idx_) const {
 		if (field->getIndex() == idx_) {
 			return *field;
 		}
+	}
+	if (hasSuperClass()) {
+		return getSuperClass().getField(idx_);
 	}
 	throw std::out_of_range(fmt::format("Field index not found: {}", idx_));
 }

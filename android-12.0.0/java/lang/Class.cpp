@@ -125,7 +125,7 @@ extern "C" {
 		auto& fieldTypeClass = classloader.getOrLoad(field.getType());
 		fieldObj->setField("type", Object::makeConstClass(classloader, fieldTypeClass));
 		fieldObj->setField("accessFlags", Object::make((uint64_t)field.getAccessFlags()));
-		fieldObj->setField("offset", Object::make((uint64_t)clazz.getFieldOffset(field.getName())));
+		fieldObj->setField("offset", Object::make((uint64_t)field.getIndex()));
 		return (jobject)fieldObj;
 	}
 

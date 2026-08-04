@@ -49,7 +49,7 @@ extern "C" {
 		return 1;
 	}
 
-	JNIEXPORT jboolean JNICALL Java_sun_misc_Unsafe_compareAndSwapInt(JNIEnv*, jobject, jobject obj, jlong offset, jint expected, jint newValue) {
+	JNIEXPORT jboolean JNICALL Java_sun_misc_Unsafe_compareAndSwapInt(JNIEnv*, jobject thiz, jobject obj, jlong offset, jint expected, jint newValue) {
 		auto object = sandvik::native::getObject(obj);
 		size_t index = static_cast<size_t>(offset);
 		if (object->isArray()) {
