@@ -52,6 +52,15 @@ JNIEXPORT void JNICALL Java_java_lang_ref_Reference_getReferent(JNIEnv* env, job
 		}
 	}
 
+	JNIEXPORT jobject JNICALL Java_java_lang_ref_Reference_getReferent(JNIEnv* env, jobject refObj) {
+		try {
+			auto ref = sandvik::native::getObject(refObj);
+			return (jobject)ref->getField("referent");
+		} catch (...) {
+			return nullptr;
+		}
+	}
+
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_ref_Reference_clearReferent(JNIEnv* env, jobject obj) {
     logger.fwarning("{} not implemented!", __FUNCTION__);
