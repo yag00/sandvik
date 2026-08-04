@@ -89,7 +89,13 @@ extern "C" {
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredClasses(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getDeclaredClasses not implemented!");
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+		// TODO: getDeclaredClasses() nécessite de parser les annotations InnerClass/EnclosingClass/MemberClasses du DEX (non stockées actuellement dans
+		// LIEF/Class). Stub temporaire : retourne un tableau vide en attendant.
+		auto& classArrayType = classloader.getOrLoad("java/lang/Class");
+		auto array = Array::make(classArrayType, 0u);
+		return (jobjectArray)array;
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredFields(JNIEnv* env, jobject obj) {
