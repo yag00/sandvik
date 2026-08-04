@@ -124,11 +124,27 @@ extern "C" {
 		}
 	}
 
-#if 0
-JNIEXPORT void JNICALL Java_sun_misc_Unsafe_getIntVolatile(JNIEnv* env, jobject obj) {
-	logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jint JNICALL Java_sun_misc_Unsafe_getIntVolatile(JNIEnv*, jobject, jobject obj, jlong offset) {
+		auto object = sandvik::native::getObject(obj);
+		size_t index = static_cast<size_t>(offset);
+		if (object->isArray()) {
+			auto array = static_cast<ArrayRef>(object);
+			if (index >= array->getArrayLength()) {
+				throw ArrayIndexOutOfBoundsException("getIntVolatile: index out of bounds");
+			}
+			auto val = array->getElement(index);
+			if (!val->isNumberObject()) {
+				throw VmException("getIntVolatile: array element is not a number object");
+			}
+			return val->getValue();
+		} else {
+			auto val = object->getField(index);
+			if (!val->isNumberObject()) {
+				throw VmException("getIntVolatile: field is not a number object");
+			}
+			return val->getValue();
+		}
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_sun_misc_Unsafe_putIntVolatile(JNIEnv* env, jobject obj) {
