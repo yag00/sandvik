@@ -32,9 +32,6 @@ Object* native::getObject(jobject jobj) {
 	if (ptr == nullptr) {
 		throw NullPointerException("null object");
 	}
-	if (ptr->isNull()) {
-		return Object::makeNull();
-	}
 	return ptr;
 }
 

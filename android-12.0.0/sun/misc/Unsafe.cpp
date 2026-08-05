@@ -51,6 +51,9 @@ extern "C" {
 
 	JNIEXPORT jboolean JNICALL Java_sun_misc_Unsafe_compareAndSwapInt(JNIEnv*, jobject thiz, jobject obj, jlong offset, jint expected, jint newValue) {
 		auto object = sandvik::native::getObject(obj);
+		if (object->isNull()) {
+			throw NullPointerException("null object");
+		}
 		size_t index = static_cast<size_t>(offset);
 		if (object->isArray()) {
 			auto array = static_cast<ArrayRef>(object);
@@ -73,6 +76,9 @@ extern "C" {
 
 	JNIEXPORT jboolean JNICALL Java_sun_misc_Unsafe_compareAndSwapLong(JNIEnv*, jobject, jobject obj, jlong offset, jlong expected, jlong newValue) {
 		auto object = sandvik::native::getObject(obj);
+		if (object->isNull()) {
+			throw NullPointerException("null object");
+		}
 		size_t index = static_cast<size_t>(offset);
 		if (object->isArray()) {
 			auto array = static_cast<ArrayRef>(object);
@@ -95,13 +101,26 @@ extern "C" {
 
 	JNIEXPORT jboolean JNICALL Java_sun_misc_Unsafe_compareAndSwapObject(JNIEnv*, jobject, jobject obj, jlong offset, jobject expected, jobject newValue) {
 		auto object = native::getObject(obj);
+		if (object->isNull()) {
+			throw NullPointerException("null object");
+		}
 		size_t index = static_cast<size_t>(offset);
+
+		auto expectedObj = native::getObject(expected);
+		if (expectedObj->isNull()) {
+			expectedObj = Object::makeNull();
+		}
+		auto newObj = native::getObject(newValue);
+		if (newObj->isNull()) {
+			newObj = Object::makeNull();
+		}
+
 		if (object->isArray()) {
 			auto array = static_cast<ArrayRef>(object);
-			return array->compareAndSwapElement(index, native::getObject(expected), native::getObject(newValue));
+			return array->compareAndSwapElement(index, expectedObj, newObj);
 
 		} else {
-			return object->compareAndSwapField(index, native::getObject(expected), native::getObject(newValue));
+			return object->compareAndSwapField(index, expectedObj, newObj);
 		}
 	}
 
@@ -143,6 +162,9 @@ JNIEXPORT void JNICALL Java_sun_misc_Unsafe_putOrderedLong(JNIEnv* env, jobject 
 
 	JNIEXPORT jobject JNICALL Java_sun_misc_Unsafe_getObject(JNIEnv* env, jobject, jobject obj, jlong offset) {
 		auto object = native::getObject(obj);
+		if (object->isNull()) {
+			throw NullPointerException("null object");
+		}
 		size_t index = static_cast<size_t>(offset);
 		if (object->isArray()) {
 			auto array = static_cast<ArrayRef>(object);
@@ -157,6 +179,9 @@ JNIEXPORT void JNICALL Java_sun_misc_Unsafe_putOrderedLong(JNIEnv* env, jobject 
 
 	JNIEXPORT void JNICALL Java_sun_misc_Unsafe_putObject(JNIEnv* env, jobject, jobject obj, jlong offset, jobject value) {
 		auto object = native::getObject(obj);
+		if (object->isNull()) {
+			throw NullPointerException("null object");
+		}
 		auto val = native::getObject(value);
 		size_t index = static_cast<size_t>(offset);
 
