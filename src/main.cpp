@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 
 #include <args.hxx>
+#include <filesystem>
 
 #include "class.hpp"
 #include "classloader.hpp"
@@ -27,6 +28,7 @@
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
 #include "system/env_var.hpp"
+#include "loader/getprop.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
 #include "trace.hpp"
@@ -55,6 +57,7 @@ int main(int argc, char** argv) {
 	args::ValueFlagList<std::string> jarFiles(parser, "file", "Specify the Jar files to load", {"jar"});
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
 	args::ValueFlag<std::string> androidRoot(parser, "dir", "Specify the virtual Android filesystem root directory", {"android-root"}, "");
+	args::ValueFlag<std::string> propFile(parser, "file", "Specify an Android getprop output file to preload properties", {"prop"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
 
@@ -115,6 +118,16 @@ int main(int argc, char** argv) {
 
 	trace.enableInstructionTrace(args::get(instructiontrace));
 	trace.enableCallTrace(args::get(calltrace));
+
+	if (!args::get(propFile).empty()) {
+		const auto& path = args::get(propFile);
+		if (std::filesystem::exists(path)) {
+			auto count = Getprop::getInstance().loadFromFile(path);
+			logger.fdebug("Loaded {} properties from {}", count, path);
+		} else {
+			logger.fwarning("Property file {} not found, skipping", path);
+		}
+	}
 
 	if (args::get(mainClass).empty() && args::get(apkFile).empty()) {
 		std::cerr << "Main class not specified" << std::endl << std::endl;
