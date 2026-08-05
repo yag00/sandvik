@@ -32,7 +32,6 @@
 using namespace sandvik;
 
 extern "C" {
-
 	JNIEXPORT jint JNICALL Java_sun_misc_Unsafe_getArrayBaseOffsetForComponentType(JNIEnv* env, jobject obj, jclass componentType_) {
 		auto componentType = native::getObject(componentType_);
 		if (componentType->isNull()) {
@@ -101,20 +100,14 @@ extern "C" {
 
 	JNIEXPORT jboolean JNICALL Java_sun_misc_Unsafe_compareAndSwapObject(JNIEnv*, jobject, jobject obj, jlong offset, jobject expected, jobject newValue) {
 		auto object = native::getObject(obj);
+		logger.fok("compareAndSwapObject: object={}, offset={}", object->toString(), (long)offset);
 		if (object->isNull()) {
 			throw NullPointerException("null object");
 		}
 		size_t index = static_cast<size_t>(offset);
 
-		auto expectedObj = native::getObject(expected);
-		if (expectedObj->isNull()) {
-			expectedObj = Object::makeNull();
-		}
-		auto newObj = native::getObject(newValue);
-		if (newObj->isNull()) {
-			newObj = Object::makeNull();
-		}
-
+		auto expectedObj = native::getReferenceObjectOrNull(expected);
+		auto newObj = native::getReferenceObjectOrNull(newValue);
 		if (object->isArray()) {
 			auto array = static_cast<ArrayRef>(object);
 			return array->compareAndSwapElement(index, expectedObj, newObj);
@@ -198,7 +191,7 @@ JNIEXPORT void JNICALL Java_sun_misc_Unsafe_putOrderedLong(JNIEnv* env, jobject 
 		if (object->isNull()) {
 			throw NullPointerException("null object");
 		}
-		auto val = native::getObject(value);
+		auto val = native::getReferenceObjectOrNull(value);
 		size_t index = static_cast<size_t>(offset);
 
 		if (object->isArray()) {

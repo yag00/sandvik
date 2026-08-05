@@ -35,6 +35,17 @@ Object* native::getObject(jobject jobj) {
 	return ptr;
 }
 
+ObjectRef native::getReferenceObjectOrNull(jobject value_) {
+	if (value_ == nullptr) {
+		return Object::makeNull();
+	}
+	auto value = (Object*)value_;
+	if (value->isNull()) {
+		return Object::makeNull();
+	}
+	return value;
+}
+
 Object* native::getString(jobject jstr) {
 	return native::getString((jstring)jstr);
 }
