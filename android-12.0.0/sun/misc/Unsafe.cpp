@@ -100,7 +100,6 @@ extern "C" {
 
 	JNIEXPORT jboolean JNICALL Java_sun_misc_Unsafe_compareAndSwapObject(JNIEnv*, jobject, jobject obj, jlong offset, jobject expected, jobject newValue) {
 		auto object = native::getObject(obj);
-		logger.fok("compareAndSwapObject: object={}, offset={}", object->toString(), (long)offset);
 		if (object->isNull()) {
 			throw NullPointerException("null object");
 		}
