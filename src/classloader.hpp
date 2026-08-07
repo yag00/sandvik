@@ -169,6 +169,7 @@ namespace sandvik {
 
 			std::vector<std::string> _classpath;
 			std::vector<std::unique_ptr<Apk>> _apks;
+			std::vector<std::string> _jars;
 			std::vector<std::unique_ptr<Dex>> _dexs;
 			std::map<std::string, std::unique_ptr<Class>, std::less<>> _classes;
 			mutable std::recursive_mutex _mutex;

@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 	args::Flag instructiontrace(parser, "instruction", "Instruction trace", {'i', "instructions"});
 	args::Flag calltrace(parser, "calltrace", "Call trace", {'c', "calltrace"});
 	args::ValueFlagList<std::string> dexFiles(parser, "file", "Specify the DEX files to load", {"dex"});
-	args::ValueFlagList<std::string> jarFiles(parser, "file", "Specify the Jar files to load", {"jar"});
+	args::ValueFlag<std::string> jarDir(parser, "dir", "Directory containing runtime JARs (loaded in order)", {"jar-dir"});
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
@@ -123,8 +123,8 @@ int main(int argc, char** argv) {
 		vm.loadDex(dexFile);
 	}
 	// load jar (containing dex) files
-	for (const auto& jarFile : args::get(jarFiles)) {
-		vm.loadRt(jarFile);
+	if (!args::get(jarDir).empty()) {
+		vm.loadRt(args::get(jarDir));
 	}
 	// load apk file
 	if (!args::get(apkFile).empty()) {

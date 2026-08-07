@@ -47,7 +47,7 @@ ClassLoader::~ClassLoader() {
 
 void ClassLoader::loadRt(const std::string& rt_) {
 	try {
-		rtld::load(rt_, _dexs);
+		rtld::load(rt_, _dexs, &_jars);
 		logger.fdebug("RT loaded: {}", rt_);
 	} catch (const std::exception& e) {
 		logger.ferror("Failed to load DEX: {}", e.what());

@@ -18,6 +18,7 @@
 
 #include "rtld.hpp"
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -27,32 +28,20 @@
 #include "system/logger.hpp"
 #include "system/zip.hpp"
 
-extern "C" {
-	// extern const unsigned char _binary_sanddirt_dex_jar_start[];
-	// extern const unsigned char _binary_sanddirt_dex_jar_end[];
-	// extern const size_t _binary_sanddirt_dex_jar_size;
-}
-
 using namespace sandvik;
 
 /** Constructor: Loads the JAR file */
-void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) {
+void rtld::loadJar(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dexs_) {
 	auto zip = std::make_unique<ZipReader>();
 	if (path_.empty()) {
 		throw VmException("Invalid RT file: empty path");
-		/*auto size = (size_t)&_binary_sanddirt_dex_jar_size;
-		// paranoia check
-		auto size2 = (uintptr_t)_binary_sanddirt_dex_jar_end - (uintptr_t)_binary_sanddirt_dex_jar_start;
-		if (size != size2) {
-		    throw VmException("Internal error: embedded RT size mismatch {} != {}", size, size2);
-		}
-		zip->open((const uint8_t*)_binary_sanddirt_dex_jar_start, size);*/
 	} else {
 		if (!ZipReader::isValidArchive(path_)) {
 			throw VmException("Invalid RT file: {}", path_);
 		}
 		zip->open(path_);
 	}
+	logger.fdebug("Loading JAR: {}", path_);
 
 	// load all *.dex files
 	for (const auto& file : zip->getList()) {
@@ -67,4 +56,53 @@ void rtld::load(const std::string& path_, std::vector<std::unique_ptr<Dex>>& dex
 		}
 	}
 	zip->close();
+}
+
+std::vector<std::string> rtld::resolveJarOrder(const std::string& jarsDir_) {
+	std::vector<std::string> jarFiles;
+	std::string orderFile = jarsDir_ + "/order.txt";
+	if (std::filesystem::exists(orderFile)) {
+		std::ifstream infile(orderFile);
+		std::string line;
+		while (std::getline(infile, line)) {
+			if (!line.empty()) {
+				jarFiles.push_back(jarsDir_ + "/" + line);
+			}
+		}
+	} else {
+		logger.fdebug("No order.txt found in {}, loading JARs in alphabetical order", jarsDir_);
+		for (const auto& entry : std::filesystem::directory_iterator(jarsDir_)) {
+			if (entry.path().extension() == ".jar") {
+				jarFiles.push_back(entry.path().string());
+			}
+		}
+		std::sort(jarFiles.begin(), jarFiles.end());
+	}
+	return jarFiles;
+}
+
+void rtld::load(const std::string& jarsDir_, std::vector<std::unique_ptr<Dex>>& dexs_, std::vector<std::string>* loadedJarPaths_) {
+	auto jarFiles = resolveJarOrder(jarsDir_);
+	for (const auto& jarFile : jarFiles) {
+		loadJar(jarFile, dexs_);
+		if (loadedJarPaths_) {
+			loadedJarPaths_->push_back(jarFile);
+		}
+	}
+}
+
+std::optional<std::vector<uint8_t>> sandvik::rtld::findResourceInJar(const std::string& jarPath_, const std::string& name_) {
+	try {
+		ZipReader reader;
+		reader.open(jarPath_);
+		uint64_t size = 0;
+		std::unique_ptr<char[]> data = reader.extractToMemory(name_, size);
+		reader.close();
+		if (data && size > 0) {
+			return std::vector<uint8_t>(reinterpret_cast<uint8_t*>(data.get()), reinterpret_cast<uint8_t*>(data.get()) + size);
+		}
+	} catch (const std::exception&) {
+		// absent de ce jar, ou jar illisible
+	}
+	return std::nullopt;
 }
