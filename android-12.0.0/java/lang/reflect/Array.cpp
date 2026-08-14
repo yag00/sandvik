@@ -49,7 +49,14 @@ extern "C" {
 			dims.push_back(dim);
 		}
 
-		auto newArray = Array::make(compClass->getClass(), dims);
+		const Class* targetClass = nullptr;
+		try {
+			targetClass = &compClass->getClassType();
+		} catch (const std::bad_cast&) {
+			targetClass = &compClass->getClass();
+		}
+
+		auto newArray = Array::make(*targetClass, dims);
 		return (jobject)newArray;
 	}
 
