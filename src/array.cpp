@@ -23,6 +23,7 @@
 #include <algorithm>
 
 #include "class.hpp"
+#include "classloader.hpp"
 #include "exceptions.hpp"
 #include "gc.hpp"
 #include "monitor.hpp"
@@ -77,20 +78,23 @@ bool Array::isClass() const {
 }
 
 Class& Array::getClass() const {
-	// If the array's class is already java.lang.Object, return it.
-	if (_classtype.getFullname() == "java.lang.Object") {
-		return const_cast<Class&>(_classtype);
-	}
-	// Walk the superclass chain (inspect as const) and return the java.lang.Object entry if found.
-	const Class* cur = &_classtype;
-	while (cur->hasSuperClass()) {
-		auto& super = cur->getSuperClass();
-		if (super.getFullname() == "java.lang.Object") {
-			return super;
-		}
-		cur = &super;
-	}
-	throw VmException("Array does not have java.lang.Object as superclass");
+	std::string arrayName = "[L" + _classtype.getFullname() + ";";
+	return _classtype.getClassLoader().getOrLoad(arrayName);
+
+	// // If the array's class is already java.lang.Object, return it.
+	// if (_classtype.getFullname() == "java.lang.Object") {
+	// 	return const_cast<Class&>(_classtype);
+	// }
+	// // Walk the superclass chain (inspect as const) and return the java.lang.Object entry if found.
+	// const Class* cur = &_classtype;
+	// while (cur->hasSuperClass()) {
+	// 	auto& super = cur->getSuperClass();
+	// 	if (super.getFullname() == "java.lang.Object") {
+	// 		return super;
+	// 	}
+	// 	cur = &super;
+	// }
+	// throw VmException("Array does not have java.lang.Object as superclass");
 }
 
 const Class& Array::getClassType() const {
