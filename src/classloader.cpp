@@ -34,6 +34,7 @@
 #include "method.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "system/os_constants.hpp"
 #include "types.hpp"
 #include "utils.hpp"
 
@@ -408,6 +409,21 @@ void ClassLoader::linkClass(Class& class_) {
 
 	if (class_.getFullname() == "java.lang.VMClassLoader") {
 		class_.getMethod("getResource", "(Ljava/lang/String;)Ljava/net/URL;").makeNative();
+		return;
+	}
+
+	if (class_.getFullname() == "android.system.OsConstants") {
+		// placeholder() isn't actually native in this dex (ACC_NATIVE not set, body is "return 0"); hook it to feed real host values in field-declaration
+		// order.
+		class_.getMethod("placeholder", "()I").hook([](Frame& frame, std::vector<ObjectRef>& args) {
+			(void)args;
+			static thread_local size_t callIndex = 0;
+			const auto& table = sandvik::osconst::orderedTable();
+			if (callIndex >= table.size()) {
+				callIndex = 0;
+			}
+			frame.setReturnValue(static_cast<int32_t>(table[callIndex++].value));
+		});
 		return;
 	}
 }
