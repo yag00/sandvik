@@ -46,10 +46,14 @@ namespace sandvik {
 			explicit Vm();
 			~Vm();
 
-			/** Load runtime libraries
-			 * @param path_ Path to the runtime libraries
+			/** Load runtime libraries from a directory
+			 * @param path_ Path to the runtime libraries directory
 			 */
-			void loadRt(const std::string& path_ = "");
+			void loadRtByDir(const std::string& path_ = "");
+			/** Load runtime libraries from a file
+			 * @param path_ Path to the runtime libraries file
+			 */
+			void loadRtByFile(const std::string& path_ = "");
 			/** Load DEX files
 			 * @param path_ Path to the DEX file
 			 */

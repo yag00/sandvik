@@ -63,8 +63,12 @@ Vm::~Vm() {
 	GC::getInstance().unmanageVm(this);
 }
 
-void Vm::loadRt(const std::string& path) {
-	_classloader->loadRt(path);
+void Vm::loadRtByDir(const std::string& path) {
+	_classloader->loadRtByDir(path);
+}
+
+void Vm::loadRtByFile(const std::string& path) {
+	_classloader->loadRtByFile(path);
 }
 
 void Vm::loadDex(const std::string& path) {

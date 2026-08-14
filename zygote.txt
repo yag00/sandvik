@@ -1,1 +1,1 @@
-./wbuild/sandvik -c --log=INFO --jar android-12.0.0-bin/core-oj.dex.jar --jar android-12.0.0-bin/core-libart.dex.jar --jar android-12.0.0-bin/icu-stubs.dex.jar --jar android-12.0.0-bin/javalib.dex.jar --main com.android.internal.os.ZygoteInit -- dummy --abi-list=x86_64
+./wbuild/sandvik -c --log=INFO --jar-dir=android-12.0.0-bin --main com.android.internal.os.ZygoteInit -- dummy --abi-list=x86_64

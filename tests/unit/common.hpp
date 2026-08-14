@@ -22,9 +22,9 @@
 
 inline void initializeVmRuntime(sandvik::Vm& vm) {
 	// Load the runtime libraries
-	vm.loadRt("../android-12.0.0-bin/core-oj.dex.jar");
-	vm.loadRt("../android-12.0.0-bin/core-libart.dex.jar");
-	vm.loadRt("../android-12.0.0-bin/icu-stubs.dex.jar");
+	vm.loadRtByFile("../android-12.0.0-bin/core-oj.dex.jar");
+	vm.loadRtByFile("../android-12.0.0-bin/core-libart.dex.jar");
+	vm.loadRtByFile("../android-12.0.0-bin/icu-stubs.dex.jar");
 }
 
 #endif // __COMMON_TEST__

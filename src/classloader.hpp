@@ -42,10 +42,14 @@ namespace sandvik {
 			ClassLoader();
 			~ClassLoader();
 
-			/** @brief Load runtime classes
+			/** @brief Load runtime classes by directory of JAR files
 			 * @param rt_ path to runtime classes
 			 */
-			void loadRt(const std::string& rt_);
+			void loadRtByDir(const std::string& rt_);
+			/** @brief Load runtime classes by JAR file
+			 * @param rt_ path to runtime classes
+			 */
+			void loadRtByFile(const std::string& rt_);
 			/** @brief Load dex file
 			 * @param dex_ path to dex
 			 */

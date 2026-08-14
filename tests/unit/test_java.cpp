@@ -41,7 +41,7 @@ void run_common_test(const std::string& mainclassname) {
 
 	try {
 		initializeVmRuntime(vm);
-		vm.loadRt("../tests/java/unit/TestUnitDex.jar");
+		vm.loadRtByFile("../tests/java/unit/TestUnitDex.jar");
 		vm.run(mainclassname, {});
 	} catch (const std::exception& e) {
 		FAIL() << fmt::format("Exception thrown during test {}: {}", mainclassname, e.what());
