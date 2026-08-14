@@ -251,6 +251,9 @@ bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) 
 	if (it != _methods.end()) {
 		return true;
 	}
+	if (hasSuperClass()) {
+		return getSuperClass().hasMethod(name_, descriptor_);
+	}
 	return false;
 }
 bool Class::hasMethod(uint32_t idx_) const {
@@ -279,7 +282,19 @@ Method& Class::getMethod(const std::string& name_, const std::string& descriptor
 	auto sig = name_ + descriptor_;
 	auto it = _methods.find(sig);
 	if (it != _methods.end()) {
-		return *(it->second);
+		Method& method = *it->second;
+		if (!method.isHooked()) {
+			if ((method.hasBytecode() || method.isNative())) {
+				return method;
+			}
+			if (hasSuperClass()) {
+				return getSuperClass().getMethod(name_, descriptor_);
+			}
+		}
+		return method;
+	}
+	if (hasSuperClass()) {
+		return getSuperClass().getMethod(name_, descriptor_);
 	}
 	throw VmException("Method not found: {} {}", name_, descriptor_);
 }
