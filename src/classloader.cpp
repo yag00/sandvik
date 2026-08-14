@@ -77,6 +77,15 @@ void ClassLoader::loadApk(const std::string& apk_) {
 	}
 }
 
+std::optional<std::vector<uint8_t>> ClassLoader::findResource(const std::string& name) {
+	for (const auto& jarPath : _jars) {
+		if (auto data = rtld::findResourceInJar(jarPath, name)) {
+			return data;
+		}
+	}
+	return std::nullopt;
+}
+
 void ClassLoader::addClassPath(const std::string& classpath_) {
 	if (std::find(_classpath.begin(), _classpath.end(), classpath_) == _classpath.end()) {
 		logger.fdebug("classpath add {}", classpath_);
@@ -214,7 +223,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	}
 
 	// If the class is not found, throw an exception
-	throw VmException("ClassNotFoundError: {}", dotclassname);
+	throw ClassNotFoundException(fmt::format("Class not found: {} ", dotclassname));
 }
 
 Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_, std::string& classname_, std::string& method_, std::string& sig_) {
@@ -358,6 +367,22 @@ void ClassLoader::linkClass(Class& class_) {
 			}
 			thisObj->setString(otherStringObj->str());
 		});
+
+		auto& m3 = class_.getMethod("<init>", "([C)V");
+		m3.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
+			// args: this, char[]
+			if (args.size() != 2) {
+				throw VmException("Invalid number of arguments for String.<init>");
+			}
+			auto thisObj = args[0];
+			auto charArray = args[1];
+			auto array = (ArrayRef)charArray;
+			std::string str = "";
+			for (size_t i = 0; i < array->getArrayLength(); ++i) {
+				str += static_cast<char>(array->getElement(i)->getValue());
+			}
+			thisObj->setString(str);
+		});
 		return;
 	}
 
@@ -378,6 +403,11 @@ void ClassLoader::linkClass(Class& class_) {
 	if (class_.getFullname() == "java.lang.Object") {
 		class_.getMethod("getClass", "()Ljava/lang/Class;").makeNative();
 		class_.getMethod("hashCode", "()I").makeNative();
+		return;
+	}
+
+	if (class_.getFullname() == "java.lang.VMClassLoader") {
+		class_.getMethod("getResource", "(Ljava/lang/String;)Ljava/net/URL;").makeNative();
 		return;
 	}
 }

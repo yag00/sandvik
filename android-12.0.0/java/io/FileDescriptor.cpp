@@ -16,8 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include <fmt/format.h>
 #include <jni/jni.h>
+#include <sys/stat.h>
 
 #include "array.hpp"
 #include "class.hpp"
@@ -39,10 +42,30 @@ JNIEXPORT void JNICALL Java_java_io_FileDescriptor_initIDs(JNIEnv* env, jobject 
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_io_FileDescriptor_isSocket(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jboolean JNICALL Java_java_io_FileDescriptor_isSocket(JNIEnv* env, jobject obj) {
+		if (obj == nullptr) {
+			return JNI_FALSE;
+		}
+
+		jclass clazz = env->GetObjectClass(obj);
+		jfieldID fid = env->GetFieldID(clazz, "descriptor", "I");
+
+		if (fid == nullptr) {
+			return JNI_FALSE;
+		}
+
+		jint fd = env->GetIntField(obj, fid);
+
+		if (fd < 0) {
+			return JNI_FALSE;
+		}
+
+		struct stat st;
+		if (fstat(fd, &st) != 0) {
+			return JNI_FALSE;
+		}
+
+		return S_ISSOCK(st.st_mode) ? JNI_TRUE : JNI_FALSE;
+	}
 
 }  // extern "C"

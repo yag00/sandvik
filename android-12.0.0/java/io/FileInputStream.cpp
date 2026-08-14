@@ -16,8 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include <fmt/format.h>
 #include <jni/jni.h>
+#include <sys/ioctl.h>
 
 #include "array.hpp"
 #include "class.hpp"
@@ -38,5 +41,23 @@ JNIEXPORT void JNICALL Java_java_io_FileInputStream_initIDs(JNIEnv* env, jobject
     logger.fwarning("{} not implemented!", __FUNCTION__);
 }
 #endif
+
+	JNIEXPORT jint JNICALL Java_java_io_FileInputStream_available0(JNIEnv* env, jobject thiz) {
+		auto thisObj = sandvik::native::getObject(thiz);
+		auto fdObj = thisObj->getField("fd");
+		int fd = fdObj->getField("descriptor")->getValue();
+
+		int available = 0;
+		if (::ioctl(fd, FIONREAD, &available) == -1) {
+			off_t cur = ::lseek(fd, 0, SEEK_CUR);
+			off_t end = ::lseek(fd, 0, SEEK_END);
+			if (cur == static_cast<off_t>(-1) || end == static_cast<off_t>(-1)) {
+				return 0;
+			}
+			::lseek(fd, cur, SEEK_SET);
+			available = static_cast<int>(end - cur);
+		}
+		return static_cast<jint>(available);
+	}
 
 }  // extern "C"

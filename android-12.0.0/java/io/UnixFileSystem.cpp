@@ -72,11 +72,9 @@ extern "C" {
 		return (jobjectArray)array;
 	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_getBooleanAttributes0(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jint JNICALL Java_java_io_UnixFileSystem_getBooleanAttributes0(JNIEnv* env, jobject obj, jobject file) {
+		return 0;
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_getLastModifiedTime0(JNIEnv* env, jobject obj) {
