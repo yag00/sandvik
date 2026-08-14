@@ -27,6 +27,7 @@
 #include "gc.hpp"
 #include "monitor.hpp"
 #include "object.hpp"
+#include "utils.hpp"
 
 using namespace sandvik;
 
@@ -48,9 +49,10 @@ Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_)
 	}
 	_length = totalSize;
 	_data = std::shared_ptr<std::atomic<ObjectRef>[]>(new std::atomic<ObjectRef>[totalSize], std::default_delete<std::atomic<ObjectRef>[]>());
-	// Initialize elements to null
+	// Initialize elements to "null" for Objects or "0" for primitive types
+	ObjectRef defaultValue = sandvik::is_primitive_type(classtype_.getFullname()) ? Object::make(static_cast<int32_t>(0)) : Object::makeNull();
 	for (uint32_t i = 0; i < totalSize; ++i) {
-		_data[i].store(Object::makeNull(), std::memory_order_relaxed);
+		_data[i].store(defaultValue, std::memory_order_relaxed);
 	}
 }
 

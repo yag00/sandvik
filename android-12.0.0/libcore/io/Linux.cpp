@@ -17,11 +17,13 @@
  */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <fmt/format.h>
+#include <sys/stat.h>
 #include <sys/utsname.h>
 
 #include "array.hpp"
@@ -116,10 +118,99 @@ extern "C" {
 		return static_cast<jint>(written);
 	}
 
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_readBytes(JNIEnv* env, jclass, jobject fdObj, jobject bufferObj, jint offset, jint count) {
+		auto fdObject = sandvik::native::getObject(fdObj);
+		auto buffer = sandvik::native::getArray(bufferObj);
+
+		int fd = fdObject->getField("descriptor")->getValue();
+		if (fd < 0) {
+			throw IOException("Bad file descriptor");
+		}
+		if (offset < 0 || count < 0) {
+			throw IllegalArgumentException("offset or byteCount < 0");
+		}
+		if (static_cast<size_t>(offset) + static_cast<size_t>(count) > static_cast<size_t>(buffer->getArrayLength())) {
+			throw ArrayIndexOutOfBoundsException();
+		}
+
+		std::vector<uint8_t> data(count);
+		ssize_t nread = ::read(fd, data.data(), count);
+		if (nread < 0) {
+			throw IOException(fmt::format("Read operation failed: {}", strerror(errno)));
+		}
+		for (ssize_t i = 0; i < nread; ++i) {
+			buffer->setElement(offset + static_cast<int>(i), Object::make(static_cast<int32_t>(data[i])));
+		}
+
+		return static_cast<jint>(nread);
+	}
+
 	// Places a process into a process group, used during zygote and child process setup.
 	JNIEXPORT void JNICALL Java_libcore_io_Linux_setpgid(JNIEnv* env, jobject thiz, jint pid, jint pgid) {
 		(void)env;
 		(void)thiz;
 		(void)setpgid(static_cast<pid_t>(pid), static_cast<pid_t>(pgid));
+	}
+
+	JNIEXPORT jobject JNICALL Java_libcore_io_Linux_open(JNIEnv* env, jclass clazz, jstring path, jint flags, jint mode) {
+		const char* pathCStr = env->GetStringUTFChars(path, nullptr);
+		int fd = ::open(pathCStr, flags, mode);
+		int openErrno = errno;
+		std::string pathStr = pathCStr;
+		env->ReleaseStringUTFChars(path, pathCStr);
+		if (fd == -1) {
+			throw IOException(fmt::format("open failed on '{}' (flags={:#x}, mode={:#o}): {}", pathStr, flags, mode, strerror(openErrno)));
+		}
+
+		jclass fileDescriptorClass = env->FindClass("java/io/FileDescriptor");
+		jmethodID constructor = env->GetMethodID(fileDescriptorClass, "<init>", "()V");
+		jobject fileDescriptorObj = env->NewObject(fileDescriptorClass, constructor);
+
+		jfieldID descriptorField = env->GetFieldID(fileDescriptorClass, "descriptor", "I");
+		env->SetIntField(fileDescriptorObj, descriptorField, fd);
+		logger.fdebug("Linux.open('{}') -> fd={}", pathStr, fd);
+
+		return fileDescriptorObj;
+	}
+
+	JNIEXPORT jobject JNICALL Java_libcore_io_Linux_fstat(JNIEnv* env, jclass clazz, jobject fdObj) {
+		auto fdObject = sandvik::native::getObject(fdObj);
+		int fd = fdObject->getField("descriptor")->getValue();
+
+		struct stat st;
+		logger.fdebug("Linux.fstat(fd={})", fd);
+		if (::fstat(fd, &st) == -1) {
+			throw IOException(fmt::format("fstat failed: {}", strerror(errno)));
+		}
+
+		jclass structStatClass = env->FindClass("android/system/StructStat");
+		jmethodID ctor = env->GetMethodID(structStatClass, "<init>", "(JJIJIIJJJJJJJ)V");
+		return env->NewObject(structStatClass, ctor, static_cast<jlong>(st.st_dev), static_cast<jlong>(st.st_ino), static_cast<jint>(st.st_mode),
+		                      static_cast<jlong>(st.st_nlink), static_cast<jint>(st.st_uid), static_cast<jint>(st.st_gid), static_cast<jlong>(st.st_rdev),
+		                      static_cast<jlong>(st.st_size), static_cast<jlong>(st.st_atime), static_cast<jlong>(st.st_mtime), static_cast<jlong>(st.st_ctime),
+		                      static_cast<jlong>(st.st_blksize), static_cast<jlong>(st.st_blocks));
+	}
+
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_close(JNIEnv* env, jclass clazz, jobject fdObj) {
+		if (fdObj == nullptr) {
+			return;
+		}
+		auto fdObject = sandvik::native::getObject(fdObj);
+		int fd = fdObject->getField("descriptor")->getValue();
+		if (fd >= 0 && ::close(fd) == -1) {
+			throw IOException(fmt::format("close failed: {}", strerror(errno)));
+		}
+	}
+
+	JNIEXPORT jstring JNICALL Java_libcore_io_Linux_strerror(JNIEnv* env, jclass clazz, jint error) {
+		const char* message = ::strerror(error);
+		if (message == nullptr) {
+			return nullptr;
+		}
+		return env->NewStringUTF(message);
+	}
+
+	// fdsan owner-tag tracking is a debug aid (use-after-close/double-close detection); no-op here.
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_android_fdsan_exchange_owner_tag(JNIEnv*, jobject, jobject, jlong, jlong) {
 	}
 }  // extern "C"

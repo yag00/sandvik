@@ -18,6 +18,7 @@
 
 #include <fmt/format.h>
 #include <jni/jni.h>
+#include <unicode/uchar.h>
 
 #include "array.hpp"
 #include "class.hpp"
@@ -63,17 +64,13 @@ JNIEXPORT void JNICALL Java_java_lang_Character_isDefinedImpl(JNIEnv* env, jobje
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Character_isLetterImpl(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jboolean JNICALL Java_java_lang_Character_isLetterImpl(JNIEnv* env, jclass clazz, jint codePoint) {
+		return u_isalpha(static_cast<UChar32>(codePoint)) ? JNI_TRUE : JNI_FALSE;
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Character_isLetterOrDigitImpl(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jboolean JNICALL Java_java_lang_Character_isLetterOrDigitImpl(JNIEnv* env, jclass clazz, jint codePoint) {
+		return u_isalnum(static_cast<UChar32>(codePoint)) ? JNI_TRUE : JNI_FALSE;
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_Character_isAlphabeticImpl(JNIEnv* env, jobject obj) {

@@ -48,7 +48,23 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_newInstance(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_newInstance not implemented!");
+		auto classObj = sandvik::native::getObject(obj);
+		const Class* targetClass = nullptr;
+		auto internalClass = classObj->getField("internal");
+		if (internalClass && !internalClass->isNull()) {
+			targetClass = &internalClass->getClass();
+		}
+		if (!targetClass) {
+			targetClass = &classObj->getClassType();
+		}
+
+		logger.debug(fmt::format("Class.newInstance: Creating new instance of {}", targetClass->getFullname()));
+		jclass jtargetClass = (jclass)Object::make(const_cast<Class&>(*targetClass));
+		jmethodID ctorID = env->GetMethodID(jtargetClass, "<init>", "()V");
+		if (!ctorID) {
+			throw NoSuchMethodException(fmt::format("Class.newInstance: default constructor <init>()V not found in {}", targetClass->getFullname()));
+		}
+		return env->NewObject(jtargetClass, ctorID);
 	}
 
 	JNIEXPORT jstring JNICALL Java_java_lang_Class_getNameNative(JNIEnv* env, jobject obj) {
@@ -210,6 +226,9 @@ extern "C" {
 		auto classObj = sandvik::native::getObject(obj);
 		auto& classloader = jenv->getClassLoader();
 		auto& classType = classObj->getClassType();
+
+		logger.finfo("[Class.getComponentType] object={} objectClass={} isArray={}", (void*)classObj, classType.getFullname(), classType.isArray());
+
 		// Check if the class is an array
 		if (!classType.isArray()) {
 			return (jobject)Object::makeNull();

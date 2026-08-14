@@ -77,6 +77,10 @@ extern "C" {
 		return static_cast<jint>(static_cast<int>(str1.size()) - static_cast<int>(str2.size()));
 	}
 
+	JNIEXPORT jint JNICALL Java_java_lang_String_compareTo__Ljava_lang_String_2(JNIEnv* env, jobject obj, jstring anotherString) {
+		return Java_java_lang_String_compareTo(env, obj, anotherString);
+	}
+
 	JNIEXPORT jobject JNICALL Java_java_lang_String_fastSubstring(JNIEnv* env, jobject obj, jint start, jint length) {
 		auto this_ptr = sandvik::native::getString(obj);
 		const auto& str = this_ptr->str();

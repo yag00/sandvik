@@ -167,6 +167,10 @@ void JThread::loop() {
 		_vm.stop();
 		// clear the stack, call to end() will be true
 		_stack.clear();
+	} catch (const std::exception& e) {
+		logger.ferror("Unhandled std::exception in thread {}: {}", getName(), e.what());
+		_vm.stop();
+		_stack.clear();
 	}
 }
 

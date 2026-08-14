@@ -107,6 +107,15 @@ namespace sandvik {
 			/** destructor */
 			~ClassCastException() noexcept override = default;
 	};
+	/** @brief ClassNotFoundException exception class */
+	class ClassNotFoundException : public JavaException {
+		public:
+			/** constructor
+			 * @param message Exception message. */
+			explicit ClassNotFoundException(const std::string& message = "") : JavaException("java.lang.ClassNotFoundException", message) {
+			}
+			~ClassNotFoundException() noexcept override = default;
+	};
 	/** @brief NoClassDefFoundError exception class */
 	class NoClassDefFoundError : public JavaException {
 		public:

@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -49,6 +50,11 @@ namespace sandvik {
 			 * @param dex_ path to dex
 			 */
 			void loadDex(const std::string& dex_);
+			/** @brief Find resource by name
+			 * @param name resource name
+			 * @return optional containing resource data if found, std::nullopt otherwise
+			 */
+			std::optional<std::vector<uint8_t>> findResource(const std::string& name);
 			/** @brief Load apk file
 			 * @param apk_ path to apk
 			 */
