@@ -34,8 +34,10 @@
 extern "C" {
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Throwable_nativeFillInStackTrace(JNIEnv* env, jobject obj) {
-		logger.fwarning("{} not implemented!", __FUNCTION__);
-		return nullptr;
+		auto throwable = sandvik::native::getObject(obj);
+		logger.fdebug("[Throwable.nativeFillInStackTrace] throwable={}", static_cast<void*>(throwable));
+		// Return the same object for now
+		return obj;
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Throwable_nativeGetStackTrace(JNIEnv* env, jclass clazz, jobject stackState) {
