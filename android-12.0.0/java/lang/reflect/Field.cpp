@@ -34,6 +34,22 @@
 
 extern "C" {
 
+	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Field_get(JNIEnv* env, jobject obj, jobject receiver) {
+		auto fieldObj = sandvik::native::getObject(obj);
+		auto nameObj = fieldObj->getField("name");
+		const std::string& fieldName = nameObj->str();
+		auto receiverObj = sandvik::native::getObject(receiver);
+		if (receiverObj == nullptr || receiverObj->isNull()) {
+			// static field access: resolve via declaringClass
+			auto declaringClassObj = fieldObj->getField("declaringClass");
+			auto& clazz = const_cast<sandvik::Class&>(declaringClassObj->getClassType());
+			auto& field = clazz.getField(fieldName);
+			return (jobject)field.getObjectValue();
+		}
+		auto fieldValue = receiverObj->getField(fieldName);
+		return (jobject)fieldValue;
+	}
+
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_reflect_Field_getNameInternal(JNIEnv* env, jobject obj) {
     logger.fwarning("{} not implemented!", __FUNCTION__);
