@@ -247,15 +247,6 @@ namespace sandvik {
 			}
 			~NoSuchMethodError() noexcept override = default;
 	};
-	/** @brief NoSuchFieldException exception class */
-	class NoSuchFieldException : public JavaException {
-		public:
-			/** constructor
-			 * @param message Exception message. */
-			explicit NoSuchFieldException(const std::string& message = "") : JavaException("java.lang.NoSuchFieldException", message) {
-			}
-			~NoSuchFieldException() noexcept override = default;
-	};
 	/** @brief NoSuchMethodException exception class */
 	class NoSuchMethodException : public JavaException {
 		public:
@@ -264,6 +255,24 @@ namespace sandvik {
 			explicit NoSuchMethodException(const std::string& message = "") : JavaException("java.lang.NoSuchMethodException", message) {
 			}
 			~NoSuchMethodException() noexcept override = default;
+	};
+	/** @brief NoSuchFieldError exception class */
+	class NoSuchFieldError : public JavaException {
+		public:
+			/** constructor
+			 * @param message Exception message. */
+			explicit NoSuchFieldError(const std::string& message = "") : JavaException("java.lang.NoSuchFieldError", message) {
+			}
+			~NoSuchFieldError() noexcept override = default;
+	};
+	/** @brief NoSuchFieldException exception class */
+	class NoSuchFieldException : public JavaException {
+		public:
+			/** constructor
+			 * @param message Exception message. */
+			explicit NoSuchFieldException(const std::string& message = "") : JavaException("java.lang.NoSuchFieldException", message) {
+			}
+			~NoSuchFieldException() noexcept override = default;
 	};
 	/** @brief OutOfMemoryError exception class */
 	class OutOfMemoryError : public JavaException {

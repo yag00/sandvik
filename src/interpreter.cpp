@@ -466,6 +466,29 @@ Method* Interpreter::resolveInterfaceMethod(Class& instance_, const std::string&
 	return resolveInterfaceHierarchyMethod(iface, methodname_, signature_, visited);
 }
 
+Field& Interpreter::resolveStaticField(Field& initial_) const {
+	if (initial_.isStatic()) {
+		return initial_;
+	}
+	// The field found is not static: it may be a phantom field_id attached to a subclass (LIEF quirk) or genuinely wrong. Walk up the hierarchy looking for a
+	// real static field with the same name.
+	auto& classloader = _rt.getClassLoader();
+	Class* cur = &initial_.getClass();
+	while (cur->hasSuperClass()) {
+		cur = &classloader.getOrLoad(cur->getSuperClassname());
+		try {
+			Field& f = cur->getOwnField(initial_.getName());
+			if (f.isStatic()) {
+				return f;
+			}
+		} catch (const NoSuchFieldError&) {
+			// not declared here, keep climbing
+		}
+	}
+	// Nothing found, return the original so callers report the original error
+	return initial_;
+}
+
 void Interpreter::handleException(ObjectRef exception_) {
 	if (!exception_->isClass()) {
 		throw VmException("throw operand is not an object!");
@@ -2109,7 +2132,9 @@ void Interpreter::sget(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF can attach a "phantom" field_id to a subclass when bytecode accesses an inherited static field through the subclass name (e.g. Sub.staticField).
+	// That phantom Field is not statically declared there, so walk up the hierarchy to find the real declaring class.
+	const auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sget: Cannot use sget on a non-static field");
 	}
@@ -2132,7 +2157,8 @@ void Interpreter::sget_wide(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	const auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sget_wide: Cannot use sget on a non-static field");
 	}
@@ -2155,8 +2181,8 @@ void Interpreter::sget_object(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
-	logger.fdebug("sget_object: Resolving field {}", field.str());
+	// LIEF "phantom" field_id concern
+	const auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sget_object: Cannot use sget_object on a non-static field");
 	}
@@ -2179,7 +2205,8 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	const auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sget_boolean: Cannot use sget_boolean on a non-static field");
 	}
@@ -2202,7 +2229,8 @@ void Interpreter::sget_byte(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	const auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sget_byte: Cannot use sget_byte on a non-static field");
 	}
@@ -2225,9 +2253,10 @@ void Interpreter::sget_char(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	const auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
-		throw VmException("sget_wide: Cannot use sget on a non-static field");
+		throw VmException("sget_char: Cannot use sget on a non-static field");
 	}
 	if (field.getType() != "C") {
 		throw VmException("sget_char: Field {} type mismatch, expected char but got {}", field.getName(), field.getType());
@@ -2248,7 +2277,8 @@ void Interpreter::sget_short(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	const auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	const auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sget_short: Cannot use sget on a non-static field");
 	}
@@ -2271,7 +2301,9 @@ void Interpreter::sput(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF can attach a "phantom" field_id to a subclass when bytecode accesses an inherited static field through the subclass name (e.g. Sub.staticField).
+	// That phantom Field is not statically declared there, so walk up the hierarchy to find the real declaring class.
+	auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sput: Cannot use sput on a non-static field");
 	}
@@ -2291,7 +2323,8 @@ void Interpreter::sput_wide(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sput_wide: Cannot use sput_wide on a non-static field");
 	}
@@ -2312,7 +2345,8 @@ void Interpreter::sput_object(const uint8_t* operand_) {
 	auto& classloader = _rt.getClassLoader();
 
 	std::string classname, fieldname;
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname);
+	// LIEF "phantom" field_id concern
+	auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex, classname, fieldname));
 	if (!field.isStatic()) {
 		throw VmException("sput_object: Cannot use sput_object on a non-static field");
 	}
@@ -2337,7 +2371,8 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sput_boolean: Cannot use sput_boolean on a non-static field");
 	}
@@ -2357,7 +2392,8 @@ void Interpreter::sput_byte(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sput_byte: Cannot use sput_byte on a non-static field");
 	}
@@ -2377,7 +2413,8 @@ void Interpreter::sput_char(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sput_char: Cannot use sput_char on a non-static field");
 	}
@@ -2397,7 +2434,8 @@ void Interpreter::sput_short(const uint8_t* operand_) {
 	auto& frame = _rt.currentFrame();
 	auto& classloader = _rt.getClassLoader();
 
-	auto& field = classloader.resolveField(frame.getDexIdx(), fieldIndex);
+	// LIEF "phantom" field_id concern
+	auto& field = resolveStaticField(classloader.resolveField(frame.getDexIdx(), fieldIndex));
 	if (!field.isStatic()) {
 		throw VmException("sput_short: Cannot use sput_short on a non-static field");
 	}

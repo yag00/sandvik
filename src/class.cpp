@@ -330,7 +330,10 @@ Field& Class::getField(const std::string& name_) const {
 	if (it != _fields.end()) {
 		return *(it->second);
 	}
-	throw VmException("Field not found: {}", name_);
+	if (hasSuperClass()) {
+		return getSuperClass().getField(name_);
+	}
+	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
 }
 
 Field& Class::getField(uint32_t idx_) const {
@@ -342,7 +345,15 @@ Field& Class::getField(uint32_t idx_) const {
 	if (hasSuperClass()) {
 		return getSuperClass().getField(idx_);
 	}
-	throw std::out_of_range(fmt::format("Field index not found: {}", idx_));
+	throw NoSuchFieldError(fmt::format("{}: field index {}", getFullname(), idx_));
+}
+
+Field& Class::getOwnField(const std::string& name_) const {
+	auto it = _fields.find(name_);
+	if (it != _fields.end()) {
+		return *(it->second);
+	}
+	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
 }
 
 std::vector<std::string> Class::getFieldList() const {
@@ -361,7 +372,7 @@ size_t Class::getFieldOffset(const std::string& name_) const {
 		}
 		index++;
 	}
-	throw VmException("Field not found: {}", name_);
+	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
 }
 
 Class& Class::getSuperClass() const {

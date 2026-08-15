@@ -131,6 +131,12 @@ namespace sandvik {
 			 * @return Reference to the Field object.
 			 */
 			Field& getField(uint32_t idx_) const;
+			/** @brief Gets a field declared directly in this class (no superclass fallback).
+			 * @param name_ Name of the field.
+			 * @return Reference to the Field object.
+			 * @throws VmException if not found locally.
+			 */
+			Field& getOwnField(const std::string& name_) const;
 			/** @brief Gets the list of field names.
 			 * @return Vector of field names.
 			 */

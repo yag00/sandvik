@@ -33,6 +33,7 @@
 namespace sandvik {
 	class Method;
 	class Class;
+	class Field;
 	class JThread;
 	/** @brief Interpreter class
 	 */
@@ -495,6 +496,7 @@ namespace sandvik {
 			                               const std::string& signature_) const;
 			Method* resolveInterfaceHierarchyMethod(Class& interfaceClass_, const std::string& methodname_, const std::string& signature_,
 			                                        std::unordered_set<std::string>& visited_) const;
+			Field& resolveStaticField(Field& initial_) const;
 
 			std::vector<ObjectRef> getInvokeMethodArgs(const uint8_t* operand_) const;
 
