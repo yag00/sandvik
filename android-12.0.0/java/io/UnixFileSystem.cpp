@@ -76,6 +76,18 @@ extern "C" {
 		return 0;
 	}
 
+	JNIEXPORT jstring JNICALL Java_java_io_UnixFileSystem_canonicalize0(JNIEnv* env, jobject obj, jstring path) {
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+
+		auto pathStr = sandvik::native::getObject(path);
+		char resolvedPath[PATH_MAX];
+		if (realpath(pathStr->str().c_str(), resolvedPath) != nullptr) {
+			return (jstring)Object::make(classloader, resolvedPath);
+		}
+		return path;
+	}
+
 #if 0
 JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_getLastModifiedTime0(JNIEnv* env, jobject obj) {
     logger.fwarning("{} not implemented!", __FUNCTION__);
