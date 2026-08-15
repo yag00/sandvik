@@ -227,8 +227,6 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 		auto& classType = classObj->getClassType();
 
-		logger.finfo("[Class.getComponentType] object={} objectClass={} isArray={}", (void*)classObj, classType.getFullname(), classType.isArray());
-
 		// Check if the class is an array
 		if (!classType.isArray()) {
 			return (jobject)Object::makeNull();
