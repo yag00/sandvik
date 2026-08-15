@@ -121,7 +121,7 @@ def build(bld):
     # check style
     # -------------------------------------------------
     checkstyle_sources = bld.path.ant_glob(
-        ['android-12.0.0/**/*.cpp', 'sanddirt/**/*.java', 'src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
+        ['android/12.0.0/natives/**/*.cpp', 'src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
     bld.checkstyle(
         inputs=checkstyle_sources,
     )
@@ -146,7 +146,9 @@ def build(bld):
     # -------------------------------------------------
     # build sandvik library
     # -------------------------------------------------
-    sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c', 'android-12.0.0/**/*.cpp'], excl=['src/main.cpp'])
+    sources = bld.path.ant_glob(
+        ['src/**/*.cpp', 'src/**/*.c', 'android/12.0.0/natives/**/*.cpp'],
+        excl=['src/main.cpp'])
     bld.shlib(
         features=['resources', 'doxygen'],
         source=sources,
@@ -156,7 +158,6 @@ def build(bld):
         use=['FMT', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
         linkflags=["-Wl,-z,defs,-licuuc"],
         install_path='${PREFIX}/lib',
-        # resources       = 'android-12.0.0/bin/core-oj.dex.jar',
         doxyfile='doc/sandvik.doxygen',
     )
     # -------------------------------------------------
