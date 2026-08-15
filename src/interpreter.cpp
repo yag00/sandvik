@@ -556,6 +556,46 @@ std::vector<ObjectRef> Interpreter::getInvokeMethodArgs(const uint8_t* operand_)
 	return args;
 }
 
+bool Interpreter::tryRedirectToStringFactory(const Method& method, const std::vector<ObjectRef>& args, uint32_t thisRegIdx) {
+	// Check if the method is a constructor of java.lang.String
+	if (method.getName() != "<init>" || method.getClass().getFullname() != "java.lang.String") {
+		return false;
+	}
+	// Search for a matching signature in the STRING_FACTORY_MAPPINGS
+	const StringFactoryMapping* mapping = nullptr;
+	for (const auto& entry : STRING_FACTORY_MAPPINGS) {
+		if (entry.initSig == method.getSignature()) {
+			mapping = &entry;
+			break;
+		}
+	}
+	logger.fdebug("Redirecting String constructor {} to StringFactory method {}", method.getSignature(), mapping ? mapping->targetSig : "none");
+	// If no mapping is found, return false to fallback on the standard behavior
+	if (!mapping) {
+		return false;
+	}
+	// Prepare the arguments for the StringFactory method, excluding the 'this' reference
+	std::vector<ObjectRef> factoryArgs(args.begin() + 1, args.end());
+
+	// Load the StringFactory class and retrieve the corresponding method
+	auto& sfClass = _rt.getClassLoader().getOrLoad("Ljava/lang/StringFactory;");
+	auto& sfMethod = sfClass.getMethod(std::string(mapping->targetName), std::string(mapping->targetSig));
+	// If the StringFactory method is native, execute it directly; otherwise, create a new frame for it
+	if (sfMethod.isNative()) {
+		executeNativeMethod(sfMethod, factoryArgs);
+		auto& frame = _rt.currentFrame();
+		sandvik::ObjectRef newString = frame.getReturnObject();
+		frame.setObjRegister(thisRegIdx, newString);
+	} else {
+		auto& newframe = _rt.newFrame(sfMethod);
+		for (size_t i = 0; i < factoryArgs.size(); ++i) {
+			uint32_t regIdx = sfMethod.getNbRegisters() - factoryArgs.size() + i;
+			newframe.setObjRegister(regIdx, factoryArgs[i]);
+		}
+	}
+	return true;
+}
+
 // nop
 void Interpreter::nop(const uint8_t* operand_) {
 	// No operation
@@ -2591,6 +2631,13 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 	} else {
 		trace.logCall("invoke-direct", method.getClass().getFullname(), method.getName(), method.getSignature(), args, method.isStatic());
 	}
+
+	uint32_t thisRegIdx = operand_[4] & 0x0F;
+	if (tryRedirectToStringFactory(method, args, thisRegIdx)) {
+		frame.pc() += 5;
+		return;
+	}
+
 	if (method.isNative()) {
 		executeNativeMethod(method, args);
 	} else {

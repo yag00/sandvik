@@ -41,4 +41,17 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 		return (jstring)sandvik::Object::make(classloader, str);
 	}
+
+	JNIEXPORT jstring JNICALL Java_java_lang_StringFactory_newStringFromUtf8Bytes(JNIEnv* env, jclass clazz, jbyteArray bytes) {
+		if (bytes == nullptr) {
+			throw NullPointerException("Null byte array in StringFactory.newStringFromUtf8Bytes");
+		}
+		jsize len = env->GetArrayLength(bytes);
+		std::vector<jbyte> buf(len);
+		env->GetByteArrayRegion(bytes, 0, len, buf.data());
+		std::string str(buf.begin(), buf.end());
+		auto jenv = native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+		return (jstring)sandvik::Object::make(classloader, str);
+	}
 }  // extern "C"
