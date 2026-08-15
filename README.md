@@ -80,8 +80,16 @@ Sandvik can be used to run Dalvik bytecode files (`.dex`) or Android application
 - `--apk=[file]`
   Specify the APK file to load.
 
+- `--android-version=[version]`
+  Specify the Android version to load (must be the name of a folder inside ̀`./android/` directory)
+- ̀`--jar-dir=[dir]`
+  Specify the directory containing the JAR files to load, alternative to ̀`--jar ... --jar ... --jar ...`. If not set `--jar` not specified as well, and if `android-version` is set, it will be defined as `android/{android-version}/bin`. If a `order.txt` file is found in this folder, only JAR mentioned will be loaded and in the specified order.
+
 - `--jar=[file]`
-  Specify the Jar files to load.
+  Specify the JAR files to load.
+
+- ̀`--android-root=[dir]`
+  Specify the directory containing the virtual Android filesystem root directory. If not set and if `android-version` is set, it will be defined as `android/{android-version}/fs`.
 
 - `--main=[classname]`
   Specify the main class to run.
