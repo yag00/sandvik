@@ -187,6 +187,14 @@ extern "C" {
 		return reinterpret_cast<jlong>(result);
 	}
 
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_munmap(JNIEnv* env, jclass clazz, jlong address, jlong length) {
+		int result = ::munmap(reinterpret_cast<void*>(address), static_cast<size_t>(length));
+		if (result == -1) {
+			throw IOException(fmt::format("munmap failed: {}", strerror(errno)));
+		}
+		return result;
+	}
+
 	JNIEXPORT jobject JNICALL Java_libcore_io_Linux_fstat(JNIEnv* env, jclass clazz, jobject fdObj) {
 		auto fdObject = sandvik::native::getObject(fdObj);
 		int fd = fdObject->getField("descriptor")->getValue();
