@@ -81,7 +81,7 @@ extern "C" {
 	}
 	JNIEXPORT jlong JNICALL Java_libcore_io_Linux_sysconf(JNIEnv* env, jclass, jint name) {
 		errno = 0;
-		logger.fwarning("call sysconf(name={})", name);
+		logger.fdebug("call sysconf(name={})", name);
 		long result = 0;  // sysconf(name);
 		if (result == -1 && errno != 0) {
 			logger.ferror("sysconf failed with error: {}", strerror(errno));

@@ -41,28 +41,19 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 		auto& objclass = classloader.getOrLoad(objstr->str());
 		logger.debug(fmt::format("Class.forName: Loaded class {}", objclass.getFullname()));
-		auto& clazz = classloader.getOrLoad("java/lang/Class");
-		auto classObj = sandvik::Object::make(clazz);
-		classObj->setField("internal", sandvik::Object::make(objclass));
-		return (jobject)classObj;
+		return (jobject)sandvik::Object::makeConstClass(classloader, objclass);
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_newInstance(JNIEnv* env, jobject obj) {
 		auto classObj = sandvik::native::getObject(obj);
-		const Class* targetClass = nullptr;
-		auto internalClass = classObj->getField("internal");
-		if (internalClass && !internalClass->isNull()) {
-			targetClass = &internalClass->getClass();
-		}
-		if (!targetClass) {
-			targetClass = &classObj->getClassType();
-		}
+		const Class& targetClass = classObj->getClassType();
 
-		logger.debug(fmt::format("Class.newInstance: Creating new instance of {}", targetClass->getFullname()));
-		jclass jtargetClass = (jclass)Object::make(const_cast<Class&>(*targetClass));
+		logger.debug(fmt::format("Class.newInstance: Creating new instance of {}", targetClass.getFullname()));
+		jclass jtargetClass = (jclass)Object::make(const_cast<Class&>(targetClass));
+
 		jmethodID ctorID = env->GetMethodID(jtargetClass, "<init>", "()V");
 		if (!ctorID) {
-			throw NoSuchMethodException(fmt::format("Class.newInstance: default constructor <init>()V not found in {}", targetClass->getFullname()));
+			throw NoSuchMethodException(fmt::format("Class.newInstance: default constructor <init>()V not found in {}", targetClass.getFullname()));
 		}
 		return env->NewObject(jtargetClass, ctorID);
 	}
@@ -174,15 +165,15 @@ extern "C" {
 		auto classObj = sandvik::native::getObject(obj);
 		auto& classloader = jenv->getClassLoader();
 
-		auto internalClass = classObj->getField("internal");
-		logger.debug(fmt::format("Class.getDeclaredConstructor: Getting constructor for class {}", internalClass->toString()));
+		const Class& targetClass = classObj->getClassType();
+		logger.debug(fmt::format("Class.getDeclaredConstructor: Getting constructor for class {}", targetClass.getFullname()));
 
 		// Create a java.lang.reflect.Constructor object
 		auto& ctorClass = classloader.getOrLoad("java/lang/reflect/Constructor");
 		auto ctorObj = sandvik::Object::make(ctorClass);
 
 		// Set fields as needed (e.g., 'declaringClass', 'parameterTypes', etc.)
-		ctorObj->setField("declaringClass", sandvik::Object::make(internalClass->getClass()));
+		ctorObj->setField("declaringClass", Object::makeConstClass(classloader, const_cast<Class&>(targetClass)));
 		// For simplicity, parameterTypes is empty for default constructor
 		ctorObj->setField("parameterTypes", sandvik::Object::make(classloader.getOrLoad("java/lang/Object")));
 
