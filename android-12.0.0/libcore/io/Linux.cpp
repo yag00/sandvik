@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include <fmt/format.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
@@ -36,6 +37,7 @@
 #include "object.hpp"
 #include "system/env_var.hpp"
 #include "system/logger.hpp"
+#include "vfs.hpp"
 
 using namespace sandvik;
 
@@ -154,12 +156,12 @@ extern "C" {
 
 	JNIEXPORT jobject JNICALL Java_libcore_io_Linux_open(JNIEnv* env, jclass clazz, jstring path, jint flags, jint mode) {
 		const char* pathCStr = env->GetStringUTFChars(path, nullptr);
-		int fd = ::open(pathCStr, flags, mode);
+		std::string realPath = VFS::resolve(pathCStr);
+		int fd = ::open(realPath.c_str(), flags, mode);
 		int openErrno = errno;
-		std::string pathStr = pathCStr;
 		env->ReleaseStringUTFChars(path, pathCStr);
 		if (fd == -1) {
-			throw IOException(fmt::format("open failed on '{}' (flags={:#x}, mode={:#o}): {}", pathStr, flags, mode, strerror(openErrno)));
+			throw IOException(fmt::format("open failed on '{}' (flags={:#x}, mode={:#o}): {}", realPath, flags, mode, strerror(openErrno)));
 		}
 
 		jclass fileDescriptorClass = env->FindClass("java/io/FileDescriptor");
@@ -168,9 +170,21 @@ extern "C" {
 
 		jfieldID descriptorField = env->GetFieldID(fileDescriptorClass, "descriptor", "I");
 		env->SetIntField(fileDescriptorObj, descriptorField, fd);
-		logger.fdebug("Linux.open('{}') -> fd={}", pathStr, fd);
+		logger.fdebug("Linux.open('{}') -> fd={}", realPath, fd);
 
 		return fileDescriptorObj;
+	}
+
+	JNIEXPORT jlong JNICALL Java_libcore_io_Linux_mmap(JNIEnv* env, jclass clazz, jlong address, jlong length, jint prot, jint flags, jobject fdObj,
+	                                                   jlong offset) {
+		auto fdObject = sandvik::native::getObject(fdObj);
+		int fd = fdObject->getField("descriptor")->getValue();
+
+		void* result = ::mmap(reinterpret_cast<void*>(address), static_cast<size_t>(length), prot, flags, fd, static_cast<off_t>(offset));
+		if (result == MAP_FAILED) {
+			throw IOException(fmt::format("mmap failed: {}", strerror(errno)));
+		}
+		return reinterpret_cast<jlong>(result);
 	}
 
 	JNIEXPORT jobject JNICALL Java_libcore_io_Linux_fstat(JNIEnv* env, jclass clazz, jobject fdObj) {

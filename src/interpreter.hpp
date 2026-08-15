@@ -509,7 +509,7 @@ namespace sandvik {
 					std::string_view targetSig;
 			};
 
-			// Mapping of String constructors to their corresponding StringFactory methods 
+			// Mapping of String constructors to their corresponding StringFactory methods
 			static constexpr std::array<StringFactoryMapping, 13> STRING_FACTORY_MAPPINGS = {{
 			    {"()V", "newEmptyString", "()Ljava/lang/String;"},
 			    {"([B)V", "newStringFromBytes", "([B)Ljava/lang/String;"},

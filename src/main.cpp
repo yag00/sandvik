@@ -26,10 +26,12 @@
 #include "jni.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
+#include "system/env_var.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
 #include "trace.hpp"
 #include "version.hpp"
+#include "vfs.hpp"
 #include "vm.hpp"
 
 using namespace sandvik;
@@ -51,6 +53,7 @@ int main(int argc, char** argv) {
 	args::ValueFlag<std::string> jarDir(parser, "dir", "Directory containing runtime JARs (loaded in order)", {"jar-dir"});
 	args::ValueFlagList<std::string> jarFiles(parser, "file", "Specify the Jar files to load", {"jar"});
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
+	args::ValueFlag<std::string> androidRoot(parser, "dir", "Specify the virtual Android filesystem root directory", {"android-root"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
 
@@ -134,6 +137,9 @@ int main(int argc, char** argv) {
 	// load apk file
 	if (!args::get(apkFile).empty()) {
 		vm.loadApk(args::get(apkFile));
+	}
+	if (!args::get(androidRoot).empty()) {
+		VFS::setAndroidRoot(args::get(androidRoot));
 	}
 	// run the VM
 	try {

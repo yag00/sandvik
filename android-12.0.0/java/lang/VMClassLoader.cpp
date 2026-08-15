@@ -28,16 +28,13 @@
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vfs.hpp"
 
 using namespace sandvik;
 
 namespace {
 	std::mutex g_cacheMutex;
 	std::unordered_map<std::string, std::string> g_extractedCache;
-
-	std::string cacheRoot() {
-		return "/tmp/sandvik-res-cache";
-	}
 
 	std::string writeToCache(const std::string& name, const std::vector<uint8_t>& data) {
 		std::lock_guard<std::mutex> lock(g_cacheMutex);
@@ -47,7 +44,7 @@ namespace {
 			return it->second;
 		}
 
-		const std::string root = cacheRoot();
+		const std::string root = VFS::getHostCacheRoot();
 		std::error_code ec;
 		std::filesystem::create_directories(root, ec);
 		if (ec) {
