@@ -90,8 +90,22 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 			continue;
 		}
 
-		// Otherwise: keep existing method
-		logger.fwarning("Duplicate method found: {}{} in class {}", name, signature, getFullname());
+		if (!newHasCode && oldHasCode) {
+			// Keep existing method
+			continue;
+		}
+
+		if (!newHasCode && !oldHasCode) {
+			// Both are stubs, keep existing method
+			continue;
+		}
+
+		if (newHasCode && oldHasCode) {
+			// Both have code, keep existing method
+			continue;
+		}
+
+		logger.fwarning("Conflict between new and existing method found: {}{} in class {}", name, signature, getFullname());
 	}
 	// Initialize fields
 	for (const auto& field : class_.fields()) {
