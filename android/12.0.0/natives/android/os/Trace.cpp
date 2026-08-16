@@ -31,4 +31,10 @@ extern "C" {
 		(void)name;
 	}
 
+	JNIEXPORT void JNICALL Java_android_os_Trace_nativeTraceEnd(JNIEnv* env, jclass clazz, jlong tag) {
+		(void)env;
+		(void)clazz;
+		(void)tag;
+	}
+
 }  // extern "C"
