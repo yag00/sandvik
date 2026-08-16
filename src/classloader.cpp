@@ -366,19 +366,19 @@ void ClassLoader::linkClass(Class& class_) {
 			thisObj->setString(str);
 		});
 
-		auto& m2 = class_.getMethod("<init>", "(Ljava/lang/String;)V");
-		m2.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
-			// args: this, String
-			if (args.size() != 2) {
-				throw VmException("Invalid number of arguments for String.<init>");
-			}
-			auto thisObj = args[0];
-			auto otherStringObj = args[1];
-			if (!otherStringObj->isString()) {
-				throw VmException("Argument is not a String object");
-			}
-			thisObj->setString(otherStringObj->str());
-		});
+		// auto& m2 = class_.getMethod("<init>", "(Ljava/lang/String;)V");
+		// m2.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
+		// 	// args: this, String
+		// 	if (args.size() != 2) {
+		// 		throw VmException("Invalid number of arguments for String.<init>");
+		// 	}
+		// 	auto thisObj = args[0];
+		// 	auto otherStringObj = args[1];
+		// 	if (!otherStringObj->isString()) {
+		// 		throw VmException("Argument is not a String object");
+		// 	}
+		// 	thisObj->setString(otherStringObj->str());
+		// });
 
 		auto& m3 = class_.getMethod("<init>", "([C)V");
 		m3.hook([](Frame& frame, const std::vector<ObjectRef>& args) {

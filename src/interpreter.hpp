@@ -510,20 +510,20 @@ namespace sandvik {
 			};
 
 			// Mapping of String constructors to their corresponding StringFactory methods
-			static constexpr std::array<StringFactoryMapping, 13> STRING_FACTORY_MAPPINGS = {{
-			    {"()V", "newEmptyString", "()Ljava/lang/String;"},
-			    {"([B)V", "newStringFromBytes", "([B)Ljava/lang/String;"},
-			    {"([BII)V", "newStringFromBytes", "([BII)Ljava/lang/String;"},
-			    {"([BIILjava/lang/String;)V", "newStringFromBytes", "([BIILjava/lang/String;)Ljava/lang/String;"},
-			    {"([BIILjava/nio/charset/Charset;)V", "newStringFromBytes", "([BIILjava/nio/charset/Charset;)Ljava/lang/String;"},
-			    {"([BLjava/lang/String;)V", "newStringFromBytes", "([BLjava/lang/String;)Ljava/lang/String;"},
-			    {"([BLjava/nio/charset/Charset;)V", "newStringFromBytes", "([BLjava/nio/charset/Charset;)Ljava/lang/String;"},
-			    {"(Ljava/lang/String;)V", "newStringFromString", "(Ljava/lang/String;)Ljava/lang/String;"},
-			    {"(Ljava/lang/StringBuffer;)V", "newStringFromStringBuffer", "(Ljava/lang/StringBuffer;)Ljava/lang/String;"},
-			    {"(Ljava/lang/StringBuilder;)V", "newStringFromStringBuilder", "(Ljava/lang/StringBuilder;)Ljava/lang/String;"},
-			    {"([III)V", "newStringFromCodePoints", "([III)Ljava/lang/String;"}
-			    // ([C)V and ([CII)V are intentionally omitted since libcode handles them directly
-			}};
+			static constexpr std::array<StringFactoryMapping, 11> STRING_FACTORY_MAPPINGS = {
+			    {{"()V", "newEmptyString", "()Ljava/lang/String;"},
+			     {"([B)V", "newStringFromBytes", "([B)Ljava/lang/String;"},
+			     //  {"([C)V", "newStringFromChars", "([C)Ljava/lang/String;"},
+			     {"([BII)V", "newStringFromBytes", "([BII)Ljava/lang/String;"},
+			     //  {"([CII)V", "newStringFromChars", "(II[C)Ljava/lang/String;"},
+			     {"([BIILjava/lang/String;)V", "newStringFromBytes", "([BIILjava/lang/String;)Ljava/lang/String;"},
+			     {"([BIILjava/nio/charset/Charset;)V", "newStringFromBytes", "([BIILjava/nio/charset/Charset;)Ljava/lang/String;"},
+			     {"([BLjava/lang/String;)V", "newStringFromBytes", "([BLjava/lang/String;)Ljava/lang/String;"},
+			     {"([BLjava/nio/charset/Charset;)V", "newStringFromBytes", "([BLjava/nio/charset/Charset;)Ljava/lang/String;"},
+			     {"(Ljava/lang/String;)V", "newStringFromString", "(Ljava/lang/String;)Ljava/lang/String;"},
+			     {"(Ljava/lang/StringBuffer;)V", "newStringFromStringBuffer", "(Ljava/lang/StringBuffer;)Ljava/lang/String;"},
+			     {"(Ljava/lang/StringBuilder;)V", "newStringFromStringBuilder", "(Ljava/lang/StringBuilder;)Ljava/lang/String;"},
+			     {"([III)V", "newStringFromCodePoints", "([III)Ljava/lang/String;"}}};
 	};
 }  // namespace sandvik
 
