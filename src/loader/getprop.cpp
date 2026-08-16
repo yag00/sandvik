@@ -19,12 +19,15 @@
 #include "getprop.hpp"
 
 #include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
+#include "system/logger.hpp"
+
 using namespace sandvik;
 
-std::string Getprop::trim(const std::string& value_) {
+std::string GetProp::trim(const std::string& value_) {
 	size_t first = 0;
 	while (first < value_.size() && std::isspace(static_cast<unsigned char>(value_[first])) != 0) {
 		++first;
@@ -38,7 +41,7 @@ std::string Getprop::trim(const std::string& value_) {
 	return value_.substr(first, last - first);
 }
 
-bool Getprop::parseLine(const std::string& line_, std::string& keyOut_, std::string& valueOut_) {
+bool GetProp::parseLine(const std::string& line_, std::string& keyOut_, std::string& valueOut_) {
 	auto line = trim(line_);
 	if (line.empty() || line[0] == '#') {
 		return false;
@@ -65,7 +68,7 @@ bool Getprop::parseLine(const std::string& line_, std::string& keyOut_, std::str
 	return false;
 }
 
-size_t Getprop::loadFromText(const std::string& output_) {
+size_t GetProp::loadFromText(const std::string& output_) {
 	std::unordered_map<std::string, std::string> parsed;
 	std::istringstream stream(output_);
 	std::string line;
@@ -82,18 +85,26 @@ size_t Getprop::loadFromText(const std::string& output_) {
 	return _properties.size();
 }
 
-size_t Getprop::loadFromFile(const std::string& path_) {
+size_t GetProp::loadFromFile(const std::string& path_) {
+	// Check if file exists and is readable
+	if (!std::filesystem::exists(path_)) {
+		logger.fwarning("Property file {} not found, skipping", path_);
+		return 0;
+	}
 	std::ifstream in(path_);
 	if (!in.is_open()) {
+		logger.fwarning("Property file {} could not be opened, skipping", path_);
 		return 0;
 	}
 
 	std::ostringstream buffer;
 	buffer << in.rdbuf();
-	return loadFromText(buffer.str());
+	auto res = loadFromText(buffer.str());
+	logger.fdebug("Loaded {} properties from {}", res, path_);
+	return res;
 }
 
-std::string Getprop::get(const std::string& key_, const std::string& defaultValue_) const {
+std::string GetProp::get(const std::string& key_, const std::string& defaultValue_) const {
 	std::lock_guard lock(_mutex);
 	auto it = _properties.find(key_);
 	if (it == _properties.end()) {
@@ -102,12 +113,12 @@ std::string Getprop::get(const std::string& key_, const std::string& defaultValu
 	return it->second;
 }
 
-bool Getprop::has(const std::string& key_) const {
+bool GetProp::has(const std::string& key_) const {
 	std::lock_guard lock(_mutex);
 	return _properties.find(key_) != _properties.end();
 }
 
-void Getprop::clear() {
+void GetProp::clear() {
 	std::lock_guard lock(_mutex);
 	_properties.clear();
 }

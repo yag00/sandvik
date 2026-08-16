@@ -119,16 +119,6 @@ int main(int argc, char** argv) {
 	trace.enableInstructionTrace(args::get(instructiontrace));
 	trace.enableCallTrace(args::get(calltrace));
 
-	if (!args::get(propFile).empty()) {
-		const auto& path = args::get(propFile);
-		if (std::filesystem::exists(path)) {
-			auto count = Getprop::getInstance().loadFromFile(path);
-			logger.fdebug("Loaded {} properties from {}", count, path);
-		} else {
-			logger.fwarning("Property file {} not found, skipping", path);
-		}
-	}
-
 	if (args::get(mainClass).empty() && args::get(apkFile).empty()) {
 		std::cerr << "Main class not specified" << std::endl << std::endl;
 		std::cerr << parser;
@@ -141,6 +131,13 @@ int main(int argc, char** argv) {
 	auto baseFileDir = std::optional<std::string>();
 	if (!args::get(androidVersion).empty()) {
 		baseFileDir = "android/" + args::get(androidVersion) + "/";
+	}
+
+	// Load Device Properties from getprop output file if specified
+	if (!args::get(propFile).empty()) {
+		GetProp::getInstance().loadFromFile(args::get(propFile));
+	} else if (baseFileDir.has_value()) {
+		GetProp::getInstance().loadFromFile(baseFileDir.value() + "getprop.prop");
 	}
 
 	// Load DEX files

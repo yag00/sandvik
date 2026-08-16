@@ -217,6 +217,24 @@ extern "C" {
 		                      static_cast<jlong>(st.st_blksize), static_cast<jlong>(st.st_blocks));
 	}
 
+	JNIEXPORT jobject JNICALL Java_libcore_io_Linux_stat(JNIEnv* env, jclass clazz, jstring path) {
+		const char* pathCStr = env->GetStringUTFChars(path, nullptr);
+		std::string realPath = VFS::resolve(pathCStr);
+		struct stat st;
+		logger.fdebug("Linux.stat('{}')", realPath);
+		if (::stat(realPath.c_str(), &st) == -1) {
+			throw IOException(fmt::format("stat failed on '{}': {}", realPath, strerror(errno)));
+		}
+		env->ReleaseStringUTFChars(path, pathCStr);
+
+		jclass structStatClass = env->FindClass("android/system/StructStat");
+		jmethodID ctor = env->GetMethodID(structStatClass, "<init>", "(JJIJIIJJJJJJJ)V");
+		return env->NewObject(structStatClass, ctor, static_cast<jlong>(st.st_dev), static_cast<jlong>(st.st_ino), static_cast<jint>(st.st_mode),
+		                      static_cast<jlong>(st.st_nlink), static_cast<jint>(st.st_uid), static_cast<jint>(st.st_gid), static_cast<jlong>(st.st_rdev),
+		                      static_cast<jlong>(st.st_size), static_cast<jlong>(st.st_atime), static_cast<jlong>(st.st_mtime), static_cast<jlong>(st.st_ctime),
+		                      static_cast<jlong>(st.st_blksize), static_cast<jlong>(st.st_blocks));
+	}
+
 	JNIEXPORT void JNICALL Java_libcore_io_Linux_close(JNIEnv* env, jclass clazz, jobject fdObj) {
 		if (fdObj == nullptr) {
 			return;

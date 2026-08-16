@@ -54,8 +54,8 @@ extern "C" {
 		(void)clazz;
 
 		auto keyStr = sandvik::native::getString(key)->str();
-		if (sandvik::Getprop::getInstance().has(keyStr)) {
-			auto value = sandvik::Getprop::getInstance().get(keyStr);
+		if (sandvik::GetProp::getInstance().has(keyStr)) {
+			auto value = sandvik::GetProp::getInstance().get(keyStr);
 			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), value);
 		}
 		logger.fwarning("SystemProperties.native_getString called with key: {}, returning default value", keyStr);
@@ -68,9 +68,9 @@ extern "C" {
 		(void)clazz;
 
 		auto keyStr = sandvik::native::getString(key)->str();
-		if (sandvik::Getprop::getInstance().has(keyStr)) {
+		if (sandvik::GetProp::getInstance().has(keyStr)) {
 			try {
-				auto value = sandvik::Getprop::getInstance().get(keyStr);
+				auto value = sandvik::GetProp::getInstance().get(keyStr);
 				return static_cast<jint>(std::stoi(value));
 			} catch (const std::exception&) {
 				logger.fwarning("SystemProperties.native_getInt invalid numeric value for key: {}", keyStr);
@@ -86,9 +86,9 @@ extern "C" {
 		(void)clazz;
 
 		auto keyStr = sandvik::native::getString(key)->str();
-		if (sandvik::Getprop::getInstance().has(keyStr)) {
+		if (sandvik::GetProp::getInstance().has(keyStr)) {
 			bool parsed = false;
-			if (parseBool(sandvik::Getprop::getInstance().get(keyStr), parsed)) {
+			if (parseBool(sandvik::GetProp::getInstance().get(keyStr), parsed)) {
 				return static_cast<jboolean>(parsed);
 			}
 			logger.fwarning("SystemProperties.native_getBoolean invalid bool value for key: {}", keyStr);

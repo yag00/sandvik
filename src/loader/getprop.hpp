@@ -34,8 +34,8 @@ namespace sandvik {
 	 * - [key]: [value]
 	 * - key=value
 	 */
-	class Getprop : public Singleton<Getprop> {
-			friend class Singleton<Getprop>;
+	class GetProp : public Singleton<GetProp> {
+			friend class Singleton<GetProp>;
 
 		public:
 			/**
@@ -73,8 +73,8 @@ namespace sandvik {
 			void clear();
 
 		private:
-			Getprop() = default;
-			~Getprop() = default;
+			GetProp() = default;
+			~GetProp() = default;
 
 			static bool parseLine(const std::string& line_, std::string& keyOut_, std::string& valueOut_);
 			static std::string trim(const std::string& value_);
