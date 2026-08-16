@@ -154,6 +154,10 @@ extern "C" {
 		(void)setpgid(static_cast<pid_t>(pid), static_cast<pid_t>(pgid));
 	}
 
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_getgid(JNIEnv* env, jclass) {
+		return static_cast<jint>(getgid());
+	}
+
 	JNIEXPORT jobject JNICALL Java_libcore_io_Linux_open(JNIEnv* env, jclass clazz, jstring path, jint flags, jint mode) {
 		const char* pathCStr = env->GetStringUTFChars(path, nullptr);
 		std::string realPath = VFS::resolve(pathCStr);
