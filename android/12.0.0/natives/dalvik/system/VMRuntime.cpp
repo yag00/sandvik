@@ -73,4 +73,9 @@ extern "C" {
 		(void)thiz;
 		return sizeof(void*) == 8 ? JNI_TRUE : JNI_FALSE;
 	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_preloadDexCaches(JNIEnv* env, jclass) {
+		(void)env;
+		// No-op for Sandvik VM, as it does not use dex caches.
+	}
 }  // extern "C"
