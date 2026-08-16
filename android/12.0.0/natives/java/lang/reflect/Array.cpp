@@ -60,4 +60,23 @@ extern "C" {
 		return (jobject)newArray;
 	}
 
+	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Array_createObjectArray(JNIEnv* env, jclass, jobject componentType, jint length) {
+		if (length < 0) {
+			throw NegativeArraySizeException(std::to_string(length));
+		}
+
+		auto componentTypeObj = sandvik::native::getObject(componentType);
+		if (componentTypeObj == nullptr || componentTypeObj->isNull()) {
+			throw NullPointerException("componentType");
+		}
+
+		const Class& componentClass = componentTypeObj->getClassType();
+
+		ClassLoader& classloader = componentClass.getClassLoader();
+
+		ObjectRef arrayObj = Object::makeArray(classloader, componentClass, {static_cast<uint32_t>(length)});
+
+		return (jobject)arrayObj;
+	}
+
 }  // extern "C"
