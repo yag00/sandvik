@@ -379,7 +379,25 @@ bool Object::operator==(std::nullptr_t) const {
 }
 
 ObjectRef Object::clone() const {
-	throw CloneNotSupportedException();
+	Class& cls = this->getClass();
+
+	if (!cls.implements("java.lang.Cloneable")) {
+		throw CloneNotSupportedException();
+	}
+
+	ObjectRef newObj = Object::make(cls);
+
+	for (Class* c = &cls; c != nullptr; c = c->hasSuperClass() ? &c->getSuperClass() : nullptr) {
+		for (const auto& fieldName : c->getFieldList()) {
+			Field& f = c->getField(fieldName);
+			if (f.isStatic()) {
+				continue;
+			}
+			newObj->setField(fieldName, this->getField(fieldName));
+		}
+	}
+
+	return newObj;
 }
 
 void Object::monitorEnter() {

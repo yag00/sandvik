@@ -163,6 +163,9 @@ bool Class::implements(const std::string& interface_) const {
 			return true;
 		}
 	}
+	if (hasSuperClass()) {
+		return getSuperClass().implements(interface_);
+	}
 	return false;
 }
 
