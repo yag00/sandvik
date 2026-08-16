@@ -1,4 +1,5 @@
 android-util-stubs.dex.jar
+icu-stubs.dex.jar
 core-oj.dex.jar
 core-libart.dex.jar
 core-icu4j.dex.jar
