@@ -95,7 +95,7 @@ namespace sandvik {
 			std::vector<Vm*> _vms;
 
 			// object count limit before triggering GC
-			uint64_t _limit = 10000000;
+			uint64_t _limit = 50000000;
 			mutable std::mutex _mtx;
 			std::condition_variable _cv;
 			std::atomic<bool> _gcRequested{false};
