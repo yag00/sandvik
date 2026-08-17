@@ -78,4 +78,24 @@ extern "C" {
 		(void)env;
 		// No-op for Sandvik VM, as it does not use dex caches.
 	}
+
+	JNIEXPORT jobject JNICALL Java_dalvik_system_VMRuntime_newUnpaddedArray(JNIEnv* env, jobject thiz, jobject componentType, jint minLen) {
+		(void)thiz;
+
+		auto classObj = sandvik::native::getReferenceObjectOrNull(componentType);
+		if (classObj == nullptr || !classObj->isClass()) {
+			throw sandvik::NullPointerException("componentType is null");
+		}
+
+		if (minLen < 0) {
+			throw sandvik::VmException("newUnpaddedArray: negative length {}", minLen);
+		}
+
+		auto& classloader = sandvik::native::getNativeInterface(env)->getClassLoader();
+		const Class& elementType = classObj->getClassType();
+
+		sandvik::ObjectRef array = sandvik::Object::makeArray(classloader, elementType, {static_cast<uint32_t>(minLen)});
+
+		return (jobject)array;
+	}
 }  // extern "C"
