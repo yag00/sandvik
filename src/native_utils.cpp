@@ -55,10 +55,24 @@ Object* native::getString(jstring jstr) {
 	if (ptr == nullptr) {
 		throw NullPointerException("null object");
 	}
+	if (ptr->isNumberObject() && ptr->getValue() == 0) {
+		throw NullPointerException("null object");
+	}
 	if (!ptr->isString()) {
 		throw ClassCastException("Object is not a java.lang.String");
 	}
 	return ptr;
+}
+
+Object* native::getNullableString(jstring jstr) {
+	if (jstr == nullptr) {
+		return nullptr;
+	}
+	try {
+		return native::getString(jstr);
+	} catch (const NullPointerException&) {
+		return nullptr;
+	}
 }
 
 Array* native::getArray(jobject jarray) {

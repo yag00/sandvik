@@ -63,35 +63,23 @@ extern "C" {
 		// pas de chemins de recherche natifs spécifiques) : ne pas les caster
 		// sans vérifier isNull() d'abord.
 		std::string searchPath;
-		if (librarySearchPath != nullptr) {
-			auto searchPathObj = sandvik::native::getString(librarySearchPath);
-			if (searchPathObj) {
-				searchPath = searchPathObj->str();
-			}
+		if (auto obj = sandvik::native::getNullableString(librarySearchPath)) {
+			searchPath = obj->str();
 		}
 
 		std::string permittedLibPath;
-		if (libraryPermittedPath != nullptr) {
-			auto permittedLibObj = sandvik::native::getString(libraryPermittedPath);
-			if (permittedLibObj) {
-				permittedLibPath = permittedLibObj->str();
-			}
+		if (auto obj = sandvik::native::getNullableString(libraryPermittedPath)) {
+			permittedLibPath = obj->str();
 		}
 
 		std::string dexPathStr;
-		if (dexPath != nullptr) {
-			auto dexPathObj = sandvik::native::getString(dexPath);
-			if (dexPathObj) {
-				dexPathStr = dexPathObj->str();
-			}
+		if (auto obj = sandvik::native::getNullableString(dexPath)) {
+			dexPathStr = obj->str();
 		}
 
 		std::string permittedPathStr;
-		if (permittedPath != nullptr) {
-			auto permittedPathObj = sandvik::native::getString(permittedPath);
-			if (permittedPathObj) {
-				permittedPathStr = permittedPathObj->str();
-			}
+		if (auto obj = sandvik::native::getNullableString(permittedPath)) {
+			permittedPathStr = obj->str();
 		}
 
 		logger.fdebug("createClassloaderNamespace: searchPath='{}', permittedLibPath='{}', dexPath='{}', permittedPath='{}'", searchPath, permittedLibPath,

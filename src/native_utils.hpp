@@ -37,6 +37,8 @@ namespace sandvik {
 		Object* getString(jobject jstr);
 		/** @brief Retrieves a native Object from a Java jstring. */
 		Object* getString(jstring jstr);
+		/** @brief Retrieves a native Object from a Java jstring, or null if the jstring is null. */
+		Object* getNullableString(jstring jstr);
 		/** @brief Retrieves a native Array from a Java jobject. */
 		Array* getArray(jobject jarray);
 		/** @brief Retrieves the native interface from the Java environment. */
