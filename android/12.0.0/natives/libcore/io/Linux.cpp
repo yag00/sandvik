@@ -235,6 +235,26 @@ extern "C" {
 		                      static_cast<jlong>(st.st_blksize), static_cast<jlong>(st.st_blocks));
 	}
 
+	JNIEXPORT jboolean JNICALL Java_libcore_io_Linux_access(JNIEnv* env, jobject thiz, jstring path, jint mode) {
+		(void)env;
+		(void)thiz;
+
+		auto pathObj = native::getNullableString(path);
+		if (!pathObj) {
+			throw NullPointerException("path is null");
+		}
+		std::string pathStr = pathObj->str();
+
+		errno = 0;
+		int result = ::access(pathStr.c_str(), mode);
+
+		logger.fdebug("Linux.access: path='{}' mode={}", pathStr, mode);
+		if (result != 0) {
+			throw IOException(fmt::format("access failed on path='{}' mode={}: {}", pathStr, mode, strerror(errno)));
+		}
+		return JNI_TRUE;
+	}
+
 	JNIEXPORT void JNICALL Java_libcore_io_Linux_close(JNIEnv* env, jclass clazz, jobject fdObj) {
 		if (fdObj == nullptr) {
 			return;
