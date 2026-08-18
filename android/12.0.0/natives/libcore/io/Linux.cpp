@@ -201,7 +201,7 @@ extern "C" {
 
 	JNIEXPORT jint JNICALL Java_libcore_io_Linux_fcntlInt(JNIEnv* env, jobject obj, jobject fd, jint cmd, jint arg) {
 		auto fdObj = native::getObject(fd);
-		logger.finfo("Linux.fcntlInt(fd={}, cmd={}, arg={})", static_cast<void*>(fdObj), cmd, arg);
+		logger.fdebug("Linux.fcntlInt(fd={}, cmd={}, arg={})", static_cast<void*>(fdObj), cmd, arg);
 		// F_SETFD
 		if (cmd == 1030) {
 			return 0;

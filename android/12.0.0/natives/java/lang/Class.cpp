@@ -98,7 +98,7 @@ extern "C" {
 		}
 
 		auto declaringName = name.substr(0, pos);
-		logger.finfo("[Class.getDeclaringClass] {} -> {}", name, declaringName);
+		logger.fdebug("[Class.getDeclaringClass] {} -> {}", name, declaringName);
 		auto& declaringClass = classloader.getOrLoad(declaringName);
 
 		return (jobject)Object::makeConstClass(classloader, declaringClass);
