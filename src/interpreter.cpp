@@ -576,7 +576,9 @@ bool Interpreter::tryRedirectToStringFactory(const Method& method, const std::ve
 	}
 	// Prepare the arguments for the StringFactory method, excluding the 'this' reference
 	std::vector<ObjectRef> factoryArgs(args.begin() + 1, args.end());
-
+	if (mapping->initSig == "([CII)V") {
+		factoryArgs = {factoryArgs[1], factoryArgs[2], factoryArgs[0]};
+	}
 	// Load the StringFactory class and retrieve the corresponding method
 	auto& sfClass = _rt.getClassLoader().getOrLoad("Ljava/lang/StringFactory;");
 	auto& sfMethod = sfClass.getMethod(std::string(mapping->targetName), std::string(mapping->targetSig));
@@ -592,6 +594,8 @@ bool Interpreter::tryRedirectToStringFactory(const Method& method, const std::ve
 			uint32_t regIdx = sfMethod.getNbRegisters() - factoryArgs.size() + i;
 			newframe.setObjRegister(regIdx, factoryArgs[i]);
 		}
+		// Store the 'this' register index for the new frame to set the return value later
+		_stringCtorFixups[&newframe] = thisRegIdx;
 	}
 	return true;
 }
@@ -738,11 +742,24 @@ void Interpreter::return_wide(const uint8_t* operand_) {
 void Interpreter::return_object(const uint8_t* operand_) {
 	uint8_t dest = operand_[0];
 	auto ret = _rt.currentFrame().getObjRegister(dest);
+	Frame* returningFrame = &_rt.currentFrame();
+
+	// Check if there is a fixup for the returning frame (used for String constructor redirection)
+	auto fixupIt = _stringCtorFixups.find(returningFrame);
+	bool hasFixup = (fixupIt != _stringCtorFixups.end());
+	uint32_t fixupRegIdx = hasFixup ? fixupIt->second : 0;
+	if (hasFixup) {
+		_stringCtorFixups.erase(fixupIt);
+	}
+
 	_rt.popFrame();
 	if (_rt.end()) {
 		// main method return
 		_rt.setReturnObject(ret);
 		return;
+	}
+	if (hasFixup) {
+		_rt.currentFrame().setObjRegister(fixupRegIdx, ret);
 	} else {
 		_rt.currentFrame().setReturnObject(ret);
 	}
@@ -2632,7 +2649,7 @@ void Interpreter::invoke_direct(const uint8_t* operand_) {
 		trace.logCall("invoke-direct", method.getClass().getFullname(), method.getName(), method.getSignature(), args, method.isStatic());
 	}
 
-	uint32_t thisRegIdx = operand_[4] & 0x0F;
+	uint32_t thisRegIdx = operand_[3] & 0x0F;
 	if (tryRedirectToStringFactory(method, args, thisRegIdx)) {
 		frame.pc() += 5;
 		return;

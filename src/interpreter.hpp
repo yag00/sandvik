@@ -31,6 +31,7 @@
 #include "object.hpp"
 
 namespace sandvik {
+	class Frame;
 	class Method;
 	class Class;
 	class Field;
@@ -503,6 +504,8 @@ namespace sandvik {
 
 			JThread& _rt;
 			std::map<uint8_t, uint64_t> _instcoverage;
+
+			std::unordered_map<Frame*, uint32_t> _stringCtorFixups;
 			struct StringFactoryMapping {
 					std::string_view initSig;
 					std::string_view targetName;
@@ -510,12 +513,13 @@ namespace sandvik {
 			};
 
 			// Mapping of String constructors to their corresponding StringFactory methods
-			static constexpr std::array<StringFactoryMapping, 11> STRING_FACTORY_MAPPINGS = {
+			static constexpr std::array<StringFactoryMapping, 14> STRING_FACTORY_MAPPINGS = {
 			    {{"()V", "newEmptyString", "()Ljava/lang/String;"},
 			     {"([B)V", "newStringFromBytes", "([B)Ljava/lang/String;"},
-			     //  {"([C)V", "newStringFromChars", "([C)Ljava/lang/String;"},
+			     {"([C)V", "newStringFromChars", "([C)Ljava/lang/String;"},
 			     {"([BII)V", "newStringFromBytes", "([BII)Ljava/lang/String;"},
-			     //  {"([CII)V", "newStringFromChars", "(II[C)Ljava/lang/String;"},
+			     {"([CII)V", "newStringFromChars", "(II[C)Ljava/lang/String;"},
+			     {"(II[C)V", "newStringFromChars", "(II[C)Ljava/lang/String;"},
 			     {"([BIILjava/lang/String;)V", "newStringFromBytes", "([BIILjava/lang/String;)Ljava/lang/String;"},
 			     {"([BIILjava/nio/charset/Charset;)V", "newStringFromBytes", "([BIILjava/nio/charset/Charset;)Ljava/lang/String;"},
 			     {"([BLjava/lang/String;)V", "newStringFromBytes", "([BLjava/lang/String;)Ljava/lang/String;"},

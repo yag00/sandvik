@@ -348,56 +348,6 @@ void ClassLoader::visitReferences(const std::function<void(Object*)>& visitor_) 
 }
 
 void ClassLoader::linkClass(Class& class_) {
-	if (class_.getFullname() == "java.lang.String") {
-		auto& m = class_.getMethod("<init>", "([CII)V");
-		m.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
-			// args: this, char[], int, int
-			if (args.size() != 4) {
-				throw VmException("Invalid number of arguments for String.<init>");
-			}
-			auto thisObj = args[0];
-			auto charArray = args[1];
-			auto offset = args[2]->getValue();
-			size_t length = args[3]->getValue();
-			std::string str = "";
-			for (size_t i = 0; i < length; ++i) {
-				str += static_cast<char>(((ArrayRef)charArray)->getElement(offset + i)->getValue());
-			}
-			thisObj->setString(str);
-		});
-
-		// auto& m2 = class_.getMethod("<init>", "(Ljava/lang/String;)V");
-		// m2.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
-		// 	// args: this, String
-		// 	if (args.size() != 2) {
-		// 		throw VmException("Invalid number of arguments for String.<init>");
-		// 	}
-		// 	auto thisObj = args[0];
-		// 	auto otherStringObj = args[1];
-		// 	if (!otherStringObj->isString()) {
-		// 		throw VmException("Argument is not a String object");
-		// 	}
-		// 	thisObj->setString(otherStringObj->str());
-		// });
-
-		auto& m3 = class_.getMethod("<init>", "([C)V");
-		m3.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
-			// args: this, char[]
-			if (args.size() != 2) {
-				throw VmException("Invalid number of arguments for String.<init>");
-			}
-			auto thisObj = args[0];
-			auto charArray = args[1];
-			auto array = (ArrayRef)charArray;
-			std::string str = "";
-			for (size_t i = 0; i < array->getArrayLength(); ++i) {
-				str += static_cast<char>(array->getElement(i)->getValue());
-			}
-			thisObj->setString(str);
-		});
-		return;
-	}
-
 	if (class_.getFullname() == "java.lang.Class") {
 		class_.getMethod("getComponentType", "()Ljava/lang/Class;").makeNative();
 		if (class_.hasMethod("getSuperclass", "()Ljava/lang/Class;")) {
