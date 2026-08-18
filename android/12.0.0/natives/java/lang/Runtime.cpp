@@ -19,11 +19,8 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
-#include "array.hpp"
-#include "class.hpp"
-#include "classloader.hpp"
 #include "exceptions.hpp"
-#include "field.hpp"
+#include "gc.hpp"
 #include "jni.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
@@ -31,6 +28,7 @@
 #include "vm.hpp"
 
 /** @todo implementation **/
+using namespace sandvik;
 
 extern "C" {
 
@@ -64,11 +62,11 @@ JNIEXPORT void JNICALL Java_java_lang_Runtime_gc(JNIEnv* env, jobject obj) {
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Runtime_nativeGc(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT void JNICALL Java_java_lang_Runtime_nativeGc(JNIEnv* env, jobject obj) {
+		(void)env;
+		(void)obj;
+		GC::getInstance().requestCollect();
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_Runtime_runFinalization0(JNIEnv* env, jobject obj) {
