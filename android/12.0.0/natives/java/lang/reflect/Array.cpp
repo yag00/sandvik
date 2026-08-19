@@ -43,8 +43,8 @@ extern "C" {
 		std::vector<uint32_t> dims;
 		for (size_t i = 0; i < array->getArrayLength(); ++i) {
 			auto dim = array->getElement(i)->getValue();
-			if (dim <= 0) {
-				throw VmException("Array dimension cannot <= 0");
+			if (dim < 0) {
+				throw NegativeArraySizeException("Array dimension cannot be negative: " + std::to_string(dim));
 			}
 			dims.push_back(dim);
 		}
