@@ -28,6 +28,7 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "frame.hpp"
+#include "jthread.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
 #include "loader/rtld.hpp"
@@ -37,6 +38,7 @@
 #include "system/os_constants.hpp"
 #include "types.hpp"
 #include "utils.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
 
@@ -340,6 +342,15 @@ uint64_t ClassLoader::getDexIndex(const Dex& dex_) const {
 	throw VmException("DEX not found in classloader");
 }
 
+void ClassLoader::setVm(Vm& vm_) {
+	_vm = &vm_;
+}
+
+Vm& ClassLoader::getVm() const {
+	if (!_vm) throw VmException("ClassLoader has no associated Vm");
+	return *_vm;
+}
+
 void ClassLoader::visitReferences(const std::function<void(Object*)>& visitor_) const {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	for (const auto& [name, classPtr] : _classes) {
@@ -399,6 +410,46 @@ void ClassLoader::linkClass(Class& class_) {
 				throw VmException("System.loadLibrary called with null");
 			}
 			logger.fdebug("System.loadLibrary(\"{}\") -> no-op", lib->str());
+		});
+		return;
+	}
+	if (class_.getFullname() == "java.lang.ref.ReferenceQueue") {
+		auto& addMethod = class_.getMethod("add", "(Ljava/lang/ref/Reference;)V");
+		addMethod.hook([](Frame& frame, std::vector<ObjectRef>& args) {
+			// args: [0] = reference (static method, no 'this')
+			if (args.size() != 1) {
+				throw VmException("Invalid number of arguments for ReferenceQueue.add");
+			}
+			auto reference = args[0];
+			if (reference->isNull()) {
+				return;
+			}
+			// Sandvik has no real daemon thread draining the finalizer queue,
+			// so we simulate it synchronously here: immediately invoke
+			// finalize() on the reference's zombie/referent instead of truly
+			// enqueueing for later async processing.
+			auto zombie = reference->getField("zombie");
+			if (zombie->isNull()) {
+				return;
+			}
+
+			auto& cls = zombie->getClass();
+			if (!cls.hasMethod("finalize", "()V")) {
+				return;
+			}
+			auto& finalizeMethod = cls.getMethod("finalize", "()V");
+			if (finalizeMethod.isNative() || !finalizeMethod.hasBytecode()) {
+				return;
+			}
+			// Create a new thread to run the finalize method
+			auto& classloader = cls.getClassLoader();
+			auto& vm = classloader.getVm();
+			auto& currentThread = vm.currentThread();
+			auto& thread = currentThread.newChild(fmt::format("{}.finalize", cls.getFullname()));
+			auto& newframe = thread.newFrame(finalizeMethod);
+			newframe.setObjRegister(newframe.getMethod().getNbRegisters() - 1, zombie);
+			thread.runInCurrentThread();
+			currentThread.popChild();
 		});
 		return;
 	}

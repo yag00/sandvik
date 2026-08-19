@@ -501,6 +501,7 @@ namespace sandvik {
 
 			std::vector<ObjectRef> getInvokeMethodArgs(const uint8_t* operand_) const;
 			bool tryRedirectToStringFactory(const Method& method, const std::vector<ObjectRef>& args, uint32_t thisRegIdx);
+			void registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const;
 
 			JThread& _rt;
 			std::map<uint8_t, uint64_t> _instcoverage;

@@ -34,6 +34,7 @@ namespace sandvik {
 	class Field;
 	class Apk;
 	class Dex;
+	class Vm;
 	enum class TYPES;
 	/** @brief Class Loader class
 	 */
@@ -171,6 +172,14 @@ namespace sandvik {
 			 * @param visitor_ function to call for each referenced object
 			 */
 			void visitReferences(const std::function<void(Object*)>& visitor_) const;
+			/** @brief Set the virtual machine
+			 * @param vm_ reference to the virtual machine
+			 */
+			void setVm(Vm& vm_);
+			/** @brief Get the virtual machine
+			 * @return reference to the virtual machine
+			 */
+			Vm& getVm() const;
 
 		private:
 			friend class ClassBuilder;
@@ -183,6 +192,7 @@ namespace sandvik {
 			std::vector<std::unique_ptr<Dex>> _dexs;
 			std::map<std::string, std::unique_ptr<Class>, std::less<>> _classes;
 			mutable std::recursive_mutex _mutex;
+			Vm* _vm = nullptr;
 	};
 }  // namespace sandvik
 

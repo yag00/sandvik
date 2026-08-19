@@ -56,6 +56,7 @@ Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_uniq
 
 	// load self as a shared library to be able to resolve native methods
 	loadLibrary("");
+	_classloader->setVm(*this);
 }
 
 Vm::~Vm() {

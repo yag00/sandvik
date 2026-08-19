@@ -600,6 +600,42 @@ bool Interpreter::tryRedirectToStringFactory(const Method& method, const std::ve
 	return true;
 }
 
+void Interpreter::registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const {
+	// java.lang.Object.finalize() is a no-op; only classes that actually
+	// override it need to be tracked by java.lang.ref.FinalizerReference,
+	// mirroring what ART's native allocator does automatically on real
+	// Android. We only register when THIS class (not an inherited one)
+	// declares finalize() -- walking the hierarchy would double-register
+	// objects whose finalize() comes from a finalizable superclass, since
+	// the superclass's own instances already get registered when built.
+	if (cls_.getFullname() == "java.lang.Object") {
+		return;
+	}
+	static const std::unordered_set<std::string> excluded = {
+	    "java.lang.ref.FinalizerReference", "java.lang.ref.Reference",     "java.lang.ref.ReferenceQueue",
+	    "java.lang.ref.WeakReference",      "java.lang.ref.SoftReference", "java.lang.ref.PhantomReference",
+	};
+	if (excluded.count(cls_.getFullname())) {
+		return;
+	}
+	if (!cls_.hasMethod("finalize", "()V")) {
+		return;
+	}
+	auto& classloader = _rt.getClassLoader();
+	auto& frClass = classloader.getOrLoad("java.lang.ref.FinalizerReference");
+	auto& addMethod = frClass.getMethod("add", "(Ljava/lang/Object;)V");
+
+	// Create a new "fake" thread to execute the add() method (thread will be run in the current thread)
+	auto& currentThread = _rt.vm().currentThread();
+	auto& thread = currentThread.newChild(fmt::format("{}.{}", frClass.getFullname(), "add"));
+	auto& newframe = thread.newFrame(addMethod);
+	// Single Object param, static method
+	auto regidx = newframe.getMethod().getNbRegisters() - 1;
+	newframe.setObjRegister(regidx, obj_);
+	thread.runInCurrentThread();
+	currentThread.popChild();
+}
+
 // nop
 void Interpreter::nop(const uint8_t* operand_) {
 	// No operation
@@ -993,7 +1029,10 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 	}
 
 	logger.fdebug("new {}", cls.getFullname());
-	frame.setObjRegister(dest, Object::make(cls));
+	auto obj = Object::make(cls);
+	frame.setObjRegister(dest, obj);
+
+	registerFinalizerIfNeeded(cls, obj);
 	frame.pc() += 3;
 }
 // new-array vA, vB, type@CCCC
