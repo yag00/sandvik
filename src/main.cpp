@@ -35,6 +35,7 @@
 #include "version.hpp"
 #include "vfs.hpp"
 #include "vm.hpp"
+#include "zygote.hpp"
 
 using namespace sandvik;
 
@@ -166,6 +167,8 @@ int main(int argc, char** argv) {
 	} else if (baseFileDir.has_value()) {
 		VFS::setAndroidRoot(baseFileDir.value() + "fs");
 	}
+
+	setupZygoteSocket();
 
 	// Run the VM
 	try {

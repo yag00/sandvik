@@ -16,23 +16,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <jni/jni.h>
+#ifndef __ZYGOTE_HPP__
+#define __ZYGOTE_HPP__
 
-#include "system/logger.hpp"
+#include <unistd.h>
 
-extern "C" {
+#include <sys/socket.h>
+#include <sys/un.h>
 
-	// Called by Zygote startup to bracket process/thread creation; no-op in Sandvik for now.
-	JNIEXPORT void JNICALL Java_dalvik_system_ZygoteHooks_startZygoteNoThreadCreation(JNIEnv* env, jclass clazz) {
-		(void)env;
-		(void)clazz;
-		logger.fwarning("ZygoteHooks.startZygoteNoThreadCreation called");
-	}
+#include <cstdlib>
+#include <cstring>
+#include <stdexcept>
+#include <string>
 
-	JNIEXPORT void JNICALL Java_dalvik_system_ZygoteHooks_stopZygoteNoThreadCreation(JNIEnv* env, jclass clazz) {
-		(void)env;
-		(void)clazz;
-		logger.fwarning("ZygoteHooks.stopZygoteNoThreadCreation called");
-	}
+/** @brief sandvik : project namespace */
+namespace sandvik {
+	/** @brief Sets up the Zygote Unix socket and exposes its file descriptor via ANDROID_SOCKET_zygote. */
+	void setupZygoteSocket();
+}  // namespace sandvik
 
-}  // extern "C"
+#endif  // __ZYGOTE_HPP__

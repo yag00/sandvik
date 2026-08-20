@@ -24,6 +24,8 @@
 
 #include <fmt/format.h>
 #include <sys/mman.h>
+#include <sys/poll.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
@@ -265,6 +267,67 @@ extern "C" {
 			throw IOException(fmt::format("access failed on path='{}' mode={}: {}", pathStr, mode, strerror(errno)));
 		}
 		return JNI_TRUE;
+	}
+
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_listen(JNIEnv* env, jobject thiz, jobject fdObj, jint backlog) {
+		(void)thiz;
+
+		if (fdObj == nullptr) {
+			throw NullPointerException("listen: fd is null");
+		}
+		auto fdObject = sandvik::native::getObject(fdObj);
+		int fd = fdObject->getField("descriptor")->getValue();
+
+		errno = 0;
+		int result = ::listen(fd, backlog);
+		if (result != 0) {
+			throw IOException(fmt::format("listen failed: fd={} backlog={} ({})", fd, backlog, strerror(errno)));
+		}
+	}
+
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_poll(JNIEnv* env, jobject thiz, jobjectArray fdsArray, jint timeoutMs) {
+		(void)thiz;
+
+		if (fdsArray == nullptr) {
+			throw NullPointerException("poll: fds is null");
+		}
+
+		auto arrObj = sandvik::native::getArray(fdsArray);
+		Array& arr = static_cast<Array&>(*arrObj);
+		uint32_t n = arr.getArrayLength();
+
+		std::vector<struct pollfd> pfds(n);
+		std::vector<ObjectRef> structs(n);
+
+		for (uint32_t i = 0; i < n; ++i) {
+			auto structPollfd = arr.getElement(i);
+			if (structPollfd->isNull()) {
+				throw NullPointerException(fmt::format("poll: fds[{}] is null", i));
+			}
+			structs[i] = structPollfd;
+			auto fdObj = structPollfd->getField("fd");
+			if (fdObj->isNull()) {
+				throw NullPointerException(fmt::format("poll: fds[{}].fd is null", i));
+			}
+			int fd = fdObj->getField("descriptor")->getValue();
+			int16_t events = static_cast<int16_t>(structPollfd->getField("events")->getValue());
+
+			pfds[i].fd = fd;
+			pfds[i].events = events;
+			pfds[i].revents = 0;
+		}
+
+		errno = 0;
+		int result = ::poll(pfds.data(), n, timeoutMs);
+		if (result < 0) {
+			throw IOException(fmt::format("poll failed: {}", strerror(errno)));
+		}
+
+		for (uint32_t i = 0; i < n; ++i) {
+			structs[i]->setField("revents", Object::make(static_cast<int32_t>(pfds[i].revents)));
+		}
+
+		return result;
 	}
 
 	JNIEXPORT void JNICALL Java_libcore_io_Linux_close(JNIEnv* env, jclass clazz, jobject fdObj) {
