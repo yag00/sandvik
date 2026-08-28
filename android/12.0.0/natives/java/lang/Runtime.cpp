@@ -81,7 +81,14 @@ JNIEXPORT void JNICALL Java_java_lang_Runtime_runFinalization0(JNIEnv* env, jobj
 		auto filenameObj = sandvik::native::getString(filename);
 		const std::string& libName = filenameObj->str();
 		try {
-			jenv->getVm().loadLibrary(libName);
+			// TODO: We dont support all libraries for now
+			const std::vector<std::string> unsupportedLibs = {"libandroid.so", "libcompiler_rt.so", "libjnigraphics.so", "libwebviewchromium_loader.so",
+			                                                  "libjavacrypto.so"};
+			if (std::find(unsupportedLibs.begin(), unsupportedLibs.end(), libName) != unsupportedLibs.end()) {
+				logger.fwarning("TODO: {} is not supported yet! ", libName);
+			} else {
+				jenv->getVm().loadLibrary(libName);
+			}
 			return nullptr;  // success
 		} catch (const std::exception& e) {
 			logger.error(e.what());

@@ -399,20 +399,6 @@ void ClassLoader::linkClass(Class& class_) {
 		return;
 	}
 
-	if (class_.getFullname() == "java.lang.System") {
-		auto& m = class_.getMethod("loadLibrary", "(Ljava/lang/String;)V");
-		m.hook([](Frame& frame, const std::vector<ObjectRef>& args) {
-			if (args.size() != 1) {
-				throw VmException("Invalid number of arguments for System.loadLibrary");
-			}
-			auto lib = args[0];
-			if (lib->isNull()) {
-				throw VmException("System.loadLibrary called with null");
-			}
-			logger.fdebug("System.loadLibrary(\"{}\") -> no-op", lib->str());
-		});
-		return;
-	}
 	if (class_.getFullname() == "java.lang.ref.ReferenceQueue") {
 		auto& addMethod = class_.getMethod("add", "(Ljava/lang/ref/Reference;)V");
 		addMethod.hook([](Frame& frame, std::vector<ObjectRef>& args) {
