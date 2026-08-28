@@ -54,4 +54,11 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 		return (jstring)sandvik::Object::make(classloader, str);
 	}
+
+	JNIEXPORT jstring JNICALL Java_java_lang_StringFactory_newStringFromString(JNIEnv* env, jclass clazz, jstring original) {
+		if (original == nullptr) {
+			throw NullPointerException("Null string in StringFactory.newStringFromString");
+		}
+		return original;
+	}
 }  // extern "C"

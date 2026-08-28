@@ -145,15 +145,16 @@ int main(int argc, char** argv) {
 	for (const auto& dexFile : args::get(dexFiles)) {
 		vm.loadDex(dexFile);
 	}
-	// Load JAR (containing DEX) files by directory or by explicitfile list
+	// Load JAR (containing DEX) files by directory or by explicit file list
 	if (!args::get(jarDir).empty()) {
 		vm.loadRtByDir(args::get(jarDir));
-	} else if (!args::get(jarFiles).empty()) {
+	} else if (baseFileDir.has_value()) {
+		vm.loadRtByDir(baseFileDir.value() + "bin");
+	}
+	if (!args::get(jarFiles).empty()) {
 		for (const auto& jarFile : args::get(jarFiles)) {
 			vm.loadRtByFile(jarFile);
 		}
-	} else if (baseFileDir.has_value()) {
-		vm.loadRtByDir(baseFileDir.value() + "bin");
 	}
 
 	// Load APK file
