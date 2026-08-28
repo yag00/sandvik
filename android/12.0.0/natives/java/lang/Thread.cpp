@@ -154,7 +154,7 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_setNativeName(JNIEnv* env, jobject 
 		auto& vm = jenv->getVm();
 		auto& thread = vm.getThread(threadObj->getField("name")->str());
 		auto status = thread.getState();
-		logger.ferror("Thread {} status: {}", thread.getName(), static_cast<int>(status));
+		logger.fdebug("Thread {} status: {}", thread.getName(), static_cast<int>(status));
 		switch (status) {
 			case sandvik::Thread::ThreadState::NotStarted:
 				return static_cast<jint>(THREAD_STATUS_NEW);
