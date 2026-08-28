@@ -71,7 +71,7 @@ extern "C" {
 
 		auto selectorString = selectorObj ? selectorObj->toString() : "";
 		// TODO: Only supports "ALL:!DHE" case for now
-		if (selectorString != "ALL:!DHE") {
+		if (selectorString != "\"ALL:!DHE\"") {
 			logger.fwarning("[NativeCrypto.get_cipher_names] unsupported selector={}", selectorString);
 		}
 
