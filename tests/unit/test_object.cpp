@@ -75,6 +75,7 @@ namespace java {
 
 TEST(object, number) {
 	ClassLoader classloader;
+	ClassBuilder(classloader, "java.lang", "java.lang.Object").finalize();
 	java::lang::String(classloader);
 	auto obj_null = Object::makeNull();
 	auto obj_zero = Object::make(0);
@@ -114,7 +115,7 @@ TEST(object, number) {
 }
 
 TEST(object, string) {
-	ClassLoader classloader;
+	ClassLoader classloader;ClassBuilder(classloader, "java.lang", "java.lang.Object").finalize();
 	java::lang::String(classloader);
 	auto obj_null = Object::makeNull();
 	auto obj_a = Object::make(classloader, "Hello");
@@ -146,6 +147,7 @@ TEST(object, string) {
 
 TEST(object, string16) {
 	ClassLoader classloader;
+	ClassBuilder(classloader, "java.lang", "java.lang.Object").finalize();
 	java::lang::String(classloader);
 	auto obj_a = Object::make(classloader, "\u0068\u0065\u006c\u006c\u006f"); // "hello"
 	auto s16 = std::u16string{u'\u0068', u'\u0065', u'\u006c', u'\u006c', u'\u006f'};
