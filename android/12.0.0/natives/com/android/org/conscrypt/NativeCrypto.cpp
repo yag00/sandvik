@@ -16,8 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include <jni/jni.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 
 #include "array.hpp"
 #include "classloader.hpp"
