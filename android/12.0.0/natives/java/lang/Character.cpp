@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 #include <unicode/uchar.h>
+#include <unicode/urename.h>
 
 #include "array.hpp"
 #include "class.hpp"

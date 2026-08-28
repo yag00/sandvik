@@ -156,7 +156,9 @@ def build(bld):
         target=APPNAME,
         includes=['src'],
         use=['FMT', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
-        linkflags=["-Wl,-z,defs,-licuuc"],
+        lib=['icuuc'],
+        linkflags=["-Wl,-z,defs"],
+        # linkflags=["-Wl,-z,defs,-licuuc"],
         install_path='${PREFIX}/lib',
         doxyfile='doc/sandvik.doxygen',
     )
