@@ -1608,7 +1608,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 	if (!element->isNumberObject()) {
 		throw VmException("aget-boolean: Array element is not a number object");
 	}
-	bool value = element->getValue() != 0;
+	bool value = static_cast<uint8_t>(element->getValue()) != 0;
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1787,7 +1787,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	}
 
 	int32_t index = frame.getIntRegister(indexReg);
-	bool value = frame.getIntRegister(valueReg) != 0;
+	bool value = static_cast<uint8_t>(frame.getIntRegister(valueReg)) != 0;
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-boolean: Array index out of bounds");
 	}
@@ -1966,7 +1966,7 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 	if (!fieldObj || !fieldObj->isNumberObject()) {
 		throw VmException("iget_boolean: Field {} is not a number object", field.getName());
 	}
-	bool value = static_cast<bool>(fieldObj->getValue());
+	bool value = static_cast<uint8_t>(fieldObj->getValue()) != 0;
 	logger.fdebug("iget_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
@@ -2147,7 +2147,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 		throw VmException("iput_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType());
 	}
 
-	bool value = frame.getIntRegister(src) != 0;
+	bool value = static_cast<uint8_t>(frame.getIntRegister(src)) != 0;
 	logger.fdebug("iput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	obj->setField(field.getName(), Object::make(value));
 	frame.pc() += 3;
@@ -2314,7 +2314,7 @@ void Interpreter::sget_boolean(const uint8_t* operand_) {
 	if (!clazz.isStaticInitialized()) {
 		executeClinit(clazz);
 	}
-	bool value = field.getIntValue() != 0;
+	bool value = static_cast<uint8_t>(field.getIntValue()) != 0;
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -2476,7 +2476,7 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 		throw VmException("sput_boolean: Field {} type mismatch, expected boolean but got {}", field.getName(), field.getType());
 	}
 
-	bool value = frame.getIntRegister(src) != 0;
+	bool value = static_cast<uint8_t>(frame.getIntRegister(src)) != 0;
 	logger.fdebug("sput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
