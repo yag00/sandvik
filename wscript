@@ -3,8 +3,10 @@
 
 import os
 import sys
+import subprocess
 
 from waflib import Options, Utils
+from waflib import Context
 from waflib.Tools.compiler_c import c_compiler
 from waflib.Tools.compiler_cxx import cxx_compiler
 
@@ -190,3 +192,27 @@ def build(bld):
         tests = [test.UnitTest(bld, Options.options.test_name)]
         for tt in tests:
             tt.run()
+
+class RunContext(Context.Context):
+    """./waf run run sandvik vm"""
+    cmd = 'run'
+    fun = 'run'
+
+def run(ctx):
+    exec_env = os.environ.copy()
+    exe = [ctx.path.abspath() + '/wbuild/' + APPNAME]
+    #_run_idx = sys.argv.index('run')
+    #args = sys.argv[_run_idx + 1:]
+    #print(args)
+
+    # Update LD_LIBRARY_PATH in the environment variables
+    exec_env['LD_LIBRARY_PATH'] = ctx.path.abspath() + '/wbuild/'
+    args=['--log=ERROR', '--android-version=12.0.0', '--main', 'com.android.internal.os.ZygoteInit', '--', 'dummy', '--abi-list=x86_64']
+    try:
+            # Run the program with the modified environment variables
+            process = subprocess.Popen(exe + args, env=exec_env)
+            process.communicate()
+            return process.returncode
+    except FileNotFoundError:
+            print("Error: Program not found.")
+            return -1
