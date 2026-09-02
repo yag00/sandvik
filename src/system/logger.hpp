@@ -87,7 +87,11 @@ namespace sandvik {
 			/** log debug message
 			 * @param msg_ message
 			 */
-			void debug(const std::string &msg_);
+			inline void debug(const std::string &msg_) {
+#ifdef __debug__
+				log(LogLevel::DEBUG, msg_);
+#endif
+			}
 			/** log warning message
 			 * @param msg_ message
 			 */
