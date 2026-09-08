@@ -101,7 +101,6 @@ def configure(conf):
     conf.check_dependencies_tools()
     conf.check_fmt()
     conf.check_args()
-    conf.check_lief()
     conf.check_ffi()
     conf.check_axml()
     conf.check_xxhash()
@@ -157,7 +156,7 @@ def build(bld):
         name=APPNAME,
         target=APPNAME,
         includes=['src'],
-        use=['FMT', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
+        use=['FMT', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
         lib=['icuuc'],
         linkflags=["-Wl,-z,defs"],
         # linkflags=["-Wl,-z,defs,-licuuc"],
@@ -172,7 +171,7 @@ def build(bld):
         name="vm_sandvik",
         target="sandvik",
         includes=['src'],
-        use=[APPNAME, 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
+        use=[APPNAME, 'FMT', 'ARGS', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
         linkflags=["-rdynamic", "-Wl,-z,defs"],
         install_path='${PREFIX}',
     )

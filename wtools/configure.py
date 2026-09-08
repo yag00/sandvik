@@ -111,36 +111,6 @@ def check_ffi(conf):
 		conf.msg('Checking for library ffi version', v.strip())
 
 @conf
-def check_lief(conf):
-	includes = os.path.abspath('ext/LIEF-bin/include/')
-	libs = os.path.abspath('ext/LIEF-bin/lib/')
-
-	version_code = "\n".join([
-		'#include <iostream>',
-		'#include <LIEF/version.h>',
-		'int main() {',
-		'	std::cout << LIEF_VERSION << std::endl;',
-		'	return 0;',
-		'}',
-		])
-	try:
-		v = conf.check(stlib='LIEF', stlibpath=[libs], includes=[includes], uselib_store='LIEF', fragment=version_code, execute=True, define_ret=True)
-		conf.msg('Checking for library LIEF version', v.strip())
-	except Exception as e:
-		installdir = os.path.abspath('ext/LIEF-bin/')
-		conf.msg('Building local LIEF', installdir)
-		if not os.path.exists('ext/LIEF/build'):
-			os.mkdir('ext/LIEF/build')
-		# needs to be built with -fPIC in order to work
-		cwd = os.path.abspath('ext/LIEF/build')
-		execute('cmake -DCMAKE_POSITION_INDEPENDENT_CODE=True -DCMAKE_INSTALL_PREFIX={} ../'.format(installdir), cwd)
-		execute('make -j{}'.format(multiprocessing.cpu_count()), cwd)
-		execute('make install', cwd)
-
-		v = conf.check(stlib='LIEF', stlibpath=[libs], includes=[includes], uselib_store='LIEF', fragment=version_code, execute=True, define_ret=True)
-		conf.msg('Checking for library LIEF version', v.strip())
-
-@conf
 def check_axml(conf):
 	includes = os.path.abspath('ext/axml-parser-bin/include/')
 	libs = os.path.abspath('ext/axml-parser-bin/lib/')
