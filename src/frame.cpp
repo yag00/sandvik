@@ -115,17 +115,22 @@ int32_t Frame::getIntRegister(uint32_t reg) const {
 		throw VmException("getIntRegister: reg={} out of bounds", reg);
 	}
 	const auto& slot = _registers[reg];
-	if (slot.kind == RegisterSlot::Kind::Null || (slot.kind == RegisterSlot::Kind::Object && slot.obj->isNull())) {
-		logger.fdebug("getIntRegister: reg={} -> null", reg);
-		return 0;
-	}
 	uint32_t raw = 0;
-	if (!slotAsRaw32(slot, raw)) {
-		throw VmException("Register does not contain an NumberObject {}", slot.obj->toString());
+	if (slotAsRaw32(slot, raw)) {
+		auto number = static_cast<int32_t>(raw);
+		logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
+		return number;
 	}
-	auto number = static_cast<int32_t>(raw);
-	logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
-	return number;
+	// A well-formed dex file never reads a register before writing it on every possible path
+	// (the Dalvik verifier enforces definite assignment); sandvik has no verifier of its own, so
+	// reaching this means either malformed/adversarial bytecode or a bug in the interpreter. Fail
+	// loudly rather than silently synthesizing a value - consistent with
+	// getFloatRegister/getRawLongRegister/getReturnValue/getReturnDoubleValue, which already throw
+	// in the equivalent case.
+	if (slot.kind == RegisterSlot::Kind::Null) {
+		throw VmException("getIntRegister: reg={} was never written", reg);
+	}
+	throw VmException("Register does not contain an NumberObject {}", slot.obj->toString());
 }
 
 void Frame::setLongRegister(uint32_t reg, int64_t value) {
