@@ -40,6 +40,7 @@
 #include "system/logger.hpp"
 #include "trace.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 #include "vm.hpp"
 
 using namespace sandvik;
@@ -1014,8 +1015,25 @@ void Interpreter::new_array(const uint8_t* operand_) {
 	if (size < 0) {
 		throw NegativeArraySizeException("new_array: Array size cannot be negative");
 	}
-	const auto& type = classloader.getOrLoad(arrayType[0].first);
-	auto arrayObj = Array::make(type, size);
+	const auto& baseName = arrayType[0].first;
+	// resolveArray reports the leaf base type ("int") plus how many extra levels of array nesting
+	// remain beyond the immediate element (0 for a plain int[], 1 for the outer level of int[][],
+	// created one dimension at a time by new-array, etc.) - not the leaf type's own dim(), which is
+	// always 0 for a primitive/class item (see Dex::resolveArray).
+	uint32_t extraDims = arrayType[0].second;
+	const Class* elementType = nullptr;
+	if (extraDims == 0) {
+		elementType = &classloader.getOrLoad(baseName);
+	} else {
+		// This array's own element type is an array type in its own right (e.g. "[I" for the outer
+		// level of int[][]), not the leaf type - build that descriptor explicitly.
+		std::string baseDescriptor = sandvik::is_primitive_type(baseName) ? sandvik::get_primitive_descriptor(baseName)
+		                                                                  : "L" + std::regex_replace(baseName, std::regex("\\."), "/") + ";";
+		std::string componentDescriptor(extraDims, '[');
+		componentDescriptor += baseDescriptor;
+		elementType = &classloader.getOrLoad(componentDescriptor);
+	}
+	auto arrayObj = Array::make(*elementType, size);
 	frame.setObjRegister(dest, arrayObj);
 	frame.pc() += 3;
 }
@@ -1484,15 +1502,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget: Array index out of bounds");
 	}
-	auto obj = array->getElement(index);
-	int32_t value = 0;
-	if (!obj->isNumberObject()) {
-		if (!obj->isNull()) {
-			throw VmException("aget: Array does not contain number");
-		}
-	} else {
-		value = obj->getValue();
-	}
+	int32_t value = static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index)));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1516,11 +1526,7 @@ void Interpreter::aget_wide(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-wide: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-wide: Array element is not a number object");
-	}
-	int64_t value = element->getLongValue();
+	int64_t value = static_cast<int64_t>(array->getRawElement(index));
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1568,11 +1574,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-boolean: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-boolean: Array element is not a number object");
-	}
-	bool value = static_cast<uint8_t>(element->getValue()) != 0;
+	bool value = static_cast<uint8_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index)))) != 0;
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1596,11 +1598,7 @@ void Interpreter::aget_byte(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-byte: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-byte: Array element is not a number object");
-	}
-	int8_t value = static_cast<int8_t>(element->getValue());
+	int8_t value = static_cast<int8_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index))));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1624,11 +1622,7 @@ void Interpreter::aget_char(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-char: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-char: Array element is not a number object");
-	}
-	uint16_t value = static_cast<uint16_t>(element->getValue());
+	uint16_t value = static_cast<uint16_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index))));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1652,11 +1646,7 @@ void Interpreter::aget_short(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-short: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-short: Array element is not a number object");
-	}
-	int16_t value = static_cast<int16_t>(element->getValue());
+	int16_t value = static_cast<int16_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index))));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1683,7 +1673,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint32_t>(value));
 	frame.pc() += 3;
 }
 // aput-wide vAA, vBB, vCC
@@ -1707,7 +1697,7 @@ void Interpreter::aput_wide(const uint8_t* operand_) {
 		throw ArrayIndexOutOfBoundsException("aput-wide: Array index out of bounds");
 	}
 	auto value = frame.getLongRegister(valueReg);
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint64_t>(value));
 	frame.pc() += 3;
 }
 // aput-object vAA, vBB, vCC
@@ -1755,7 +1745,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-boolean: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, value ? 1u : 0u);
 	frame.pc() += 3;
 }
 // aput-byte vAA, vBB, vCC
@@ -1779,7 +1769,7 @@ void Interpreter::aput_byte(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-byte: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // aput-char vAA, vBB, vCC
@@ -1803,7 +1793,7 @@ void Interpreter::aput_char(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-char: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, value);
 	frame.pc() += 3;
 }
 // aput-short vAA, vBB, vCC
@@ -1827,7 +1817,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-short: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // iget vA, vB, field@CCCC

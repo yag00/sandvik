@@ -97,3 +97,9 @@ bool sandvik::is_primitive_type(const std::string& classname) {
 	                                                                   {"long", true},    {"float", true}, {"double", true}, {"void", true}};
 	return primitive_types[classname];
 }
+
+std::string sandvik::get_primitive_descriptor(const std::string& type_name) {
+	static std::map<std::string, std::string, std::less<>> descriptors = {{"boolean", "Z"}, {"byte", "B"},  {"char", "C"},   {"short", "S"}, {"int", "I"},
+	                                                                      {"long", "J"},    {"float", "F"}, {"double", "D"}, {"void", "V"}};
+	return descriptors[type_name];
+}

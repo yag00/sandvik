@@ -43,22 +43,32 @@ ArrayRef Array::make(const Class& classtype_, const std::vector<uint32_t>& dimen
 }
 
 Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_)
-    : Object(), _classtype(classtype_), _dimensions(dimensions_), _offset(0), _length(0) {
+    : Object(), _classtype(classtype_), _dimensions(dimensions_), _isPrimitive(sandvik::is_primitive_type(classtype_.getFullname())), _offset(0), _length(0) {
 	uint32_t totalSize = 1;
 	for (auto d : _dimensions) {
 		totalSize *= d;
 	}
 	_length = totalSize;
-	_data = std::shared_ptr<std::atomic<ObjectRef>[]>(new std::atomic<ObjectRef>[totalSize], std::default_delete<std::atomic<ObjectRef>[]>());
-	// Initialize elements to "null" for Objects or "0" for primitive types
-	ObjectRef defaultValue = sandvik::is_primitive_type(classtype_.getFullname()) ? Object::make(static_cast<int32_t>(0)) : Object::makeNull();
+	_data = std::shared_ptr<ArraySlotVector>(new std::atomic<ArraySlot>[totalSize], std::default_delete<std::atomic<ArraySlot>[]>());
+	// Initialize elements to "0" for primitive types or "null" for Objects
+	ArraySlot defaultValue;
+	if (_isPrimitive) {
+		defaultValue.raw = 0;
+	} else {
+		defaultValue.obj = Object::makeNull();
+	}
 	for (uint32_t i = 0; i < totalSize; ++i) {
 		_data[i].store(defaultValue, std::memory_order_relaxed);
 	}
 }
 
-Array::Array(std::shared_ptr<ObjectRefVector> data_, uint32_t size_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_)
-    : Object(), _classtype(classtype_), _dimensions(dimensions_), _data(data_), _offset(offset_) {
+Array::Array(std::shared_ptr<ArraySlotVector> data_, uint32_t size_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_)
+    : Object(),
+      _classtype(classtype_),
+      _dimensions(dimensions_),
+      _data(data_),
+      _isPrimitive(sandvik::is_primitive_type(classtype_.getFullname())),
+      _offset(offset_) {
 	uint32_t totalSize = 1;
 	for (auto d : _dimensions) {
 		totalSize *= d;
@@ -125,6 +135,46 @@ uint32_t Array::getArrayLength() const {
 	return getDimension(0);
 }
 
+bool Array::isPrimitiveArray() const {
+	return _isPrimitive;
+}
+
+void Array::setRawElement(uint32_t idx_, uint64_t value_) {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
+	if (!_isPrimitive) {
+		throw VmException("setRawElement: array is not a primitive array");
+	}
+	if (_dimensions.size() != 1) {
+		throw std::invalid_argument("Use multi-dimensional setElement for arrays with more than one dimension");
+	}
+	if (idx_ >= getArrayLength()) {
+		throw std::out_of_range("Array index out of bounds");
+	}
+	ArraySlot slot;
+	slot.raw = value_;
+	_data[_offset + idx_] = slot;
+}
+
+uint64_t Array::getRawElement(uint32_t idx_) const {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
+	if (_dimensions.size() != 1) {
+		throw std::invalid_argument("Use multi-dimensional getElement for arrays with more than one dimension");
+	}
+	if (idx_ >= getArrayLength()) {
+		throw std::out_of_range("Array index out of bounds");
+	}
+	ArraySlot slot = _data[_offset + idx_].load();
+	if (_isPrimitive) {
+		return slot.raw;
+	}
+	// Defensive fallback for a type-mismatched access (should not happen with well-formed
+	// bytecode): unbox a NumberObject element stored in a non-primitive array slot.
+	if (slot.obj->isNumberObject()) {
+		return static_cast<uint64_t>(slot.obj->getLongValue());
+	}
+	throw VmException("Array element is not a number object");
+}
+
 void Array::setElement(uint32_t idx_, ObjectRef value_) {
 	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	if (_dimensions.size() != 1) {
@@ -133,7 +183,13 @@ void Array::setElement(uint32_t idx_, ObjectRef value_) {
 	if (idx_ >= getArrayLength()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	_data[_offset + idx_] = value_;
+	ArraySlot slot;
+	if (_isPrimitive) {
+		slot.raw = value_->isNumberObject() ? static_cast<uint64_t>(value_->getLongValue()) : 0;
+	} else {
+		slot.obj = value_;
+	}
+	_data[_offset + idx_] = slot;
 }
 
 ObjectRef Array::getElement(uint32_t idx_) const {
@@ -144,7 +200,11 @@ ObjectRef Array::getElement(uint32_t idx_) const {
 	if (idx_ >= getArrayLength()) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	return _data[_offset + idx_];
+	ArraySlot slot = _data[_offset + idx_].load();
+	if (_isPrimitive) {
+		return Object::make(slot.raw);
+	}
+	return slot.obj;
 }
 
 void Array::setElement(const std::vector<uint32_t>& indices_, ObjectRef value_) {
@@ -153,7 +213,13 @@ void Array::setElement(const std::vector<uint32_t>& indices_, ObjectRef value_) 
 	if (idx >= _length) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	_data[_offset + idx] = value_;
+	ArraySlot slot;
+	if (_isPrimitive) {
+		slot.raw = value_->isNumberObject() ? static_cast<uint64_t>(value_->getLongValue()) : 0;
+	} else {
+		slot.obj = value_;
+	}
+	_data[_offset + idx] = slot;
 }
 
 ObjectRef Array::getElement(const std::vector<uint32_t>& indices_) const {
@@ -162,18 +228,29 @@ ObjectRef Array::getElement(const std::vector<uint32_t>& indices_) const {
 	if (idx >= _length) {
 		throw std::out_of_range("Array index out of bounds");
 	}
-	return _data[_offset + idx];
+	ArraySlot slot = _data[_offset + idx].load();
+	if (_isPrimitive) {
+		return Object::make(slot.raw);
+	}
+	return slot.obj;
 }
 
 bool Array::compareAndSwapElement(uint32_t idx_, ObjectRef expected_, ObjectRef newValue_) {
 	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
+	if (_isPrimitive) {
+		return false;
+	}
 	if (_dimensions.size() != 1) {
 		return false;
 	}
 	if (idx_ >= getArrayLength()) {
 		return false;
 	}
-	return _data[_offset + idx_].compare_exchange_strong(expected_, newValue_);
+	ArraySlot expectedSlot;
+	expectedSlot.obj = expected_;
+	ArraySlot newSlot;
+	newSlot.obj = newValue_;
+	return _data[_offset + idx_].compare_exchange_strong(expectedSlot, newSlot);
 }
 
 uint32_t Array::flattenIndex(const std::vector<uint32_t>& indices_) const {
@@ -223,8 +300,12 @@ ObjectRef Array::clone() const {
 
 void Array::visitReferences(const std::function<void(Object*)>& visitor_) const {
 	Object::visitReferences(visitor_);
+	if (_isPrimitive) {
+		// A primitive array holds no object references - nothing to mark.
+		return;
+	}
 	for (size_t i = 0; i < _length; ++i) {
-		Object* obj = _data[_offset + i];
+		Object* obj = _data[_offset + i].load().obj;
 		if (obj != nullptr) {
 			visitor_(obj);
 		}

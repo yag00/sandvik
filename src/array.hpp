@@ -27,8 +27,21 @@
 #include "object.hpp"
 
 namespace sandvik {
-	/** @brief Vector of Object references */
-	using ObjectRefVector = std::atomic<ObjectRef>[];
+	/** @brief A single array element slot.
+	 *
+	 * All elements of a given Array share the same nature - primitive or object reference -
+	 * determined once at construction from the array's component type, so (unlike Frame's
+	 * per-register slots) no per-element tag is needed: the owning Array already knows which
+	 * union member is active for every element it holds. A primitive array (int[], byte[], ...)
+	 * stores raw values inline, unboxed; an object array (Object[], String[], ...) stores an
+	 * ObjectRef as before.
+	 */
+	union ArraySlot {
+			uint64_t raw;   ///< Active member for a primitive array element.
+			ObjectRef obj;  ///< Active member for an object array element.
+	};
+	/** @brief Vector of array element slots */
+	using ArraySlotVector = std::atomic<ArraySlot>[];
 	/** @brief Array reference type */
 	using ArrayRef = Array*;
 	/**
@@ -66,7 +79,7 @@ namespace sandvik {
 			 * @param dimensions_ Vector of dimensions for the array
 			 * @param offset_ Offset for the subarray
 			 */
-			Array(std::shared_ptr<ObjectRefVector> data_, uint32_t size_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
+			Array(std::shared_ptr<ArraySlotVector> data_, uint32_t size_, const Class& classtype_, const std::vector<uint32_t>& dimensions_, size_t offset_);
 			~Array() override = default;
 
 			/** @brief Returns a string representation of the array. */
@@ -121,6 +134,28 @@ namespace sandvik {
 			 */
 			ObjectRef getElement(uint32_t idx_) const;
 
+			/** @brief Checks whether this is a primitive-typed array (int[], byte[], ...) as opposed
+			 * to an array of object references (Object[], String[], ...).
+			 * @return true if this array stores raw primitive values.
+			 */
+			bool isPrimitiveArray() const;
+
+			/** @brief Sets the element at the specified index as a raw 64-bit primitive value, without
+			 * boxing. Only valid for a primitive array; throws otherwise.
+			 * @param idx_ Index of the element.
+			 * @param value_ Raw value to set (interpreted by the caller based on the opcode's type:
+			 *   the low 8/16/32 bits for byte/char-short/int, or the full 64 bits for long/double).
+			 */
+			void setRawElement(uint32_t idx_, uint64_t value_);
+			/** @brief Gets the element at the specified index as a raw 64-bit primitive value, without
+			 * unboxing. Valid for a primitive array; for an object array, falls back to unboxing a
+			 * NumberObject element if present (defensive handling of a type-mismatched access), and
+			 * throws otherwise.
+			 * @param idx_ Index of the element.
+			 * @return Raw value of the element.
+			 */
+			uint64_t getRawElement(uint32_t idx_) const;
+
 			/** @brief Sets the element at the specified multi-dimensional indices.
 			 * @param indices_ Vector of indices for each dimension.
 			 * @param value_ ObjectRef to set at the specified indices.
@@ -155,7 +190,8 @@ namespace sandvik {
 
 			const Class& _classtype;
 			std::vector<uint32_t> _dimensions;
-			std::shared_ptr<ObjectRefVector> _data;
+			std::shared_ptr<ArraySlotVector> _data;
+			bool _isPrimitive;
 
 			size_t _offset;
 			size_t _length;
