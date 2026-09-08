@@ -26,11 +26,10 @@
 
 #include "object.hpp"
 
-namespace LIEF::DEX {
-	class Class;
-}  // namespace LIEF::DEX
-
 namespace sandvik {
+	namespace dex {
+		class Class;
+	}  // namespace dex
 	class ClassLoader;
 	class Monitor;
 	class Method;
@@ -45,12 +44,12 @@ namespace sandvik {
 			 * @param fullname_ Full name of the class
 			 */
 			Class(ClassLoader& classloader_, const std::string& packagename_, const std::string& fullname_);
-			/** @brief Constructs a Class object from a LIEF DEX Class.
+			/** @brief Constructs a Class object from a parsed DEX class definition.
 			 * @param classloader_ Reference to the ClassLoader
 			 * @param dexIdx_ Index of the DEX file
-			 * @param class_ Reference to the LIEF DEX Class
+			 * @param class_ Reference to the parsed DEX class
 			 */
-			Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
+			Class(ClassLoader& classloader_, const uint32_t dexIdx_, const dex::Class& class_);
 			virtual ~Class();
 
 			/** @brief Gets the ClassLoader associated with the class. */

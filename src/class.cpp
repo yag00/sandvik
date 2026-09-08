@@ -20,16 +20,17 @@
 
 #include <fmt/format.h>
 
-#include <LIEF/DEX/Class.hpp>
-#include <LIEF/DEX/Field.hpp>
-#include <LIEF/DEX/Method.hpp>
-#include <LIEF/DEX/Prototype.hpp>
-#include <LIEF/DEX/Type.hpp>
+#include <algorithm>
 #include <sstream>
 
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
+#include "loader/dex/Class.hpp"
+#include "loader/dex/Field.hpp"
+#include "loader/dex/Method.hpp"
+#include "loader/dex/Prototype.hpp"
+#include "loader/dex/Type.hpp"
 #include "method.hpp"
 #include "monitor.hpp"
 #include "object.hpp"
@@ -57,14 +58,14 @@ Class::Class(ClassLoader& classloader_, const std::string& packagename_, const s
 	}
 }
 
-Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_)
+Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const dex::Class& class_)
     : _classloader(classloader_),
       _packagename(class_.package_name()),
       _fullname(class_.pretty_name()),
       _name(class_.name()),
       _dexIdx(dexIdx_),
-      _isInterface(class_.has(LIEF::DEX::ACC_INTERFACE)),
-      _isAbstract(class_.has(LIEF::DEX::ACC_ABSTRACT)),
+      _isInterface(class_.has(dex::ACC_INTERFACE)),
+      _isAbstract(class_.has(dex::ACC_ABSTRACT)),
       _hasSuperClass(class_.has_parent()),
       _monitor(std::make_unique<Monitor>()) {
 	// Initialize methods

@@ -20,9 +20,6 @@
 
 #include <axml/axml_parser.h>
 
-#include <LIEF/DEX/Class.hpp>
-#include <LIEF/DEX/File.hpp>
-#include <LIEF/DEX/Method.hpp>
 #include <regex>
 #include <string>
 #include <vector>

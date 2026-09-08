@@ -18,14 +18,14 @@
 
 #include "method.hpp"
 
-#include <LIEF/DEX/CodeInfo.hpp>
-#include <LIEF/DEX/Method.hpp>
-#include <LIEF/DEX/enums.hpp>
 #include <sstream>
 
 #include "class.hpp"
 #include "exceptions.hpp"
 #include "frame.hpp"
+#include "loader/dex/CodeInfo.hpp"
+#include "loader/dex/Method.hpp"
+#include "loader/dex/enums.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
 
@@ -36,7 +36,7 @@ Method::Method(Class& class_, const std::string& name_, const std::string& signa
 	parseArgumentTypes();
 }
 
-Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_), _name(method_.name()), _signature(get_method_descriptor(method_)) {
+Method::Method(Class& class_, const dex::Method& method_) : _class(class_), _name(method_.name()), _signature(get_method_descriptor(method_)) {
 	_nbRegisters = method_.code_info().nb_registers();
 	_index = method_.index();
 	_bytecode = method_.bytecode();

@@ -27,13 +27,10 @@
 
 #include "object.hpp"
 
-namespace LIEF {
-	namespace DEX {
-		class Method;
-	}
-}  // namespace LIEF
-
 namespace sandvik {
+	namespace dex {
+		class Method;
+	}  // namespace dex
 	class Frame;
 	class Class;
 	/** @brief Access flags for methods. */
@@ -69,11 +66,11 @@ namespace sandvik {
 			 * @param index_ Index of the method.
 			 */
 			Method(Class& class_, const std::string& name_, const std::string& signature_, uint32_t index_);
-			/** Constructor for Method from LIEF DEX Method.
+			/** Constructor for Method from a parsed DEX method.
 			 * @param class_ Reference to the Class object.
-			 * @param method_ Reference to the LIEF DEX Method object.
+			 * @param method_ Reference to the parsed DEX method.
 			 */
-			Method(Class& class_, const LIEF::DEX::Method& method_);
+			Method(Class& class_, const dex::Method& method_);
 			virtual ~Method() = default;
 
 			/** @brief Gets the class of the method.

@@ -21,22 +21,22 @@
 
 #include <string>
 
-namespace LIEF::DEX {
-	class Type;
-	class Method;
-}  // namespace LIEF::DEX
-
 namespace sandvik {
+	namespace dex {
+		class Type;
+		class Method;
+	}  // namespace dex
+
 	/** @brief Get the type descriptor for a given type.
 	 * @param type Type to get the descriptor for.
 	 * @return Type descriptor as a string.
 	 */
-	std::string get_type_descriptor(const LIEF::DEX::Type& type);
+	std::string get_type_descriptor(const dex::Type& type);
 	/** @brief Get the type descriptor for a given method.
 	 * @param method Method to get the descriptor for.
 	 * @return Method descriptor as a string.
 	 */
-	std::string get_method_descriptor(const LIEF::DEX::Method& method);
+	std::string get_method_descriptor(const dex::Method& method);
 	/** @brief Get the primitive type for a given descriptor.
 	 * @param descriptor Type descriptor.
 	 * @return Primitive type as a string.

@@ -18,21 +18,21 @@
 
 #include "utils.hpp"
 
-#include <LIEF/DEX/Class.hpp>
-#include <LIEF/DEX/Method.hpp>
-#include <LIEF/DEX/Prototype.hpp>
-#include <LIEF/DEX/Type.hpp>
 #include <map>
 #include <sstream>
 
 #include "exceptions.hpp"
+#include "loader/dex/Class.hpp"
+#include "loader/dex/Method.hpp"
+#include "loader/dex/Prototype.hpp"
+#include "loader/dex/Type.hpp"
 
-using namespace LIEF::DEX;
+using namespace sandvik::dex;
 
-using enum Type::PRIMITIVES;
+using enum PRIMITIVES;
 using enum Type::TYPES;
 
-std::string sandvik::get_type_descriptor(const LIEF::DEX::Type& type) {
+std::string sandvik::get_type_descriptor(const dex::Type& type) {
 	switch (type.type()) {
 		case PRIMITIVE:
 			switch (type.primitive()) {
@@ -75,7 +75,7 @@ std::string sandvik::get_type_descriptor(const LIEF::DEX::Type& type) {
 			throw VmException("Unknown or unsupported type {}", (int)type.type());
 	}
 }
-std::string sandvik::get_method_descriptor(const LIEF::DEX::Method& method) {
+std::string sandvik::get_method_descriptor(const dex::Method& method) {
 	std::ostringstream oss;
 	oss << '(';
 	for (const auto& param : method.prototype()->parameters_type()) {

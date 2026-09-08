@@ -26,11 +26,10 @@
 
 #include "object.hpp"
 
-namespace LIEF::DEX {
-	class Field;
-}  // namespace LIEF::DEX
-
 namespace sandvik {
+	namespace dex {
+		class Field;
+	}  // namespace dex
 	class Class;
 	/** @brief Represents a field in a Java class. */
 	class Field {
@@ -43,11 +42,11 @@ namespace sandvik {
 			 * @param index_ Index of the field
 			 */
 			Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_, uint32_t index_);
-			/** @brief Constructs a Field from a LIEF DEX Field.
+			/** @brief Constructs a Field from a parsed DEX field.
 			 * @param class_ Reference to the Class that owns this field
-			 * @param field_ Reference to the LIEF DEX Field
+			 * @param field_ Reference to the parsed DEX field
 			 */
-			Field(Class& class_, const LIEF::DEX::Field& field_);
+			Field(Class& class_, const dex::Field& field_);
 			~Field() = default;
 
 			/** @brief Returns the index of the field in the class.
