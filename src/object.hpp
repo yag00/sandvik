@@ -434,12 +434,20 @@ namespace sandvik {
 			 * @note for use by subclasses populating their initial field set; ordinary
 			 * field updates should go through setField() instead. */
 			void initField(const std::string& name_, ObjectRef value_);
+			/** Gets this object's Monitor, creating it on first use.
+			 * Most objects are never synchronized on, so the Monitor (a mutex plus two
+			 * condition_variables) is allocated lazily instead of unconditionally at construction.
+			 * @return reference to the Monitor.
+			 */
+			Monitor& getMonitor() const;
 
 		private:
 			/** Map storing field names and their corresponding values. */
 			std::map<std::string, std::atomic<ObjectRef>, std::less<>> _fields;
-			/** Monitor for thread synchronization */
-			std::unique_ptr<Monitor> _monitor;
+			/** Guards the lazy creation of _monitor */
+			mutable std::once_flag _monitorInit;
+			/** Monitor for thread synchronization, created on first use (see getMonitor()) */
+			mutable std::unique_ptr<Monitor> _monitor;
 			/** Mark bit for GC */
 			std::atomic<bool> _marked{false};
 			/** Mutex protecting field map structure and lookups */

@@ -358,9 +358,9 @@ ObjectRef Object::makeArray(ClassLoader& classloader_, const Class& classtype_, 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-Object::Object() : _monitor(std::make_unique<Monitor>()) {
-	setField("shadow$_klass_", Object::makeNull());
-	setField("shadow$_monitor_", Object::makeNull());
+Object::Object() {
+	initField("shadow$_klass_", Object::makeNull());
+	initField("shadow$_monitor_", Object::makeNull());
 }
 
 bool Object::operator==(const Object& other) const {
@@ -400,28 +400,38 @@ ObjectRef Object::clone() const {
 	return newObj;
 }
 
+Monitor& Object::getMonitor() const {
+	std::call_once(_monitorInit, [this] { _monitor = std::make_unique<Monitor>(); });
+	return *_monitor;
+}
+
+void Object::initField(const std::string& name_, ObjectRef value_) {
+	std::lock_guard lock(_fieldsMutex);
+	_fields.try_emplace(name_, value_);
+}
+
 void Object::monitorEnter() {
-	_monitor->enter();
+	getMonitor().enter();
 }
 
 void Object::monitorExit() {
-	_monitor->exit();
+	getMonitor().exit();
 }
 
 void Object::monitorCheck() const {
-	_monitor->check();
+	getMonitor().check();
 }
 
 void Object::wait(uint64_t timeout_) {
-	_monitor->wait(timeout_);
+	getMonitor().wait(timeout_);
 }
 
 void Object::notify() {
-	_monitor->notify();
+	getMonitor().notify();
 }
 
 void Object::notifyAll() {
-	_monitor->notifyAll();
+	getMonitor().notifyAll();
 }
 
 bool Object::isNumberObject() const {
