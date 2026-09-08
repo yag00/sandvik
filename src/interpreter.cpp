@@ -296,22 +296,24 @@ void Interpreter::execute() {
 	auto& frame = _rt.currentFrame();
 	const auto& method = frame.getMethod();
 	auto code = method.getBytecode();
-	auto func = fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature());
 	if (code == nullptr) {
-		throw VmException("Method {} has no bytecode!", func);
+		throw VmException("Method {}::{}{} has no bytecode!", method.getClass().getFullname(), method.getName(), method.getSignature());
 	}
 	if (frame.pc() >= method.getBytecodeSize()) {
-		throw VmException("Current frame {} has invalid pc: {}", func, frame.pc());
+		throw VmException("Current frame {}::{}{} has invalid pc: {}", method.getClass().getFullname(), method.getName(), method.getSignature(), frame.pc());
 	}
 	auto bytecode = code + frame.pc();
-	trace.logInstruction(frame.pc(), func, bytecode);
+	if (trace.isInstructionTraceEnabled()) {
+		trace.logInstruction(frame.pc(), fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature()), bytecode);
+	}
 	frame.pc()++;
 	_instcoverage[*bytecode]++;
 	try {
 		_dispatch[*bytecode](bytecode + 1);
 	} catch (JavaException& e) {
 		auto exctype = e.getExceptionType();
-		logger.fdebug("handling exception {} ({}) in method {}", exctype, e.what(), func);
+		logger.fdebug("handling exception {} ({}) in method {}::{}{}", exctype, e.what(), method.getClass().getFullname(), method.getName(),
+		              method.getSignature());
 		auto exc = Object::make(_rt.getClassLoader().getOrLoad(exctype));
 		exc->setField("detailMessage", Object::make(_rt.getClassLoader(), e.getMessage()));
 		handleException(exc);

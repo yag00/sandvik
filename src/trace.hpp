@@ -49,6 +49,13 @@ namespace sandvik {
 			 */
 			void enableCallTrace(bool enable_);
 
+			/** check whether instruction tracing is enabled.
+			 * @return true if instruction tracing is enabled
+			 */
+			inline bool isInstructionTraceEnabled() const {
+				return _trace_instructions;
+			}
+
 			/** log instruction trace entry.
 			 * @param pc_ program counter
 			 * @param function_ function name and signature
