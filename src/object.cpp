@@ -548,6 +548,22 @@ ObjectRef Object::getField(const std::string& name_) const {
 	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->toString()));
 }
 
+void Object::setFieldValue(const std::string& name_, uint64_t value_) {
+	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
+	std::lock_guard lock(_fieldsMutex);
+	auto it = _fields.find(name_);
+	if (it != _fields.end()) {
+		ObjectRef existing = it->second.load(std::memory_order_relaxed);
+		if (existing != nullptr && existing->isNumberObject()) {
+			existing->getAndSet(static_cast<int64_t>(value_));
+			return;
+		}
+		it->second.store(Object::make(value_), std::memory_order_relaxed);
+		return;
+	}
+	_fields.try_emplace(name_, Object::make(value_));
+}
+
 void Object::setField(const std::string& name_, ObjectRef value_) {
 	monitorCheck();  // Ensure the current thread owns the monitor (if locked)
 	std::lock_guard lock(_fieldsMutex);

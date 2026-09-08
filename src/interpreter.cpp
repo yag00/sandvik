@@ -2025,7 +2025,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 	}
 	int32_t value = frame.getIntRegister(src);
 	logger.fdebug("iput {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint32_t>(value));
 	frame.pc() += 3;
 }
 // iput-wide vA, vB, field@CCCC
@@ -2052,7 +2052,7 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 
 	int64_t value = frame.getLongRegister(src);
 	logger.fdebug("iput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint64_t>(value));
 	frame.pc() += 3;
 }
 // iput-object vA, vB, field@CCCC
@@ -2103,7 +2103,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 
 	bool value = static_cast<uint8_t>(frame.getIntRegister(src)) != 0;
 	logger.fdebug("iput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), value ? 1u : 0u);
 	frame.pc() += 3;
 }
 // iput-byte vA, vB, field@CCCC
@@ -2126,7 +2126,7 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
 	logger.fdebug("iput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // iput-char vA, vB, field@CCCC
@@ -2149,7 +2149,7 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
 	logger.fdebug("iput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), value);
 	frame.pc() += 3;
 }
 // iput-short vA, vB, field@CCCC
@@ -2172,7 +2172,7 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
 	logger.fdebug("iput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // sget vA, field@BBBB
