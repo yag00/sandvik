@@ -2506,27 +2506,39 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	std::string classname, methodname, signature;
 	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
 
+	Class* const receiverClass = instance;
+	auto& cacheEntry = _virtualCallCache[&frame.getMethod()][frame.pc()];
 	Method* vmethod = nullptr;
-	while (true) {
-		Method* found = instance->findMethodOrNull(methodname, signature);
-		if (found != nullptr) {
-			vmethod = found;
-			if (vmethod->isVirtual()) {
-				break;  // Method found, exit loop
+	if (cacheEntry.receiverClass == receiverClass) {
+		// Monomorphic fast path: same receiver class as last time this call site ran, so it
+		// resolves to the same method - skip the hierarchy walk below entirely.
+		vmethod = cacheEntry.resolvedMethod;
+		instance = cacheEntry.declaringClass;
+	} else {
+		while (true) {
+			Method* found = instance->findMethodOrNull(methodname, signature);
+			if (found != nullptr) {
+				vmethod = found;
+				if (vmethod->isVirtual()) {
+					break;  // Method found, exit loop
+				}
+				// not virtual: keep searching up the superclass chain (see comment below)
 			}
-			// not virtual: keep searching up the superclass chain (see comment below)
-		}
-		logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
-		if (instance->hasSuperClass()) {
-			// If the method is not found in the current class, try the superclass
-			instance = &classloader.getOrLoad(instance->getSuperClassname());
-			if (!instance->isStaticInitialized()) {
-				executeClinit(*instance);
+			logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
+			if (instance->hasSuperClass()) {
+				// If the method is not found in the current class, try the superclass
+				instance = &classloader.getOrLoad(instance->getSuperClassname());
+				if (!instance->isStaticInitialized()) {
+					executeClinit(*instance);
+				}
+			} else {
+				// If no superclass, break the loop
+				break;
 			}
-		} else {
-			// If no superclass, break the loop
-			break;
 		}
+		cacheEntry.receiverClass = receiverClass;
+		cacheEntry.declaringClass = instance;
+		cacheEntry.resolvedMethod = vmethod;
 	}
 	if (vmethod) {
 		if (!vmethod->isVirtual()) {
@@ -2731,27 +2743,39 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 	std::string classname, methodname, signature;
 	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
 
+	Class* const receiverClass = instance;
+	auto& cacheEntry = _virtualCallCache[&frame.getMethod()][frame.pc()];
 	Method* vmethod = nullptr;
-	while (true) {
-		Method* found = instance->findMethodOrNull(methodname, signature);
-		if (found != nullptr) {
-			vmethod = found;
-			if (vmethod->isVirtual()) {
-				break;  // Method found, exit loop
+	if (cacheEntry.receiverClass == receiverClass) {
+		// Monomorphic fast path: same receiver class as last time this call site ran, so it
+		// resolves to the same method - skip the hierarchy walk below entirely.
+		vmethod = cacheEntry.resolvedMethod;
+		instance = cacheEntry.declaringClass;
+	} else {
+		while (true) {
+			Method* found = instance->findMethodOrNull(methodname, signature);
+			if (found != nullptr) {
+				vmethod = found;
+				if (vmethod->isVirtual()) {
+					break;  // Method found, exit loop
+				}
+				// not virtual: keep searching up the superclass chain (see comment below)
 			}
-			// not virtual: keep searching up the superclass chain (see comment below)
-		}
-		logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
-		if (instance->hasSuperClass()) {
-			// If the method is not found in the current class, try the superclass
-			instance = &classloader.getOrLoad(instance->getSuperClassname());
-			if (!instance->isStaticInitialized()) {
-				executeClinit(*instance);
+			logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
+			if (instance->hasSuperClass()) {
+				// If the method is not found in the current class, try the superclass
+				instance = &classloader.getOrLoad(instance->getSuperClassname());
+				if (!instance->isStaticInitialized()) {
+					executeClinit(*instance);
+				}
+			} else {
+				// If no superclass, break the loop
+				break;
 			}
-		} else {
-			// If no superclass, break the loop
-			break;
 		}
+		cacheEntry.receiverClass = receiverClass;
+		cacheEntry.declaringClass = instance;
+		cacheEntry.resolvedMethod = vmethod;
 	}
 	if (vmethod) {
 		if (vmethod->isStatic()) {
