@@ -272,24 +272,7 @@ Interpreter::Interpreter(JThread& rt_) : _rt(rt_) {
 }
 
 Interpreter::~Interpreter() {
-#if 0
-	/*std::vector<std::pair<uint8_t, uint64_t>> sortedCoverage(_instcoverage.begin(), _instcoverage.end());
-	std::sort(sortedCoverage.begin(), sortedCoverage.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
-	for (const auto& [key, value] : sortedCoverage) {
-	    logger.finfo("Instruction 0x{:02x} executed {} times", key, value);
-	}*/
-	auto count = 0;
-	for (uint16_t i = 0; i < 0xE3; ++i) {
-		if (_instcoverage.find(i) == _instcoverage.end()) {
-			auto s = _disassembler->disassemble(i);
-			if (!s.empty()) {
-				logger.fwarning("Missing coverage for instruction 0x{:02x} {}", i, s);
-				count++;
-			}
-		}
-	}
-	logger.finfo("{} tested, missing coverage for {} instructions", _instcoverage.size(), count - 8);
-#endif
+
 }
 
 void Interpreter::execute() {
@@ -307,7 +290,6 @@ void Interpreter::execute() {
 		trace.logInstruction(frame.pc(), fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature()), bytecode);
 	}
 	frame.pc()++;
-	_instcoverage[*bytecode]++;
 	try {
 		_dispatch[*bytecode](bytecode + 1);
 	} catch (JavaException& e) {

@@ -503,7 +503,6 @@ namespace sandvik {
 			void registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const;
 
 			JThread& _rt;
-			std::map<uint8_t, uint64_t> _instcoverage;
 
 			std::unordered_map<Frame*, uint32_t> _stringCtorFixups;
 			struct StringFactoryMapping {
