@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#include <functional>
+#include <array>
 #include <map>
 #include <memory>
 #include <string>
@@ -487,8 +487,11 @@ namespace sandvik {
 			void shr_int_lit8(const uint8_t* operand_);
 			// ushr-int/lit8 vAA, vBB, #+CC
 			void ushr_int_lit8(const uint8_t* operand_);
+			// fallback handler for unassigned/reserved opcodes
+			void invalidInstruction(const uint8_t* operand_);
 
-			std::vector<std::function<void(const uint8_t* operand_)>> _dispatch;
+			using OpHandler = void (Interpreter::*)(const uint8_t* operand_);
+			std::array<OpHandler, 256> _dispatch;
 
 			void handleException(ObjectRef exception_);
 			void executeClinit(Class& class_) const;
