@@ -29,6 +29,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "types.hpp"
+
 namespace sandvik {
 	class Class;
 	class Object;
@@ -37,7 +39,6 @@ namespace sandvik {
 	class Apk;
 	class Dex;
 	class Vm;
-	enum class TYPES;
 	/** @brief Class Loader class
 	 */
 	class ClassLoader {
@@ -217,9 +218,19 @@ namespace sandvik {
 					std::string classname;
 					Class* resolved = nullptr;
 			};
+			struct CachedTypeRef {
+					std::string name;
+					TYPES type = TYPES::UNKNOWN;
+			};
+			struct CachedArrayRef {
+					std::vector<std::pair<std::string, uint32_t>> descriptor;
+			};
 			std::vector<std::unordered_map<uint16_t, CachedMethodRef>> _methodRefCache;
 			std::vector<std::unordered_map<uint16_t, CachedFieldRef>> _fieldRefCache;
 			std::vector<std::unordered_map<uint16_t, CachedClassRef>> _classRefCache;
+			std::vector<std::unordered_map<uint16_t, CachedTypeRef>> _typeRefCache;
+			std::vector<std::unordered_map<uint16_t, std::string>> _stringRefCache;
+			std::vector<std::unordered_map<uint16_t, CachedArrayRef>> _arrayRefCache;
 	};
 }  // namespace sandvik
 

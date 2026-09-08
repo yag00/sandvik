@@ -355,8 +355,19 @@ std::string ClassLoader::resolveType(uint32_t dex_, uint16_t idx_, TYPES& type_)
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		return _dexs[dex_]->resolveType(idx_, type_);
+		if (_typeRefCache.size() <= dex_) {
+			_typeRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _typeRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			std::string name = _dexs[dex_]->resolveType(idx_, type_);
+			it = cache.emplace(idx_, CachedTypeRef{name, type_}).first;
+		}
+		type_ = it->second.type;
+		return it->second.name;
 	} catch (const std::exception& e) {
 		throw VmException("Type not found: {} ({})", idx_, e.what());
 	}
@@ -366,8 +377,17 @@ std::string ClassLoader::resolveString(uint32_t dex_, uint16_t idx_) {
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		return _dexs[dex_]->resolveString(idx_);
+		if (_stringRefCache.size() <= dex_) {
+			_stringRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _stringRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			it = cache.emplace(idx_, _dexs[dex_]->resolveString(idx_)).first;
+		}
+		return it->second;
 	} catch (const std::exception& e) {
 		throw VmException("String not found: {} ({})", idx_, e.what());
 	}
@@ -377,8 +397,17 @@ std::vector<std::pair<std::string, uint32_t>> ClassLoader::resolveArray(uint32_t
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		return _dexs[dex_]->resolveArray(idx_);
+		if (_arrayRefCache.size() <= dex_) {
+			_arrayRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _arrayRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			it = cache.emplace(idx_, CachedArrayRef{_dexs[dex_]->resolveArray(idx_)}).first;
+		}
+		return it->second.descriptor;
 	} catch (const std::exception& e) {
 		throw VmException("Array not found: {} ({})", idx_, e.what());
 	}
