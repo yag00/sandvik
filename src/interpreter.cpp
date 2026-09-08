@@ -272,7 +272,6 @@ Interpreter::Interpreter(JThread& rt_) : _rt(rt_) {
 }
 
 Interpreter::~Interpreter() {
-
 }
 
 void Interpreter::execute() {
@@ -398,12 +397,10 @@ Method* Interpreter::resolveInterfaceHierarchyMethod(Class& interfaceClass_, con
 		return nullptr;
 	}
 
-	try {
-		auto& method = interfaceClass_.getMethod(methodname_, signature_);
-		if (!method.isStatic()) {
-			return &method;
+	if (auto* method = interfaceClass_.findMethodOrNull(methodname_, signature_)) {
+		if (!method->isStatic()) {
+			return method;
 		}
-	} catch (...) {
 	}
 
 	auto& classloader = _rt.getClassLoader();
@@ -426,12 +423,10 @@ Method* Interpreter::resolveInterfaceMethod(Class& instance_, const std::string&
 
 	Class* current = &instance_;
 	while (current) {
-		try {
-			auto& method = current->getMethod(methodname_, signature_);
-			if (!method.isStatic()) {
-				return &method;
+		if (auto* method = current->findMethodOrNull(methodname_, signature_)) {
+			if (!method->isStatic()) {
+				return method;
 			}
-		} catch (...) {
 		}
 
 		if (current->hasSuperClass()) {
@@ -2519,25 +2514,24 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 
 	Method* vmethod = nullptr;
 	while (true) {
-		try {
-			vmethod = &instance->getMethod(methodname, signature);
-			if (!vmethod->isVirtual()) {
-				// throw exception here to go up the superclass chain
-				throw VmException();
+		Method* found = instance->findMethodOrNull(methodname, signature);
+		if (found != nullptr) {
+			vmethod = found;
+			if (vmethod->isVirtual()) {
+				break;  // Method found, exit loop
 			}
-			break;  // Method found, exit loop
-		} catch (std::exception& e) {
-			logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
-			if (instance->hasSuperClass()) {
-				// If the method is not found in the current class, try the superclass
-				instance = &classloader.getOrLoad(instance->getSuperClassname());
-				if (!instance->isStaticInitialized()) {
-					executeClinit(*instance);
-				}
-			} else {
-				// If no superclass, break the loop
-				break;
+			// not virtual: keep searching up the superclass chain (see comment below)
+		}
+		logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
+		if (instance->hasSuperClass()) {
+			// If the method is not found in the current class, try the superclass
+			instance = &classloader.getOrLoad(instance->getSuperClassname());
+			if (!instance->isStaticInitialized()) {
+				executeClinit(*instance);
 			}
+		} else {
+			// If no superclass, break the loop
+			break;
 		}
 	}
 	if (vmethod) {
@@ -2578,25 +2572,24 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 	auto instance = &classloader.getOrLoad(classname);
 	Method* vmethod = nullptr;
 	while (true) {
-		try {
-			vmethod = &instance->getMethod(methodname, signature);
-			if (!vmethod->isVirtual()) {
-				// throw exception here to go up the superclass chain
-				throw VmException();
+		Method* found = instance->findMethodOrNull(methodname, signature);
+		if (found != nullptr) {
+			vmethod = found;
+			if (vmethod->isVirtual()) {
+				break;  // Method found, exit loop
 			}
-			break;  // Method found, exit loop
-		} catch (std::exception& e) {
-			logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
-			if (instance->hasSuperClass()) {
-				// If the method is not found in the current class, try the superclass
-				instance = &classloader.getOrLoad(instance->getSuperClassname());
-				if (!instance->isStaticInitialized()) {
-					executeClinit(*instance);
-				}
-			} else {
-				// If no superclass, break the loop
-				break;
+			// not virtual: keep searching up the superclass chain (see comment below)
+		}
+		logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
+		if (instance->hasSuperClass()) {
+			// If the method is not found in the current class, try the superclass
+			instance = &classloader.getOrLoad(instance->getSuperClassname());
+			if (!instance->isStaticInitialized()) {
+				executeClinit(*instance);
 			}
+		} else {
+			// If no superclass, break the loop
+			break;
 		}
 	}
 
@@ -2746,25 +2739,24 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 
 	Method* vmethod = nullptr;
 	while (true) {
-		try {
-			vmethod = &instance->getMethod(methodname, signature);
-			if (!vmethod->isVirtual()) {
-				// throw exception here to go up the superclass chain
-				throw VmException();
+		Method* found = instance->findMethodOrNull(methodname, signature);
+		if (found != nullptr) {
+			vmethod = found;
+			if (vmethod->isVirtual()) {
+				break;  // Method found, exit loop
 			}
-			break;  // Method found, exit loop
-		} catch (std::exception& e) {
-			logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
-			if (instance->hasSuperClass()) {
-				// If the method is not found in the current class, try the superclass
-				instance = &classloader.getOrLoad(instance->getSuperClassname());
-				if (!instance->isStaticInitialized()) {
-					executeClinit(*instance);
-				}
-			} else {
-				// If no superclass, break the loop
-				break;
+			// not virtual: keep searching up the superclass chain (see comment below)
+		}
+		logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
+		if (instance->hasSuperClass()) {
+			// If the method is not found in the current class, try the superclass
+			instance = &classloader.getOrLoad(instance->getSuperClassname());
+			if (!instance->isStaticInitialized()) {
+				executeClinit(*instance);
 			}
+		} else {
+			// If no superclass, break the loop
+			break;
 		}
 	}
 	if (vmethod) {

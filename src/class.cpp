@@ -317,6 +317,27 @@ Method& Class::getMethod(const std::string& name_, const std::string& descriptor
 	throw VmException("Method not found: {} {}", name_, descriptor_);
 }
 
+Method* Class::findMethodOrNull(const std::string& name_, const std::string& descriptor_) {
+	auto sig = name_ + descriptor_;
+	auto it = _methods.find(sig);
+	if (it != _methods.end()) {
+		Method& method = *it->second;
+		if (!method.isHooked()) {
+			if ((method.hasBytecode() || method.isNative())) {
+				return &method;
+			}
+			if (hasSuperClass()) {
+				return getSuperClass().findMethodOrNull(name_, descriptor_);
+			}
+		}
+		return &method;
+	}
+	if (hasSuperClass()) {
+		return getSuperClass().findMethodOrNull(name_, descriptor_);
+	}
+	return nullptr;
+}
+
 Method& Class::getMethod(uint32_t idx_) {
 	for (const auto& [name, method] : _methods) {
 		if (method->getIndex() == idx_) {
