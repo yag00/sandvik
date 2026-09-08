@@ -36,15 +36,13 @@ Frame::Frame(Method& method_) : _method(method_) {
 		throw VmException("Method {}.{} has zero registers", method_.getClass().getFullname(), method_.getName());
 	}
 	_exception = Object::makeNull();
-	_objectReturn = Object::makeNull();
 	increaseRegSize(method_.getNbRegisters());
 }
 
 void Frame::increaseRegSize(uint32_t size_) {
 	if (size_ > _registers.size()) {
-		size_t oldSize = _registers.size();
+		// New slots default-construct as RegisterSlot::Kind::Null - no allocation involved.
 		_registers.resize(size_);
-		std::generate(_registers.begin() + oldSize, _registers.end(), []() { return Object::makeNull(); });
 	}
 }
 
@@ -68,18 +66,30 @@ void Frame::setPc(uint16_t pc_) {
 	_pc = pc_;
 }
 
+bool Frame::slotAsRaw32(const RegisterSlot& slot_, uint32_t& out_) {
+	if (slot_.kind == RegisterSlot::Kind::Raw) {
+		out_ = static_cast<uint32_t>(slot_.raw);
+		return true;
+	}
+	if (slot_.kind == RegisterSlot::Kind::Object && slot_.obj->isNumberObject()) {
+		out_ = static_cast<uint32_t>(slot_.obj->getValue());
+		return true;
+	}
+	return false;
+}
+
 uint64_t Frame::getRawLongRegister(uint32_t reg) const {
 	if (reg + 1 >= _registers.size()) {
 		throw VmException("getRawLongRegister: reg={} out of bounds", reg);
 	}
-	const Object& lsb = *_registers[reg];
-	const Object& msb = *_registers[reg + 1];
-	if (!lsb.isNumberObject() || !msb.isNumberObject()) {
+	uint32_t lo = 0;
+	uint32_t hi = 0;
+	if (!slotAsRaw32(_registers[reg], lo) || !slotAsRaw32(_registers[reg + 1], hi)) {
 		throw VmException("Register does not contain valid NumberObjects");
 	}
-	uint64_t value = static_cast<uint32_t>(msb.getValue());
+	uint64_t value = hi;
 	value <<= 32;
-	value |= static_cast<uint32_t>(lsb.getValue());
+	value |= lo;
 	return value;
 }
 
@@ -88,8 +98,8 @@ void Frame::setRawLongRegister(uint32_t reg, uint64_t value) {
 	if (reg + 1 >= _registers.size()) {
 		throw VmException("setRawLongRegister: reg={} out of bounds", reg);
 	}
-	_registers[reg] = Object::make(static_cast<uint32_t>(value & 0xFFFFFFFF));
-	_registers[reg + 1] = Object::make(static_cast<uint32_t>((value >> 32) & 0xFFFFFFFF));
+	_registers[reg] = RegisterSlot::makeRaw(value & 0xFFFFFFFFu);
+	_registers[reg + 1] = RegisterSlot::makeRaw((value >> 32) & 0xFFFFFFFFu);
 }
 
 void Frame::setIntRegister(uint32_t reg, int32_t value) {
@@ -97,22 +107,23 @@ void Frame::setIntRegister(uint32_t reg, int32_t value) {
 	if (reg >= _registers.size()) {
 		throw VmException("setIntRegister: reg={} out of bounds", reg);
 	}
-	_registers[reg] = Object::make(value);
+	_registers[reg] = RegisterSlot::makeRaw(static_cast<uint32_t>(value));
 }
 
 int32_t Frame::getIntRegister(uint32_t reg) const {
 	if (reg >= _registers.size()) {
 		throw VmException("getIntRegister: reg={} out of bounds", reg);
 	}
-	auto obj = _registers[reg];
-	if (obj->isNull()) {
+	const auto& slot = _registers[reg];
+	if (slot.kind == RegisterSlot::Kind::Null || (slot.kind == RegisterSlot::Kind::Object && slot.obj->isNull())) {
 		logger.fdebug("getIntRegister: reg={} -> null", reg);
 		return 0;
 	}
-	if (!obj->isNumberObject()) {
-		throw VmException("Register does not contain an NumberObject {}", obj->toString());
+	uint32_t raw = 0;
+	if (!slotAsRaw32(slot, raw)) {
+		throw VmException("Register does not contain an NumberObject {}", slot.obj->toString());
 	}
-	auto number = obj->getValue();
+	auto number = static_cast<int32_t>(raw);
 	logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
 	return number;
 }
@@ -132,9 +143,8 @@ void Frame::setFloatRegister(uint32_t reg, float value) {
 	if (reg >= _registers.size()) {
 		throw VmException("setFloatRegister: reg={} out of bounds", reg);
 	}
-	uint32_t intValue;
-	intValue = std::bit_cast<uint32_t>(value);
-	_registers[reg] = Object::make(intValue);
+	uint32_t intValue = std::bit_cast<uint32_t>(value);
+	_registers[reg] = RegisterSlot::makeRaw(intValue);
 }
 
 float Frame::getFloatRegister(uint32_t reg) const {
@@ -142,11 +152,11 @@ float Frame::getFloatRegister(uint32_t reg) const {
 	if (reg >= _registers.size()) {
 		throw VmException("getFloatRegister: reg={} out of bounds", reg);
 	}
-	const Object& obj = *_registers[reg];
-	if (!obj.isNumberObject()) {
-		throw VmException("Register does not contain an NumberObject {}", obj.toString());
+	const auto& slot = _registers[reg];
+	uint32_t intValue = 0;
+	if (!slotAsRaw32(slot, intValue)) {
+		throw VmException("Register does not contain an NumberObject");
 	}
-	auto intValue = static_cast<uint32_t>(obj.getValue());
 	return std::bit_cast<float>(intValue);
 }
 
@@ -154,7 +164,6 @@ void Frame::setDoubleRegister(uint32_t reg, double value) {
 	logger.fdebug("setDoubleRegister: reg={}, value={}", reg, value);
 	uint64_t temp = std::bit_cast<uint64_t>(value);
 	setRawLongRegister(reg, temp);
-	logger.fdebug("setDoubleRegister: reg={} value={} {}", reg, _registers[reg]->toString(), _registers[reg + 1]->toString());
 }
 
 double Frame::getDoubleRegister(uint32_t reg) const {
@@ -168,15 +177,25 @@ void Frame::setObjRegister(uint32_t reg, ObjectRef value) {
 	if (reg >= _registers.size()) {
 		throw VmException("setObjRegister: reg={} out of bounds", reg);
 	}
-	_registers[reg] = value;
+	_registers[reg] = RegisterSlot::makeObject(value);
 }
 
 ObjectRef Frame::getObjRegister(uint32_t reg) {
 	if (reg >= _registers.size()) {
 		throw VmException("getObjRegister: reg={} out of bounds", reg);
 	}
-	logger.fdebug("getObjRegister: reg={} => obj=<{}>", reg, _registers[reg]->toString());
-	return _registers[reg];
+	const auto& slot = _registers[reg];
+	if (slot.kind == RegisterSlot::Kind::Null) {
+		return Object::makeNull();
+	}
+	if (slot.kind == RegisterSlot::Kind::Raw) {
+		// Defensive fallback for a type-mismatched read (should not happen with well-formed
+		// bytecode): box the raw value on the fly, mirroring the old behavior where every
+		// register held a boxed Object regardless of the accessor used to read it.
+		return Object::make(slot.raw);
+	}
+	logger.fdebug("getObjRegister: reg={} => obj=<{}>", reg, slot.obj->toString());
+	return slot.obj;
 }
 
 ObjectRef Frame::getException() const {
@@ -184,43 +203,79 @@ ObjectRef Frame::getException() const {
 }
 
 ObjectRef Frame::getReturnObject() const {
-	return _objectReturn;
+	if (_returnSlot.kind == RegisterSlot::Kind::Null) {
+		return Object::makeNull();
+	}
+	if (_returnSlot.kind == RegisterSlot::Kind::Raw) {
+		return Object::make(_returnSlot.raw);
+	}
+	return _returnSlot.obj;
 }
 
 int32_t Frame::getReturnValue() const {
-	if (!_objectReturn->isNumberObject()) {
-		throw VmException("Return object is not an NumberObject");
+	if (_returnSlot.kind == RegisterSlot::Kind::Raw) {
+		return static_cast<int32_t>(_returnSlot.raw);
 	}
-	return _objectReturn->getValue();
+	if (_returnSlot.kind == RegisterSlot::Kind::Object && _returnSlot.obj->isNumberObject()) {
+		return _returnSlot.obj->getValue();
+	}
+	throw VmException("Return object is not an NumberObject");
 }
 
 int64_t Frame::getReturnDoubleValue() const {
-	if (!_objectReturn->isNumberObject()) {
-		throw VmException("Return object is not a isNumberObject");
+	if (_returnSlot.kind == RegisterSlot::Kind::Raw) {
+		return static_cast<int64_t>(_returnSlot.raw);
 	}
-	return _objectReturn->getLongValue();
+	if (_returnSlot.kind == RegisterSlot::Kind::Object && _returnSlot.obj->isNumberObject()) {
+		return _returnSlot.obj->getLongValue();
+	}
+	throw VmException("Return object is not a isNumberObject");
 }
 void Frame::setException(ObjectRef exception_) {
 	_exception = exception_;
 }
 void Frame::setReturnObject(ObjectRef ret_) {
-	_objectReturn = ret_;
+	_returnSlot = RegisterSlot::makeObject(ret_);
 }
 void Frame::setReturnValue(int32_t ret_) {
-	_objectReturn = Object::make(ret_);
+	_returnSlot = RegisterSlot::makeRaw(static_cast<uint32_t>(ret_));
 }
 void Frame::setReturnDoubleValue(int64_t ret_) {
-	_objectReturn = Object::make(ret_);
-	logger.fdebug("setReturnDoubleValue: {:x} -> obj=<{}>", ret_, _objectReturn->toString());
+	_returnSlot = RegisterSlot::makeRaw(static_cast<uint64_t>(ret_));
+	logger.fdebug("setReturnDoubleValue: {:x} -> {:x}", ret_, _returnSlot.raw);
 }
 
 void Frame::debug() const {
 	logger.fdebug("method={} pc={}", _method.getName(), _pc);
 	for (size_t i = 0; i < _registers.size(); ++i) {
-		logger.fdebug("register[{}] = {}", i, _registers[i]->toString());
+		const auto& slot = _registers[i];
+		switch (slot.kind) {
+			case RegisterSlot::Kind::Null:
+				logger.fdebug("register[{}] = null", i);
+				break;
+			case RegisterSlot::Kind::Raw:
+				logger.fdebug("register[{}] = raw:{:x}", i, slot.raw);
+				break;
+			case RegisterSlot::Kind::Object:
+				logger.fdebug("register[{}] = {}", i, slot.obj->toString());
+				break;
+		}
 	}
 }
 
+void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	if (_returnSlot.kind == RegisterSlot::Kind::Object && _returnSlot.obj != nullptr) {
+		visitor_(_returnSlot.obj);
+	}
+	if (_exception != nullptr) {
+		visitor_(_exception);
+	}
+	for (const auto& reg : _registers) {
+		if (reg.kind == RegisterSlot::Kind::Object && reg.obj != nullptr) {
+			visitor_(reg.obj);
+		}
+	}
+}
 bool Frame::isHandlingException(ObjectRef exception_) const {
 	return _exception == exception_;
 }

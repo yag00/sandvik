@@ -163,21 +163,7 @@ namespace sandvik {
 			/** Visit outgoing references
 			 * @param visitor_ function to call for each referenced object
 			 */
-			template <typename Visitor>
-			void visitReferences(Visitor&& visitor_) const {
-				static_assert(std::is_invocable_v<Visitor, Object*>);
-				if (_objectReturn != nullptr) {
-					visitor_(_objectReturn);
-				}
-				if (_exception != nullptr) {
-					visitor_(_exception);
-				}
-				for (const auto& reg : _registers) {
-					if (reg != nullptr) {
-						visitor_(reg);
-					}
-				}
-			}
+			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
 		protected:
 			/** @brief Increases the size of the register array.
@@ -196,13 +182,59 @@ namespace sandvik {
 			void setRawLongRegister(uint32_t reg, uint64_t value);
 
 		private:
+			/** @brief A single 32/64-bit register (or return-value) slot.
+			 *
+			 * Dalvik registers are untyped 32-bit cells whose interpretation (int, float, or one
+			 * half of a long/double spanning two consecutive registers) is entirely determined by
+			 * the opcode that reads them, never stored alongside the value. Since sandvik has no
+			 * bytecode verifier to produce a reference map for the GC, a slot still needs an
+			 * explicit tag so the collector can tell a raw primitive from an object reference
+			 * without guessing - but primitives themselves are stored inline, unboxed, avoiding a
+			 * heap allocation (and GC tracking) for every arithmetic/move instruction.
+			 */
+			struct RegisterSlot {
+					enum class Kind : uint8_t { Null, Raw, Object };
+					Kind kind = Kind::Null;
+					union {
+							uint64_t raw;
+							ObjectRef obj;
+					};
+					RegisterSlot() : kind(Kind::Null), raw(0) {
+					}
+					static RegisterSlot makeRaw(uint64_t value_) {
+						RegisterSlot s;
+						s.kind = Kind::Raw;
+						s.raw = value_;
+						return s;
+					}
+					static RegisterSlot makeObject(ObjectRef value_) {
+						RegisterSlot s;
+						s.kind = Kind::Object;
+						s.obj = value_;
+						return s;
+					}
+			};
+
+			/** @brief Reads a slot as a raw 32-bit primitive if possible.
+			 *
+			 * True either for a Raw slot, or for an Object slot holding a NumberObject that arrived
+			 * through generic ObjectRef marshalling (invoke-* argument/parameter passing always goes
+			 * through getObjRegister/setObjRegister, regardless of the argument's real type). This
+			 * mirrors the pre-unboxing code, which never distinguished storage kind, only the
+			 * referenced object's runtime type.
+			 * @param slot_ Slot to read.
+			 * @param out_ Set to the raw 32-bit value on success.
+			 * @return true if the slot held a usable primitive value.
+			 */
+			static bool slotAsRaw32(const RegisterSlot& slot_, uint32_t& out_);
+
 			Method& _method;
 			std::vector<std::string> _args;
 
-			std::vector<ObjectRef> _registers;
+			std::vector<RegisterSlot> _registers;
 
 			uint16_t _pc = 0;
-			ObjectRef _objectReturn;
+			RegisterSlot _returnSlot;
 			ObjectRef _exception;
 	};
 }  // namespace sandvik
