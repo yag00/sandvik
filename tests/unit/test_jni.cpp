@@ -16,7 +16,7 @@ protected:
     void SetUp() override {
         logger.setLevel(Logger::LogLevel::NONE);
         initializeVmRuntime(vm);
-        vm.loadRt();
+        vm.loadRtByDir();
         vm.loadDex("../tests/java/jni/classes.dex");
     }
 

@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,7 @@ namespace sandvik {
 	class Field;
 	class Apk;
 	class Dex;
+	class Vm;
 	enum class TYPES;
 	/** @brief Class Loader class
 	 */
@@ -41,14 +43,23 @@ namespace sandvik {
 			ClassLoader();
 			~ClassLoader();
 
-			/** @brief Load runtime classes
+			/** @brief Load runtime classes by directory of JAR files
 			 * @param rt_ path to runtime classes
 			 */
-			void loadRt(const std::string& rt_);
+			void loadRtByDir(const std::string& rt_);
+			/** @brief Load runtime classes by JAR file
+			 * @param rt_ path to runtime classes
+			 */
+			void loadRtByFile(const std::string& rt_);
 			/** @brief Load dex file
 			 * @param dex_ path to dex
 			 */
 			void loadDex(const std::string& dex_);
+			/** @brief Find resource by name
+			 * @param name resource name
+			 * @return optional containing resource data if found, std::nullopt otherwise
+			 */
+			std::optional<std::vector<uint8_t>> findResource(const std::string& name);
 			/** @brief Load apk file
 			 * @param apk_ path to apk
 			 */
@@ -61,6 +72,10 @@ namespace sandvik {
 			 * @return classpath string
 			 */
 			std::string getClassPath() const;
+			/** @brief Gets the boot classpath entries.
+			 * @return Vector of classpath entries.
+			 */
+			const std::vector<std::string>& getClassPathEntries() const;
 			/** @brief Get main activity class name
 			 * @return main activity class name
 			 */
@@ -69,13 +84,16 @@ namespace sandvik {
 			 * @return reference to main activity class
 			 */
 			Class& getMainActivityClass();
-
+			/** @brief Check if class is loaded
+			 * @param classname_ class name
+			 * @return true if class is loaded, false otherwise
+			 */
+			bool isLoaded(const std::string& classname_) const;
 			/** @brief Get or load class by name
 			 * @param classname_ class name
 			 * @return reference to class
 			 */
 			Class& getOrLoad(const std::string& classname_);
-
 			/** @brief Resolve method by dex and index
 			 * @param dex_ dex index
 			 * @param idx_ method index
@@ -150,11 +168,18 @@ namespace sandvik {
 			 * @return dex index
 			 */
 			uint64_t getDexIndex(const Dex& dex_) const;
-
 			/** Visit outgoing references
 			 * @param visitor_ function to call for each referenced object
 			 */
 			void visitReferences(const std::function<void(Object*)>& visitor_) const;
+			/** @brief Set the virtual machine
+			 * @param vm_ reference to the virtual machine
+			 */
+			void setVm(Vm& vm_);
+			/** @brief Get the virtual machine
+			 * @return reference to the virtual machine
+			 */
+			Vm& getVm() const;
 
 		private:
 			friend class ClassBuilder;
@@ -163,9 +188,11 @@ namespace sandvik {
 
 			std::vector<std::string> _classpath;
 			std::vector<std::unique_ptr<Apk>> _apks;
+			std::vector<std::string> _jars;
 			std::vector<std::unique_ptr<Dex>> _dexs;
 			std::map<std::string, std::unique_ptr<Class>, std::less<>> _classes;
 			mutable std::recursive_mutex _mutex;
+			Vm* _vm = nullptr;
 	};
 }  // namespace sandvik
 

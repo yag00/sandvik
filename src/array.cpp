@@ -23,10 +23,12 @@
 #include <algorithm>
 
 #include "class.hpp"
+#include "classloader.hpp"
 #include "exceptions.hpp"
 #include "gc.hpp"
 #include "monitor.hpp"
 #include "object.hpp"
+#include "utils.hpp"
 
 using namespace sandvik;
 
@@ -48,9 +50,10 @@ Array::Array(const Class& classtype_, const std::vector<uint32_t>& dimensions_)
 	}
 	_length = totalSize;
 	_data = std::shared_ptr<std::atomic<ObjectRef>[]>(new std::atomic<ObjectRef>[totalSize], std::default_delete<std::atomic<ObjectRef>[]>());
-	// Initialize elements to null
+	// Initialize elements to "null" for Objects or "0" for primitive types
+	ObjectRef defaultValue = sandvik::is_primitive_type(classtype_.getFullname()) ? Object::make(static_cast<int32_t>(0)) : Object::makeNull();
 	for (uint32_t i = 0; i < totalSize; ++i) {
-		_data[i].store(Object::makeNull(), std::memory_order_relaxed);
+		_data[i].store(defaultValue, std::memory_order_relaxed);
 	}
 }
 
@@ -75,20 +78,23 @@ bool Array::isClass() const {
 }
 
 Class& Array::getClass() const {
-	// If the array's class is already java.lang.Object, return it.
-	if (_classtype.getFullname() == "java.lang.Object") {
-		return const_cast<Class&>(_classtype);
-	}
-	// Walk the superclass chain (inspect as const) and return the java.lang.Object entry if found.
-	const Class* cur = &_classtype;
-	while (cur->hasSuperClass()) {
-		auto& super = cur->getSuperClass();
-		if (super.getFullname() == "java.lang.Object") {
-			return super;
-		}
-		cur = &super;
-	}
-	throw VmException("Array does not have java.lang.Object as superclass");
+	std::string arrayName = "[L" + _classtype.getFullname() + ";";
+	return _classtype.getClassLoader().getOrLoad(arrayName);
+
+	// // If the array's class is already java.lang.Object, return it.
+	// if (_classtype.getFullname() == "java.lang.Object") {
+	// 	return const_cast<Class&>(_classtype);
+	// }
+	// // Walk the superclass chain (inspect as const) and return the java.lang.Object entry if found.
+	// const Class* cur = &_classtype;
+	// while (cur->hasSuperClass()) {
+	// 	auto& super = cur->getSuperClass();
+	// 	if (super.getFullname() == "java.lang.Object") {
+	// 		return super;
+	// 	}
+	// 	cur = &super;
+	// }
+	// throw VmException("Array does not have java.lang.Object as superclass");
 }
 
 const Class& Array::getClassType() const {

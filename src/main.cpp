@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 
 #include <args.hxx>
+#include <filesystem>
 
 #include "class.hpp"
 #include "classloader.hpp"
@@ -26,11 +27,15 @@
 #include "jni.hpp"
 #include "loader/apk.hpp"
 #include "loader/dex.hpp"
+#include "loader/getprop.hpp"
+#include "system/env_var.hpp"
 #include "system/logger.hpp"
 #include "system/sharedlibrary.hpp"
 #include "trace.hpp"
 #include "version.hpp"
+#include "vfs.hpp"
 #include "vm.hpp"
+#include "zygote.hpp"
 
 using namespace sandvik;
 
@@ -48,10 +53,13 @@ int main(int argc, char** argv) {
 	args::Flag instructiontrace(parser, "instruction", "Instruction trace", {'i', "instructions"});
 	args::Flag calltrace(parser, "calltrace", "Call trace", {'c', "calltrace"});
 	args::ValueFlagList<std::string> dexFiles(parser, "file", "Specify the DEX files to load", {"dex"});
+	args::ValueFlag<std::string> androidVersion(parser, "version", "Specify the Android version to emulate (e.g., 12.0.0)", {"android-version"}, "");
+	args::ValueFlag<std::string> jarDir(parser, "dir", "Directory containing runtime JARs (loaded in order)", {"jar-dir"});
 	args::ValueFlagList<std::string> jarFiles(parser, "file", "Specify the Jar files to load", {"jar"});
 	args::ValueFlag<std::string> apkFile(parser, "file", "Specify the APK file to load", {"apk"}, "");
+	args::ValueFlag<std::string> androidRoot(parser, "dir", "Specify the virtual Android filesystem root directory", {"android-root"}, "");
+	args::ValueFlag<std::string> propFile(parser, "file", "Specify an Android getprop output file to preload properties", {"prop"}, "");
 	args::ValueFlag<std::string> mainClass(parser, "classname", "Specify the main class to run", {"main"}, "");
-	args::ValueFlag<std::string> runTime(parser, "runtime", "Specify path to override the default java runtime", {"runtime"}, "");
 	args::PositionalList<std::string> positionalArgs(parser, "args", "Positional arguments for the java program");
 
 	try {
@@ -119,27 +127,57 @@ int main(int argc, char** argv) {
 	}
 
 	Vm vm;
-	// load runtime
-	vm.loadRt(args::get(runTime));
-	// load dex files
+
+	// Determine base file directory for resources based on Android version
+	auto baseFileDir = std::optional<std::string>();
+	if (!args::get(androidVersion).empty()) {
+		baseFileDir = "android/" + args::get(androidVersion) + "/";
+	}
+
+	// Load Device Properties from getprop output file if specified
+	if (!args::get(propFile).empty()) {
+		GetProp::getInstance().loadFromFile(args::get(propFile));
+	} else if (baseFileDir.has_value()) {
+		GetProp::getInstance().loadFromFile(baseFileDir.value() + "getprop.prop");
+	}
+
+	// Load DEX files
 	for (const auto& dexFile : args::get(dexFiles)) {
 		vm.loadDex(dexFile);
 	}
-	// load jar (containing dex) files
-	for (const auto& jarFile : args::get(jarFiles)) {
-		vm.loadRt(jarFile);
+	// Load JAR (containing DEX) files by directory or by explicit file list
+	if (!args::get(jarDir).empty()) {
+		vm.loadRtByDir(args::get(jarDir));
+	} else if (baseFileDir.has_value()) {
+		vm.loadRtByDir(baseFileDir.value() + "bin");
 	}
-	// load apk file
+	if (!args::get(jarFiles).empty()) {
+		for (const auto& jarFile : args::get(jarFiles)) {
+			vm.loadRtByFile(jarFile);
+		}
+	}
+
+	// Load APK file
 	if (!args::get(apkFile).empty()) {
 		vm.loadApk(args::get(apkFile));
 	}
-	// run the VM
+
+	// Set Android Virtual Filesystem Root Directory
+	if (!args::get(androidRoot).empty()) {
+		VFS::setAndroidRoot(args::get(androidRoot));
+	} else if (baseFileDir.has_value()) {
+		VFS::setAndroidRoot(baseFileDir.value() + "fs");
+	}
+
+	setupZygoteSocket();
+
+	// Run the VM
 	try {
 		if (!args::get(apkFile).empty()) {
-			// running APK file, main class is extracted from the APK manifest
+			// Running APK file, main class is extracted from the APK manifest
 			vm.run();
 		} else {
-			// running normal class
+			// Running normal class
 			std::vector<std::string> args = args::get(positionalArgs);
 			vm.run(args::get(mainClass), args);
 		}

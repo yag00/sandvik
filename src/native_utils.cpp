@@ -35,6 +35,17 @@ Object* native::getObject(jobject jobj) {
 	return ptr;
 }
 
+ObjectRef native::getReferenceObjectOrNull(jobject value_) {
+	if (value_ == nullptr) {
+		return Object::makeNull();
+	}
+	auto value = (Object*)value_;
+	if (value->isNull()) {
+		return Object::makeNull();
+	}
+	return value;
+}
+
 Object* native::getString(jobject jstr) {
 	return native::getString((jstring)jstr);
 }
@@ -44,10 +55,24 @@ Object* native::getString(jstring jstr) {
 	if (ptr == nullptr) {
 		throw NullPointerException("null object");
 	}
+	if (ptr->isNumberObject() && ptr->getValue() == 0) {
+		throw NullPointerException("null object");
+	}
 	if (!ptr->isString()) {
 		throw ClassCastException("Object is not a java.lang.String");
 	}
 	return ptr;
+}
+
+Object* native::getNullableString(jstring jstr) {
+	if (jstr == nullptr) {
+		return Object::makeNull();
+	}
+	try {
+		return native::getString(jstr);
+	} catch (const NullPointerException&) {
+		return Object::makeNull();
+	}
 }
 
 Array* native::getArray(jobject jarray) {

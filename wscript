@@ -1,179 +1,218 @@
 #! /usr/bin/env python
 # encoding: utf-8
 
-import os, sys
-from waflib import Options, Utils
-sys.path += ['wtools']
-from wtools import configure, version, test, git
+import os
+import sys
+import subprocess
 
+from waflib import Options, Utils
+from waflib import Context
 from waflib.Tools.compiler_c import c_compiler
 from waflib.Tools.compiler_cxx import cxx_compiler
+
+from wtools import configure, git, test, version
+
+sys.path += ['wtools']
+
 
 top = '.'
 out = 'wbuild'
 
-APPNAME='sandvik'
-VERSION='1.0.0'
+APPNAME = 'sandvik'
+VERSION = '1.0.0'
+
 
 def options(opt):
-	opt.load('python')
-	opt.load('compiler_c')
-	opt.load('compiler_cxx')
+    opt.load('python')
+    opt.load('compiler_c')
+    opt.load('compiler_cxx')
 
-	default_prefix= opt.path.abspath() + os.sep + 'delivery'
-	opt.add_option('--prefix',dest='prefix',default=default_prefix,help='installation prefix [default: %r]'%default_prefix)
+    default_prefix = opt.path.abspath() + os.sep + 'delivery'
+    opt.add_option('--prefix', dest='prefix', default=default_prefix,
+                   help='installation prefix [default: %r]' % default_prefix)
 
-	opt.add_option('--debug', action='store_true', default=False, help = 'configure build in debug mode', dest = 'debug')
-	opt.add_option('--tests', action='store_true', default=False, help='Launch all tests for the target', dest='tests')
-	opt.add_option('--gcc', action='store_true', default=False, help = 'build with gcc instead of clang', dest = 'gcc')
-	opt.add_option('--test-name', action='store', default=None, help='Name of test to run', dest='test_name')
+    opt.add_option('--debug', action='store_true', default=False, help='configure build in debug mode', dest='debug')
+    opt.add_option('--tests', action='store_true', default=False, help='Launch all tests for the target', dest='tests')
+    opt.add_option('--gcc', action='store_true', default=False, help='build with gcc instead of clang', dest='gcc')
+    opt.add_option('--test-name', action='store', default=None, help='Name of test to run', dest='test_name')
+
 
 def configure(conf):
-	conf.load('python')
-	conf.check_python_version((3,0,0))
+    conf.load('python')
+    conf.check_python_version((3, 0, 0))
 
-	conf.load('java')
-	version = conf.cmd_and_log(f"{conf.env['JAVAC'][0]} --version").strip().split(' ')[1]
-	conf.msg('Checking for javac version', version)
-	conf.load('d8', tooldir='wtools')
+    conf.load('java')
+    version = conf.cmd_and_log(f"{conf.env['JAVAC'][0]} --version").strip().split(' ')[1]
+    conf.msg('Checking for javac version', version)
+    conf.load('d8', tooldir='wtools')
 
-	conf.git_submodule_update()
+    conf.git_submodule_update()
 
-	conf.load('rc', tooldir='wtools')
-	conf.load('doxygen')
+    conf.load('rc', tooldir='wtools')
+    conf.load('doxygen')
 
-	# set clang/clang++ as default compiler
-	if not Options.options.gcc:
-		c_compiler['linux'] = ['clang'] + c_compiler['linux']
-		cxx_compiler['linux'] = ['clang++'] + cxx_compiler['linux']
-	conf.load('compiler_c compiler_cxx')
-	conf.msg('Checking for c/c++ compiler version', '.'.join(conf.env['CC_VERSION']))
-	if conf.env.CC_NAME == 'clang':
-		conf.load('clang_compilation_database')
+    # set clang/clang++ as default compiler
+    if not Options.options.gcc:
+        c_compiler['linux'] = ['clang'] + c_compiler['linux']
+        cxx_compiler['linux'] = ['clang++'] + cxx_compiler['linux']
+    conf.load('compiler_c compiler_cxx')
+    conf.msg('Checking for c/c++ compiler version', '.'.join(conf.env['CC_VERSION']))
+    if conf.env.CC_NAME == 'clang':
+        conf.load('clang_compilation_database')
 
-	# c/cxx flags
-	cflags = ['-fPIC', '-Wall', '-Werror', '-O3', '-Wno-unused-parameter', '-fno-strict-aliasing', '-fomit-frame-pointer', '-march=native']
-	cxxflags = cflags + []
+    # c/cxx flags
+    cflags = ['-fPIC', '-Wall', '-Werror', '-O3', '-Wno-unused-parameter',
+              '-fno-strict-aliasing', '-fomit-frame-pointer', '-march=native']
+    cxxflags = cflags + []
 
-	conf.env.DEFINES.clear()
-	if Options.options.debug:
-		cxxflags.append('-g')
-		conf.env.DEFINES.append('__debug__')
+    conf.env.DEFINES.clear()
+    if Options.options.debug:
+        cxxflags.append('-g')
+        conf.env.DEFINES.append('__debug__')
 
-	#conditional c/cxx flags
-	dflags = {'c++only' : ['--std=c++20'], 'all' : []}
+    # conditional c/cxx flags
+    dflags = {'c++only': ['--std=c++20'], 'all': []}
 
-	for l, flags in dflags.items():
-		for flag in flags:
-			if conf.check_cxx(cxxflags=flag, mandatory=True):
-				cxxflags.append(flag)
-				if l == 'all':
-					cflags.append(flag)
+    for l, flags in dflags.items():
+        for flag in flags:
+            if conf.check_cxx(cxxflags=flag, mandatory=True):
+                cxxflags.append(flag)
+                if l == 'all':
+                    cflags.append(flag)
 
-	conf.env.CFLAGS = cflags
-	conf.env.CLANGFLAGS = cflags
-	conf.env.CLANGXXFLAGS = cxxflags
-	conf.env.CXXFLAGS = cxxflags
+    conf.env.CFLAGS = cflags
+    conf.env.CLANGFLAGS = cflags
+    conf.env.CLANGXXFLAGS = cxxflags
+    conf.env.CXXFLAGS = cxxflags
 
-	#code formater
-	conf.load('checkstyle', tooldir='wtools')
-	#git use to clone dependencies and get the current version/commit
-	conf.find_program('git', mandatory=True)
+    # code formater
+    conf.load('checkstyle', tooldir='wtools')
+    # git use to clone dependencies and get the current version/commit
+    conf.find_program('git', mandatory=True)
 
-	#-------------------------------------------------
-	#check for system libraries
-	#-------------------------------------------------
-	conf.check(lib="pthread")
+    # -------------------------------------------------
+    # check for system libraries
+    # -------------------------------------------------
+    conf.check(lib="pthread")
 
-	#-------------------------------------------------
-	#check for local libraries
-	#-------------------------------------------------
-	conf.check_dependencies_tools()
-	conf.check_fmt()
-	conf.check_args()
-	conf.check_lief()
-	conf.check_ffi()
-	conf.check_axml()
-	conf.check_xxhash()
+    # -------------------------------------------------
+    # check for local libraries
+    # -------------------------------------------------
+    conf.check_dependencies_tools()
+    conf.check_fmt()
+    conf.check_args()
+    conf.check_lief()
+    conf.check_ffi()
+    conf.check_axml()
+    conf.check_xxhash()
 
-	#-------------------------------------------------
-	#check for test libraries
-	#-------------------------------------------------
-	conf.check_googletest()
+    # -------------------------------------------------
+    # check for test libraries
+    # -------------------------------------------------
+    conf.check_googletest()
 
-	conf.env['JAVACFLAGS'] += [
-		'-Xlint:-options'       # suppress the bootstrap classpath warning
-	]
-	#we are done :)
+    conf.env['JAVACFLAGS'] += [
+        '-Xlint:-options'       # suppress the bootstrap classpath warning
+    ]
+    # we are done :)
+
 
 def build(bld):
-	gitinfo = git.getInfos(bld)
-	#-------------------------------------------------
-	# check style
-	#-------------------------------------------------
-	checkstyle_sources = bld.path.ant_glob(['android-12.0.0/**/*.cpp', 'sanddirt/**/*.java', 'src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
-	bld.checkstyle(
-		inputs = checkstyle_sources,
-	)
-	#-------------------------------------------------
-	# generate version.in.hpp file
-	#-------------------------------------------------
-	bld.version(gitinfo=gitinfo, version=VERSION, output='src/version.in.hpp',)
-	bld.add_group() #make sure formatting is done before going further
-	#-------------------------------------------------
-	# build java runtime sanddirt.jar
-	#-------------------------------------------------
-	#bld(features   = 'javac jar d8',
-	#	srcdir     = 'sanddirt/', # folder containing the sources to compile
-	#	outdir     = 'sanddirt', # folder where to output the classes (in the build directory)
-	#	compat     = '8', # java compatibility version number
-	#	sourcepath = ['sanddirt'],
-	#	classpath  = ['.', '..'],
-	#	jaropts = [], # can be used to give files
-	#	basedir    = 'sanddirt', # folder containing the classes and other files to package (must match outdir)
-	#	destfile   = 'sanddirt.jar', # do not put the destfile in the folder of the java classes!
-	#)
-	#-------------------------------------------------
-	# build sandvik library
-	#-------------------------------------------------
-	sources = bld.path.ant_glob(['src/**/*.cpp', 'src/**/*.c', 'android-12.0.0/**/*.cpp'], excl=['src/main.cpp'])
-	bld.shlib(
-		features        = ['resources', 'doxygen'],
-		source          = sources,
-		name            = APPNAME,
-		target          = APPNAME,
-		includes        = ['src'],
-		use             = ['FMT', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
-		linkflags       = ["-Wl,-z,defs"],
-		install_path    = '${PREFIX}/lib',
-		#resources       = 'android-12.0.0/bin/core-oj.dex.jar',
-		doxyfile        = 'doc/sandvik.doxygen',
-	)
-	#-------------------------------------------------
-	# build sandvik main executable
-	#-------------------------------------------------
-	bld.program(
-		source          = 'src/main.cpp',
-		name            = "vm_sandvik",
-		target          = "sandvik",
-		includes        = ['src'],
-		use             = [APPNAME, 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
-		linkflags       = ["-rdynamic", "-Wl,-z,defs"],
-		install_path    = '${PREFIX}',
-	)
+    gitinfo = git.getInfos(bld)
+    # -------------------------------------------------
+    # check style
+    # -------------------------------------------------
+    checkstyle_sources = bld.path.ant_glob(
+        ['android/12.0.0/natives/**/*.cpp', 'src/**/*.cpp', 'src/**/*.hpp', 'src/**/*.c', 'src/**/*.h'])
+    bld.checkstyle(
+        inputs=checkstyle_sources,
+    )
+    # -------------------------------------------------
+    # generate version.in.hpp file
+    # -------------------------------------------------
+    bld.version(gitinfo=gitinfo, version=VERSION, output='src/version.in.hpp',)
+    bld.add_group()  # make sure formatting is done before going further
+    # -------------------------------------------------
+    # build java runtime sanddirt.jar
+    # -------------------------------------------------
+    # bld(features   = 'javac jar d8',
+    # srcdir     = 'sanddirt/', # folder containing the sources to compile
+    # outdir     = 'sanddirt', # folder where to output the classes (in the build directory)
+    # compat     = '8', # java compatibility version number
+    # sourcepath = ['sanddirt'],
+    # classpath  = ['.', '..'],
+    # jaropts = [], # can be used to give files
+    # basedir    = 'sanddirt', # folder containing the classes and other files to package (must match outdir)
+    # destfile   = 'sanddirt.jar', # do not put the destfile in the folder of the java classes!
+    # )
+    # -------------------------------------------------
+    # build sandvik library
+    # -------------------------------------------------
+    sources = bld.path.ant_glob(
+        ['src/**/*.cpp', 'src/**/*.c', 'android/12.0.0/natives/**/*.cpp'],
+        excl=['src/main.cpp'])
+    bld.shlib(
+        features=['resources', 'doxygen'],
+        source=sources,
+        name=APPNAME,
+        target=APPNAME,
+        includes=['src'],
+        use=['FMT', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
+        lib=['icuuc'],
+        linkflags=["-Wl,-z,defs"],
+        # linkflags=["-Wl,-z,defs,-licuuc"],
+        install_path='${PREFIX}/lib',
+        doxyfile='doc/sandvik.doxygen',
+    )
+    # -------------------------------------------------
+    # build sandvik main executable
+    # -------------------------------------------------
+    bld.program(
+        source='src/main.cpp',
+        name="vm_sandvik",
+        target="sandvik",
+        includes=['src'],
+        use=[APPNAME, 'FMT', 'ARGS', 'LIEF', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
+        linkflags=["-rdynamic", "-Wl,-z,defs"],
+        install_path='${PREFIX}',
+    )
 
-	#-------------------------------------------------
-	# install include files
-	#-------------------------------------------------
-	include_files = bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h'])
-	bld.install_files('${PREFIX}/include', include_files, cwd=bld.path.find_dir('src'))
+    # -------------------------------------------------
+    # install include files
+    # -------------------------------------------------
+    include_files = bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h'])
+    bld.install_files('${PREFIX}/include', include_files, cwd=bld.path.find_dir('src'))
 
-	#-------------------------------------------------
-	# tests
-	#-------------------------------------------------
-	bld.add_group() #wait for everything to be built before running tests
-	if Options.options.tests == True or Options.options.test_name != None:
-		#run tests
-		tests = [test.UnitTest(bld, Options.options.test_name)]
-		for tt in tests:
-			tt.run()
+    # -------------------------------------------------
+    # tests
+    # -------------------------------------------------
+    bld.add_group()  # wait for everything to be built before running tests
+    if Options.options.tests == True or Options.options.test_name != None:
+        # run tests
+        tests = [test.UnitTest(bld, Options.options.test_name)]
+        for tt in tests:
+            tt.run()
+
+class RunContext(Context.Context):
+    """./waf run run sandvik vm"""
+    cmd = 'run'
+    fun = 'run'
+
+def run(ctx):
+    exec_env = os.environ.copy()
+    exe = [ctx.path.abspath() + '/wbuild/' + APPNAME]
+    #_run_idx = sys.argv.index('run')
+    #args = sys.argv[_run_idx + 1:]
+    #print(args)
+
+    # Update LD_LIBRARY_PATH in the environment variables
+    exec_env['LD_LIBRARY_PATH'] = ctx.path.abspath() + '/wbuild/'
+    args=['--log=ERROR', '--android-version=12.0.0', '--main', 'com.android.internal.os.ZygoteInit', '--', 'dummy', '--abi-list=x86_64']
+    try:
+            # Run the program with the modified environment variables
+            process = subprocess.Popen(exe + args, env=exec_env)
+            process.communicate()
+            return process.returncode
+    except FileNotFoundError:
+            print("Error: Program not found.")
+            return -1

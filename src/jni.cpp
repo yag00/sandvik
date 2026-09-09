@@ -2443,7 +2443,7 @@ void NativeInterface::GetCharArrayRegion(JNIEnv *env, jcharArray array, jsize st
 	if (start < 0 || len < 0 || (uint32_t)(start + len) > arr.getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("GetCharArrayRegion: invalid start/len");
 	}
-	if (!buf) {
+	if (len > 0 && !buf) {
 		throw NullPointerException("GetCharArrayRegion: buf is null");
 	}
 	for (jsize i = 0; i < len; ++i) {

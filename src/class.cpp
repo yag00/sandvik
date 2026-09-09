@@ -90,8 +90,22 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX:
 			continue;
 		}
 
-		// Otherwise: keep existing method
-		logger.fwarning("Duplicate method found: {}{} in class {}", name, signature, getFullname());
+		if (!newHasCode && oldHasCode) {
+			// Keep existing method
+			continue;
+		}
+
+		if (!newHasCode && !oldHasCode) {
+			// Both are stubs, keep existing method
+			continue;
+		}
+
+		if (newHasCode && oldHasCode) {
+			// Both have code, keep existing method
+			continue;
+		}
+
+		logger.fwarning("Conflict between new and existing method found: {}{} in class {}", name, signature, getFullname());
 	}
 	// Initialize fields
 	for (const auto& field : class_.fields()) {
@@ -163,6 +177,9 @@ bool Class::implements(const std::string& interface_) const {
 			return true;
 		}
 	}
+	if (hasSuperClass()) {
+		return getSuperClass().implements(interface_);
+	}
 	return false;
 }
 
@@ -171,27 +188,35 @@ bool Class::implements(const Class& interface_) const {
 }
 
 bool Class::isInstanceOf(const std::string& classname_) const {
-	if (isArray()) {
-		// array type check
-		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
-			return true;
-		}
+	try {
+		const auto& targetClass = _classloader.getOrLoad(classname_);
+		return isInstanceOf(targetClass);
+	} catch (...) {
+		return false;
 	}
-	if (getFullname() == classname_) {
-		return true;
-	}
-	return false;
 }
 bool Class::isInstanceOf(const Class& class_) const {
-	if (isArray()) {
-		// array type check
+	// Arrays are always instances of Object, Cloneable and Serializable.
+	if (class_.isArray()) {
 		if (getFullname() == "java.lang.Object" || getFullname() == "java.lang.Cloneable" || getFullname() == "java.io.Serializable") {
 			return true;
 		}
 	}
-	if (getFullname() == class_.getFullname()) {
-		return true;
+
+	const Class* current = &class_;
+	while (true) {
+		if (current->getFullname() == getFullname()) {
+			return true;
+		}
+		if (current->implements(*this)) {
+			return true;
+		}
+		if (!current->hasSuperClass()) {
+			break;
+		}
+		current = &current->getSuperClass();
 	}
+
 	return false;
 }
 bool Class::isInstanceOf(ObjectRef const class_) const {
@@ -243,6 +268,9 @@ bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) 
 	if (it != _methods.end()) {
 		return true;
 	}
+	if (hasSuperClass()) {
+		return getSuperClass().hasMethod(name_, descriptor_);
+	}
 	return false;
 }
 bool Class::hasMethod(uint32_t idx_) const {
@@ -271,7 +299,19 @@ Method& Class::getMethod(const std::string& name_, const std::string& descriptor
 	auto sig = name_ + descriptor_;
 	auto it = _methods.find(sig);
 	if (it != _methods.end()) {
-		return *(it->second);
+		Method& method = *it->second;
+		if (!method.isHooked()) {
+			if ((method.hasBytecode() || method.isNative())) {
+				return method;
+			}
+			if (hasSuperClass()) {
+				return getSuperClass().getMethod(name_, descriptor_);
+			}
+		}
+		return method;
+	}
+	if (hasSuperClass()) {
+		return getSuperClass().getMethod(name_, descriptor_);
 	}
 	throw VmException("Method not found: {} {}", name_, descriptor_);
 }
@@ -296,6 +336,9 @@ bool Class::hasField(uint32_t idx_) const {
 			return true;
 		}
 	}
+	if (hasSuperClass()) {
+		return getSuperClass().hasField(idx_);
+	}
 	return false;
 }
 
@@ -304,7 +347,10 @@ Field& Class::getField(const std::string& name_) const {
 	if (it != _fields.end()) {
 		return *(it->second);
 	}
-	throw VmException("Field not found: {}", name_);
+	if (hasSuperClass()) {
+		return getSuperClass().getField(name_);
+	}
+	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
 }
 
 Field& Class::getField(uint32_t idx_) const {
@@ -313,7 +359,18 @@ Field& Class::getField(uint32_t idx_) const {
 			return *field;
 		}
 	}
-	throw std::out_of_range(fmt::format("Field index not found: {}", idx_));
+	if (hasSuperClass()) {
+		return getSuperClass().getField(idx_);
+	}
+	throw NoSuchFieldError(fmt::format("{}: field index {}", getFullname(), idx_));
+}
+
+Field& Class::getOwnField(const std::string& name_) const {
+	auto it = _fields.find(name_);
+	if (it != _fields.end()) {
+		return *(it->second);
+	}
+	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
 }
 
 std::vector<std::string> Class::getFieldList() const {
@@ -332,7 +389,7 @@ size_t Class::getFieldOffset(const std::string& name_) const {
 		}
 		index++;
 	}
-	throw VmException("Field not found: {}", name_);
+	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
 }
 
 Class& Class::getSuperClass() const {
@@ -344,6 +401,10 @@ Class& Class::getSuperClass() const {
 
 std::string Class::getSuperClassname() const {
 	return _superClassname;
+}
+
+const std::vector<std::string>& Class::getInterfaces() const {
+	return _interfaces;
 }
 
 bool Class::isExternal() const {

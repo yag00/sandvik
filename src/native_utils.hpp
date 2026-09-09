@@ -31,10 +31,14 @@ namespace sandvik {
 	namespace native {
 		/** @brief Retrieves a native Object from a Java jobject. */
 		Object* getObject(jobject jobj);
+		/** @brief Retrieves a native Object reference from a Java jobject, or null if the jobject is null. */
+		Object* getReferenceObjectOrNull(jobject value_);
 		/** @brief Retrieves a native Object from a Java jstring. */
 		Object* getString(jobject jstr);
 		/** @brief Retrieves a native Object from a Java jstring. */
 		Object* getString(jstring jstr);
+		/** @brief Retrieves a native Object from a Java jstring, or null if the jstring is null. */
+		Object* getNullableString(jstring jstr);
 		/** @brief Retrieves a native Array from a Java jobject. */
 		Array* getArray(jobject jarray);
 		/** @brief Retrieves the native interface from the Java environment. */

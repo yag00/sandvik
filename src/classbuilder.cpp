@@ -33,6 +33,7 @@ ClassBuilder::ClassBuilder(ClassLoader& classLoader, const std::string& packageN
 
 void ClassBuilder::setSuperClass(const std::string& superClassName_) {
 	_class->_superClassname = superClassName_;
+	_class->_hasSuperClass = true;
 }
 
 void ClassBuilder::addInterface(const std::string& ifClassName_) {

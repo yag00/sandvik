@@ -30,20 +30,24 @@ using namespace sandvik;
 
 ffi_type* NativeCallHelper::getFFITypeForJNIType(char jniType) {
 	switch (jniType) {
-		case 'I':
-		case 'Z':
-		case 'B':
-		case 'S':
-		case 'C':
+		case 'I':  // Int
 			return &ffi_type_sint32;
-		case 'J':
+		case 'Z':  // Boolean
+			return &ffi_type_uint8;
+		case 'B':  // Byte
+			return &ffi_type_sint8;
+		case 'S':  // Short
+			return &ffi_type_sint16;
+		case 'C':  // Char
+			return &ffi_type_uint16;
+		case 'J':  // Long
 			return &ffi_type_sint64;
-		case 'F':
+		case 'F':  // Float
 			return &ffi_type_float;
-		case 'D':
+		case 'D':  // Double
 			return &ffi_type_double;
-		case 'L':
-		case '[':  // Objects and arrays
+		case 'L':  // Object
+		case '[':  // Arrays
 			return &ffi_type_pointer;
 		default:
 			throw VmException("Unsupported JNI type character: {}", jniType);
@@ -110,12 +114,13 @@ void NativeCallHelper::prepareCallContext(CallContext& context, const std::strin
 
 uintptr_t NativeCallHelper::getArgValue(std::vector<ObjectRef>::iterator& it, const char jniType) {
 	switch (jniType) {
-		case 'I':
-		case 'Z':
-		case 'B':
-		case 'S':
-		case 'C':
-		case 'F': {
+		case 'I':  // Int
+		case 'Z':  // Boolean
+		case 'B':  // Byte
+		case 'S':  // Short
+		case 'C':  // Char
+		case 'F':  // Float
+		{
 			auto obj = *it;
 			++it;
 			if (!obj->isNumberObject()) {
@@ -123,8 +128,9 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<ObjectRef>::iterator& it, co
 			}
 			return static_cast<uintptr_t>(obj->getValue());
 		}
-		case 'J':
-		case 'D': {
+		case 'J':  // Long
+		case 'D':  // Double
+		{
 			auto lsb = *it;
 			++it;
 			auto msb = *it;
@@ -137,8 +143,8 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<ObjectRef>::iterator& it, co
 			uintptr_t result = (static_cast<uintptr_t>(msb_value) << 32) | static_cast<uintptr_t>(lsb_value);
 			return result;
 		}
-		case 'L':
-		case '[':  // Objects and arrays
+		case 'L':  // Object
+		case '[':  // Arrays
 		{
 			auto obj = *it;
 			++it;
@@ -151,19 +157,37 @@ uintptr_t NativeCallHelper::getArgValue(std::vector<ObjectRef>::iterator& it, co
 
 ObjectRef NativeCallHelper::getReturnObject(uintptr_t result, const char jniType) {
 	switch (jniType) {
-		case 'V':
+		case 'V':                       // Void
 			return Object::makeNull();  // void return null object (should not be used)
-		case 'I':
-		case 'Z':
-		case 'B':
-		case 'S':
-		case 'C':
-		case 'J':
-		case 'F':
-		case 'D':
+		case 'I':                       // Int
+			return Object::make(static_cast<int32_t>(result));
+		case 'Z':  // Boolean
+		{
+			uint8_t value = static_cast<uint8_t>(result);
+			return Object::make(static_cast<uint32_t>(value ? 1 : 0));
+		}
+		case 'B':  // Byte
+		{
+			int8_t value = static_cast<int8_t>(result);
+			return Object::make(static_cast<int32_t>(value));
+		}
+		case 'S':  // Short
+		{
+			int16_t value = static_cast<int16_t>(result);
+			return Object::make(static_cast<int32_t>(value));
+		}
+		case 'C':  // Char
+		{
+			uint16_t value = static_cast<uint16_t>(result);
+			return Object::make(static_cast<int32_t>(value));
+		}
+		case 'J':  // Long
+		case 'F':  // Float
+		case 'D':  // Double
 			return Object::make((uint64_t)result);
-		case 'L':
-		case '[': {  // Objects and arrays
+		case 'L':  // Object
+		case '[':  // Arrays
+		{
 			auto ret = (ObjectRef)result;
 			if (ret == nullptr) {
 				return Object::makeNull();
