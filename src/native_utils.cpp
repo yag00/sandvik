@@ -66,12 +66,12 @@ Object* native::getString(jstring jstr) {
 
 Object* native::getNullableString(jstring jstr) {
 	if (jstr == nullptr) {
-		return nullptr;
+		return Object::makeNull();
 	}
 	try {
 		return native::getString(jstr);
 	} catch (const NullPointerException&) {
-		return nullptr;
+		return Object::makeNull();
 	}
 }
 
