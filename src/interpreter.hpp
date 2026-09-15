@@ -497,7 +497,6 @@ namespace sandvik {
 			                               const std::string& signature_) const;
 			Method* resolveInterfaceHierarchyMethod(Class& interfaceClass_, const std::string& methodname_, const std::string& signature_,
 			                                        std::unordered_set<std::string>& visited_) const;
-			Field& resolveStaticField(Field& initial_) const;
 
 			std::vector<ObjectRef> getInvokeMethodArgs(const uint8_t* operand_) const;
 			bool tryRedirectToStringFactory(const Method& method, const std::vector<ObjectRef>& args, uint32_t thisRegIdx);
