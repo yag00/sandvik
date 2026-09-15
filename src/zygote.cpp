@@ -33,8 +33,16 @@ int createAbstractUnixSocket(const std::string& name_) {
 	struct sockaddr_un addr{};
 	addr.sun_family = AF_UNIX;
 	addr.sun_path[0] = '\0';
-	std::strncpy(addr.sun_path + 1, name_.c_str(), sizeof(addr.sun_path) - 2);
-	socklen_t addrLen = offsetof(struct sockaddr_un, sun_path) + 1 + name_.size();
+
+	// The abstract name is not null-terminated: its length is carried explicitly via
+	// addrLen, so it must fit entirely within sun_path (reject rather than silently
+	// truncate, which would otherwise desync addrLen from what was actually copied).
+	const size_t maxNameLen = sizeof(addr.sun_path) - 2;
+	if (name_.size() > maxNameLen) {
+		throw std::runtime_error("createAbstractUnixSocket(" + name_ + "): socket name too long");
+	}
+	std::memcpy(addr.sun_path + 1, name_.data(), name_.size());
+	socklen_t addrLen = static_cast<socklen_t>(offsetof(struct sockaddr_un, sun_path) + 1 + name_.size());
 
 	if (bind(fd, (struct sockaddr*)&addr, addrLen) < 0) {
 		throw std::runtime_error("createAbstractUnixSocket(" + name_ + "): bind() failed: " + strerror(errno));

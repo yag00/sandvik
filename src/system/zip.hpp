@@ -21,11 +21,18 @@
 
 #include <stdint.h>
 
+#include <filesystem>
 #include <list>
 #include <memory>
 #include <string>
 
 namespace sandvik {
+	namespace internal {
+		/** @brief Opaque handle wrapping the underlying miniz mz_zip_archive, so
+		 * zip.hpp doesn't need to include miniz.h; fully defined in zip.cpp. */
+		struct ZipArchiveHandle;
+	}  // namespace internal
+
 	/** @brief Class for reading zip archives */
 	class ZipReader {
 		public:
@@ -75,7 +82,12 @@ namespace sandvik {
 			ZipReader(ZipReader& that);
 			void operator=(ZipReader& that);
 
-			void* _zip;
+			/** Resolves a zip entry's name against the extraction root, rejecting any
+			 * entry whose (possibly ../-laden) name would escape that root.
+			 * @throw std::exception if the entry escapes the extraction root */
+			static std::filesystem::path resolveEntryPath(const std::filesystem::path& root, const std::string& entryName);
+
+			std::unique_ptr<internal::ZipArchiveHandle> _zip;
 	};
 
 	/** @brief Class for writing zip archives */
@@ -107,7 +119,7 @@ namespace sandvik {
 			ZipWriter(ZipWriter& that);
 			void operator=(ZipWriter& that);
 
-			void* _zip;
+			std::unique_ptr<internal::ZipArchiveHandle> _zip;
 	};
 };  // namespace sandvik
 

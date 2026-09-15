@@ -533,7 +533,7 @@ ObjectRef Object::getField(const std::string& name_) const {
 	std::lock_guard lock(_fieldsMutex);
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
-		return it->second.load(std::memory_order_relaxed);
+		return it->second.load();
 	}
 	throw std::out_of_range(fmt::format("Field '{}' does not exist in object {}", name_, this->toString()));
 }
@@ -543,10 +543,15 @@ void Object::setField(const std::string& name_, ObjectRef value_) {
 	std::lock_guard lock(_fieldsMutex);
 	auto it = _fields.find(name_);
 	if (it != _fields.end()) {
-		it->second.store(value_, std::memory_order_relaxed);
+		it->second.store(value_);
 		return;
 	}
 	_fields.try_emplace(name_, value_);
+}
+
+void Object::initField(const std::string& name_, ObjectRef value_) {
+	std::lock_guard lock(_fieldsMutex);
+	_fields[name_] = value_;
 }
 
 void Object::setField(size_t index_, ObjectRef value_) {
@@ -560,10 +565,10 @@ ObjectRef Object::getField(size_t index_) const {
 }
 
 void Object::setMarked(bool v_) {
-	_marked.store(v_, std::memory_order_relaxed);
+	_marked.store(v_);
 }
 bool Object::isMarked() const {
-	return _marked.load(std::memory_order_relaxed);
+	return _marked.load();
 }
 
 void Object::visitReferences(const std::function<void(Object*)>& visitor_) const {
@@ -693,10 +698,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 				case 'J':
 				case 'F':
 				case 'D':
-					_fields[fieldname] = Object::make(0);
+					initField(fieldname, Object::make(0));
 					break;
 				default:
-					_fields[fieldname] = Object::makeNull();
+					initField(fieldname, Object::makeNull());
 					break;
 			}
 		}
@@ -719,10 +724,10 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 					case 'J':
 					case 'F':
 					case 'D':
-						_fields[fieldname] = Object::make(0);
+						initField(fieldname, Object::make(0));
 						break;
 					default:
-						_fields[fieldname] = Object::makeNull();
+						initField(fieldname, Object::makeNull());
 						break;
 				}
 			}

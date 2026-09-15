@@ -42,8 +42,7 @@ using namespace LIEF::DEX;
 Dex::Dex(const std::string& path_) : _path(path_) {
 	load(path_);
 }
-Dex::Dex() {
-}
+Dex::Dex() = default;
 
 Dex::Dex(std::vector<uint8_t>& buffer, const std::string& path_) : _path(path_) {
 	load(buffer);

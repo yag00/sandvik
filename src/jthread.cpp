@@ -91,7 +91,10 @@ JThread::~JThread() {
 	// destroyed JThread, which triggers "pure virtual method called".
 	stop();
 	try {
-		join();
+		// Qualified to avoid a virtual dispatch from this destructor (cpp:S1699):
+		// JThread has no join() override, so this is Thread::join() either way,
+		// but the qualification keeps that guaranteed regardless of future subclasses.
+		Thread::join();
 	} catch (const std::exception& ex) {
 		logger.fwarning("Failed to join JThread '{}': {}", getName(), ex.what());
 	}

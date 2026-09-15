@@ -42,11 +42,9 @@
 
 using namespace sandvik;
 
-ClassLoader::ClassLoader() {
-}
+ClassLoader::ClassLoader() = default;
 
-ClassLoader::~ClassLoader() {
-}
+ClassLoader::~ClassLoader() = default;
 
 void ClassLoader::loadRtByDir(const std::string& rt_) {
 	try {

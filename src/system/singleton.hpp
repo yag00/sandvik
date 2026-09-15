@@ -18,10 +18,8 @@ namespace sandvik {
 			Singleton& operator=(const Singleton&) = delete;
 
 		protected:
-			Singleton() {
-			}
-			virtual ~Singleton() {
-			}
+			Singleton() = default;
+			virtual ~Singleton() = default;
 
 		private:
 			Singleton(Singleton&);

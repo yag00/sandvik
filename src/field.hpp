@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "object.hpp"
@@ -121,7 +122,13 @@ namespace sandvik {
 			/** Visit outgoing references
 			 * @param visitor_ function to call for each referenced object
 			 */
-			void visitReferences(const std::function<void(Object*)>& visitor_) const;
+			template <typename Visitor>
+			void visitReferences(Visitor&& visitor_) const {
+				static_assert(std::is_invocable_v<Visitor, Object*>);
+				if (_obj != nullptr) {
+					visitor_(_obj);
+				}
+			}
 
 		private:
 			Class& _class;

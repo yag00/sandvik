@@ -118,49 +118,50 @@ void GC::collect() {
 		vm->suspend();
 	}
 
-	std::unique_lock lock(_mtx);
-	logger.fdebug("GC: Starting garbage collection cycle... ({} objects)", _objects.size());
-	std::unordered_set<Object*> tracked;
-	tracked.reserve(_objects.size());
-	for (const auto& obj : _objects) {
-		tracked.insert(obj.get());
-	}
-
-	// Mark reachable objects:
-	Object::makeNull()->setMarked(true);  // ensure null object is always marked
-	StringPool::getInstance().markAll();  // ensure all interned strings are always marked
-	//  scan each thread's stacks/frames
-	//  scan static fields in loaded classes
-	//  @todo : scan thread's local JNI handles table
-	//  @todo scan global JNI handles
-	Object* nullObj = Object::makeNull();
-	std::function<void(Object*)> mark;
-	mark = [&mark, &tracked, nullObj](Object* obj) {
-		if (obj == nullptr) {
-			return;
+	{
+		std::lock_guard lock(_mtx);
+		logger.fdebug("GC: Starting garbage collection cycle... ({} objects)", _objects.size());
+		std::unordered_set<Object*> tracked;
+		tracked.reserve(_objects.size());
+		for (const auto& obj : _objects) {
+			tracked.insert(obj.get());
 		}
-		if (obj != nullObj && tracked.find(obj) == tracked.end()) {
-			return;
-		}
-		if (obj->isMarked()) {
-			return;
-		}
-		obj->setMarked(true);
-		obj->visitReferences(mark);
-	};
-	for (auto& vm : vms) {
-		vm->visitReferences(mark);
-	}
 
-	// Sweeping: free unmarked objects
-	std::erase_if(_objects, [](const std::unique_ptr<Object>& obj) { return !obj->isMarked(); });
-	// Clear marks for next GC for live objects
-	for (const auto& obj : _objects) {
-		obj->setMarked(false);
-	}
+		// Mark reachable objects:
+		Object::makeNull()->setMarked(true);  // ensure null object is always marked
+		StringPool::getInstance().markAll();  // ensure all interned strings are always marked
+		//  scan each thread's stacks/frames
+		//  scan static fields in loaded classes
+		//  @todo : scan thread's local JNI handles table
+		//  @todo scan global JNI handles
+		Object* nullObj = Object::makeNull();
+		std::function<void(Object*)> mark;
+		mark = [&mark, &tracked, nullObj](Object* obj) {
+			if (obj == nullptr) {
+				return;
+			}
+			if (obj != nullObj && tracked.find(obj) == tracked.end()) {
+				return;
+			}
+			if (obj->isMarked()) {
+				return;
+			}
+			obj->setMarked(true);
+			obj->visitReferences(mark);
+		};
+		for (auto& vm : vms) {
+			vm->visitReferences(mark);
+		}
 
-	logger.fdebug("GC: {} live objects", _objects.size());
-	lock.unlock();
+		// Sweeping: free unmarked objects
+		std::erase_if(_objects, [](const std::unique_ptr<Object>& obj) { return !obj->isMarked(); });
+		// Clear marks for next GC for live objects
+		for (const auto& obj : _objects) {
+			obj->setMarked(false);
+		}
+
+		logger.fdebug("GC: {} live objects", _objects.size());
+	}
 	// Resume the world
 	for (auto& vm : vms) {
 		vm->resume();

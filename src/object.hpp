@@ -428,14 +428,22 @@ namespace sandvik {
 		protected:
 			/** Check monitor ownership */
 			void monitorCheck() const;
-			/** Mutex protecting field map structure and lookups */
-			mutable std::mutex _fieldsMutex;
+			/** Initializes a field slot with a value.
+			 * @param name_ field name
+			 * @param value_ initial value
+			 * @note for use by subclasses populating their initial field set; ordinary
+			 * field updates should go through setField() instead. */
+			void initField(const std::string& name_, ObjectRef value_);
+
+		private:
 			/** Map storing field names and their corresponding values. */
 			std::map<std::string, std::atomic<ObjectRef>, std::less<>> _fields;
 			/** Monitor for thread synchronization */
 			std::unique_ptr<Monitor> _monitor;
 			/** Mark bit for GC */
 			std::atomic<bool> _marked{false};
+			/** Mutex protecting field map structure and lookups */
+			mutable std::mutex _fieldsMutex;
 	};
 }  // namespace sandvik
 

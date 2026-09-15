@@ -19,6 +19,8 @@
 #ifndef __VFS_HPP__
 #define __VFS_HPP__
 
+#include <unistd.h>
+
 #include <filesystem>
 #include <string>
 
@@ -30,7 +32,9 @@ namespace sandvik {
 		private:
 			static inline std::string androidRoot = "./android_root";
 
-			static inline std::string hostCacheRoot = "/tmp/sandvik-res-cache";
+			// Namespaced by uid to avoid the race condition of a fixed, predictable
+			// path in the publicly writable temp directory.
+			static inline std::string hostCacheRoot = (std::filesystem::temp_directory_path() / ("sandvik-" + std::to_string(getuid()))).string();
 
 		public:
 			/**

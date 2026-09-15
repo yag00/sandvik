@@ -141,9 +141,3 @@ void Field::setObjectValue(ObjectRef value) {
 	}
 	_obj = value;
 }
-
-void Field::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	if (_obj != nullptr) {
-		visitor_(_obj);
-	}
-}

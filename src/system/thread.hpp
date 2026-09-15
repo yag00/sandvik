@@ -79,6 +79,7 @@ namespace sandvik {
 			virtual bool done() = 0;
 			/** @brief hook called when run() is about to start a new thread. */
 			virtual void onStart() {
+				// Intentionally blank: default no-op hook, overridden by subclasses that need it.
 			}
 
 		private:

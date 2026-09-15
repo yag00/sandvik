@@ -28,13 +28,16 @@
 
 using namespace sandvik;
 
-Logger::Logger() {
-}
+Logger::Logger() = default;
 
 Logger::~Logger() {
 	if (_file.is_open()) {
-		_file.flush();
-		_file.close();
+		try {
+			_file.flush();
+			_file.close();
+		} catch (...) {
+			// Best-effort cleanup: a destructor must never throw.
+		}
 	}
 }
 
@@ -98,60 +101,6 @@ void Logger::error(const std::string &msg) {
 
 void Logger::ok(const std::string &msg) {
 	log(LogLevel::OK, msg);
-}
-
-void Logger::debug(const char *msg_, ...) {
-	char msg[1024] = {'\0'};
-	va_list args;
-	va_start(args, msg_);
-	vsprintf((char *)&msg, msg_, args);
-	va_end(args);
-	debug(std::string(msg));
-}
-
-void Logger::info(const char *msg_, ...) {
-	char msg[1024] = {'\0'};
-	va_list args;
-	va_start(args, msg_);
-	vsprintf((char *)&msg, msg_, args);
-	va_end(args);
-	info(std::string(msg));
-}
-
-void Logger::warning(const char *msg_, ...) {
-	char msg[1024] = {'\0'};
-	va_list args;
-	va_start(args, msg_);
-	vsprintf((char *)&msg, msg_, args);
-	va_end(args);
-	warning(std::string(msg));
-}
-
-void Logger::error(const char *msg_, ...) {
-	char msg[1024] = {'\0'};
-	va_list args;
-	va_start(args, msg_);
-	vsprintf((char *)&msg, msg_, args);
-	va_end(args);
-	error(std::string(msg));
-}
-
-void Logger::ok(const char *msg_, ...) {
-	char msg[1024] = {'\0'};
-	va_list args;
-	va_start(args, msg_);
-	vsprintf((char *)&msg, msg_, args);
-	va_end(args);
-	ok(std::string(msg));
-}
-
-void Logger::color(uint32_t color_, char marker_, const char *msg_, ...) {
-	char msg[1024] = {'\0'};
-	va_list args;
-	va_start(args, msg_);
-	vsprintf((char *)&msg, msg_, args);
-	va_end(args);
-	color(color_, marker_, std::string(msg));
 }
 
 void Logger::color(uint32_t color_, char marker_, const std::string &msg_) {

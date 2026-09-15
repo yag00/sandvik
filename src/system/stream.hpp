@@ -77,6 +77,22 @@ namespace sandvik {
 			uint32_t readU4();
 
 		protected:
+			/** @return the underlying iostream, or nullptr if none is set */
+			std::iostream* stream() const {
+				return _ios.get();
+			}
+			/** Replaces the underlying iostream.
+			 * @param ios_ new iostream to take ownership of (may be null) */
+			void setStream(std::unique_ptr<std::iostream> ios_) {
+				_ios = std::move(ios_);
+			}
+			/** Sets the read/write directionality flag.
+			 * @param readStream_ true if this is a read stream, false if a write stream */
+			void setReadStream(bool readStream_) {
+				_readStream = readStream_;
+			}
+
+		private:
 			/** iostream */
 			std::unique_ptr<std::iostream> _ios;
 			/** true if read stream, false if write stream */

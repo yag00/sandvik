@@ -29,7 +29,11 @@ Stream::Stream() : _ios(nullptr), _readStream(false) {
 
 Stream::~Stream() {
 	if (_ios) {
-		_ios->flush();
+		try {
+			_ios->flush();
+		} catch (...) {
+			// Best-effort cleanup: a destructor must never throw.
+		}
 	}
 }
 

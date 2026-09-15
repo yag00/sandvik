@@ -221,10 +221,10 @@ ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::ve
 
 	// Prepare argument values
 	uintptr_t result_storage = 0;
-	uintptr_t* param_storage = nullptr;
+	std::vector<uintptr_t> param_storage;
 	if (args.size() > 0) {
 		size_t idx = 0;
-		param_storage = new uintptr_t[args.size()];
+		param_storage.resize(args.size());
 		auto mutableArgs = args;  // Create a mutable copy of args
 		auto it = mutableArgs.begin();
 		if (!isStatic) {
@@ -241,9 +241,5 @@ ObjectRef NativeCallHelper::invoke(void* functionPtr, JNIEnv* env, const std::ve
 	// Execute the call
 	ffi_call(&context.cif, FFI_FN(functionPtr), &result_storage, arg_values.data());
 
-	// Process and return result
-	if (param_storage) {
-		delete[] param_storage;
-	}
 	return getReturnObject(result_storage, returnType[0]);
 }

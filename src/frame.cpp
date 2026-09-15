@@ -221,20 +221,6 @@ void Frame::debug() const {
 	}
 }
 
-void Frame::visitReferences(const std::function<void(Object*)>& visitor_) const {
-	if (_objectReturn != nullptr) {
-		visitor_(_objectReturn);
-	}
-	if (_exception != nullptr) {
-		visitor_(_exception);
-	}
-	for (const auto& reg : _registers) {
-		if (reg != nullptr) {
-			visitor_(reg);
-		}
-	}
-}
-
 bool Frame::isHandlingException(ObjectRef exception_) const {
 	return _exception == exception_;
 }

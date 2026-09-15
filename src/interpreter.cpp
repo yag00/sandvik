@@ -331,9 +331,13 @@ void Interpreter::executeClinit(Class& class_) const {
 	// auto unlock the class at the end of the function
 	struct MonitorGuard {
 			Class& class_;
+			explicit MonitorGuard(Class& class__) : class_(class__) {
+			}
 			~MonitorGuard() {
 				class_.monitorExit();
 			}
+			MonitorGuard(const MonitorGuard&) = delete;
+			MonitorGuard& operator=(const MonitorGuard&) = delete;
 	} guard{class_};
 
 	if (class_.isStaticInitialized()) {
