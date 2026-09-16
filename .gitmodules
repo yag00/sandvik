@@ -4,9 +4,6 @@
 [submodule "ext/libffi"]
 	path = ext/libffi
 	url = https://github.com/libffi/libffi.git
-[submodule "ext/LIEF"]
-	path = ext/LIEF
-	url = https://github.com/yag00/LIEF.git
 [submodule "ext/args"]
 	path = ext/args
 	url = https://github.com/Taywee/args.git

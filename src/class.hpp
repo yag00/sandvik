@@ -24,13 +24,13 @@
 #include <string>
 #include <vector>
 
+#include "loader/dex/Annotation.hpp"
 #include "object.hpp"
 
-namespace LIEF::DEX {
-	class Class;
-}  // namespace LIEF::DEX
-
 namespace sandvik {
+	namespace dex {
+		class Class;
+	}  // namespace dex
 	class ClassLoader;
 	class Monitor;
 	class Method;
@@ -45,12 +45,12 @@ namespace sandvik {
 			 * @param fullname_ Full name of the class
 			 */
 			Class(ClassLoader& classloader_, const std::string& packagename_, const std::string& fullname_);
-			/** @brief Constructs a Class object from a LIEF DEX Class.
+			/** @brief Constructs a Class object from a parsed DEX class definition.
 			 * @param classloader_ Reference to the ClassLoader
 			 * @param dexIdx_ Index of the DEX file
-			 * @param class_ Reference to the LIEF DEX Class
+			 * @param class_ Reference to the parsed DEX class
 			 */
-			Class(ClassLoader& classloader_, const uint32_t dexIdx_, const LIEF::DEX::Class& class_);
+			Class(ClassLoader& classloader_, const uint32_t dexIdx_, const dex::Class& class_);
 			virtual ~Class();
 
 			/** @brief Gets the ClassLoader associated with the class. */
@@ -205,6 +205,19 @@ namespace sandvik {
 			 */
 			const std::vector<std::string>& getInterfaces() const;
 
+			/** @brief This class's own annotations, if any (empty for classes not parsed from a DEX
+			 * file, e.g. ones synthesized via ClassBuilder).
+			 * @return This class's annotation set. */
+			const std::vector<dex::Annotation>& getAnnotations() const;
+			/** @brief Looks up an annotation on this class by its type name.
+			 * @param typeName_ Pretty (dotted) annotation type name, e.g. "dalvik.annotation.InnerClass".
+			 * @return Pointer to the annotation, or nullptr if this class has no such annotation. */
+			const dex::Annotation* getAnnotation(const std::string& typeName_) const;
+			/** @brief Checks whether this class carries a given annotation.
+			 * @param typeName_ Pretty (dotted) annotation type name.
+			 * @return true if present. */
+			bool hasAnnotation(const std::string& typeName_) const;
+
 			/** @brief Enters the monitor.
 			 *
 			 * used for synchronization of static fields
@@ -246,6 +259,7 @@ namespace sandvik {
 			std::map<std::string, std::unique_ptr<Method>, std::less<>> _methods;
 			std::map<std::string, std::unique_ptr<Field>, std::less<>> _fields;
 			std::vector<std::string> _interfaces;
+			std::vector<dex::Annotation> _annotations;
 			friend class ClassBuilder;
 
 			std::unique_ptr<Monitor> _monitor;

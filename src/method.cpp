@@ -18,14 +18,14 @@
 
 #include "method.hpp"
 
-#include <LIEF/DEX/CodeInfo.hpp>
-#include <LIEF/DEX/Method.hpp>
-#include <LIEF/DEX/enums.hpp>
 #include <sstream>
 
 #include "class.hpp"
 #include "exceptions.hpp"
 #include "frame.hpp"
+#include "loader/dex/CodeInfo.hpp"
+#include "loader/dex/Method.hpp"
+#include "loader/dex/enums.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
 
@@ -36,7 +36,7 @@ Method::Method(Class& class_, const std::string& name_, const std::string& signa
 	parseArgumentTypes();
 }
 
-Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_), _name(method_.name()), _signature(get_method_descriptor(method_)) {
+Method::Method(Class& class_, const dex::Method& method_) : _class(class_), _name(method_.name()), _signature(get_method_descriptor(method_)) {
 	_nbRegisters = method_.code_info().nb_registers();
 	_index = method_.index();
 	_bytecode = method_.bytecode();
@@ -51,7 +51,33 @@ Method::Method(Class& class_, const LIEF::DEX::Method& method_) : _class(class_)
 	for (const auto& exc : method_.code_info().exceptions()) {
 		_trycatch_items.push_back({exc.start_addr, exc.insn_count, exc.handlers, exc.catch_all_addr});
 	}
+	_annotations = method_.annotations();
+	for (size_t i = 0; i < method_.prototype()->parameters_type().size(); ++i) {
+		_parameterAnnotations.push_back(method_.parameterAnnotations(i));
+	}
 	parseArgumentTypes();
+}
+
+const std::vector<dex::Annotation>& Method::getAnnotations() const {
+	return _annotations;
+}
+
+const dex::Annotation* Method::getAnnotation(const std::string& typeName_) const {
+	for (const auto& annotation : _annotations) {
+		if (annotation.type() == typeName_) {
+			return &annotation;
+		}
+	}
+	return nullptr;
+}
+
+bool Method::hasAnnotation(const std::string& typeName_) const {
+	return getAnnotation(typeName_) != nullptr;
+}
+
+const std::vector<dex::Annotation>& Method::getParameterAnnotations(uint32_t paramIdx_) const {
+	static const std::vector<dex::Annotation> empty;
+	return paramIdx_ < _parameterAnnotations.size() ? _parameterAnnotations[paramIdx_] : empty;
 }
 
 void Method::parseArgumentTypes() {

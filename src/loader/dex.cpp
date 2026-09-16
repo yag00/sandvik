@@ -20,16 +20,15 @@
 
 #include <fmt/format.h>
 
-#include <LIEF/DEX/Class.hpp>
-#include <LIEF/DEX/Field.hpp>
-#include <LIEF/DEX/File.hpp>
-#include <LIEF/DEX/Method.hpp>
-#include <LIEF/DEX/Parser.hpp>
+#include <algorithm>
 #include <fstream>
+#include <sstream>
 #include <utility>
 
 #include "class.hpp"
 #include "classloader.hpp"
+#include "dex/Class.hpp"
+#include "dex/File.hpp"
 #include "field.hpp"
 #include "method.hpp"
 #include "system/logger.hpp"
@@ -37,7 +36,23 @@
 #include "utils.hpp"
 
 using namespace sandvik;
-using namespace LIEF::DEX;
+using namespace sandvik::dex;
+
+namespace {
+	// Builds a "(ParamDescs)ReturnDesc" method signature directly from a proto_ids entry, the same
+	// way utils::get_method_descriptor does from a fully-built dex::Method - but resolveMethod only
+	// needs the signature string, not a whole Method object.
+	std::string buildSignature(const File& file_, uint32_t protoIdx_) {
+		std::ostringstream oss;
+		oss << '(';
+		for (uint32_t paramTypeIdx : file_.protoParamTypeIdxs(protoIdx_)) {
+			oss << get_type_descriptor(Type(file_.typeDescriptor(paramTypeIdx)));
+		}
+		oss << ')';
+		oss << get_type_descriptor(Type(file_.typeDescriptor(file_.protoReturnTypeIdx(protoIdx_))));
+		return oss.str();
+	}
+}  // namespace
 
 Dex::Dex(const std::string& path_) : _path(path_) {
 	load(path_);
@@ -55,28 +70,22 @@ std::string Dex::getPath() const {
 }
 
 void Dex::load(const std::string& path) {
-	try {
-		_dex = Parser::parse(path);
-		if (!_dex) {
-			throw DexLoaderException("Failed to parse DEX file: " + path);
-		}
-	} catch (const std::exception& e) {
-		throw DexLoaderException(std::string("LIEF error: ") + e.what());
+	std::ifstream file(path, std::ios::binary);
+	if (!file) {
+		throw DexLoaderException("Failed to open DEX file: " + path);
 	}
+	std::vector<uint8_t> buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+	load(buffer);
 }
 
 void Dex::load(std::vector<uint8_t>& buffer) {
 	if (buffer.empty()) {
 		throw DexLoaderException("Empty buffer provided");
 	}
-
 	try {
-		_dex = Parser::parse(buffer);
-		if (!_dex) {
-			throw DexLoaderException("Failed to parse DEX from moved buffer");
-		}
+		_dex = File::parse(std::move(buffer));
 	} catch (const std::exception& e) {
-		throw DexLoaderException(std::string("LIEF error: ") + e.what());
+		throw DexLoaderException(std::string("DEX parse error: ") + e.what());
 	}
 }
 
@@ -91,7 +100,7 @@ std::vector<std::string> Dex::getClassNames() const {
 
 	std::vector<std::string> names;
 	for (const auto& cls : _dex->classes()) {
-		names.push_back(cls.fullname());
+		names.push_back(cls.pretty_name());
 	}
 	return names;
 }
@@ -115,17 +124,12 @@ void Dex::resolveMethod(uint16_t idx, std::string& class_, std::string& method_,
 	}
 
 	try {
-		const auto& methods = _dex->methods();
-		if (idx >= methods.size()) {
+		if (idx >= _dex->methodIdCount()) {
 			throw DexLoaderException(fmt::format("Method index {} out of range", idx));
 		}
-		auto it = methods.begin();
-		std::advance(it, idx);
-		const auto& method = *it;
-
-		class_ = method.cls()->pretty_name();
-		method_ = method.name();
-		sig_ = get_method_descriptor(method);
+		class_ = dex::Class(_dex->typeDescriptor(_dex->methodIdClassTypeIdx(idx))).pretty_name();
+		method_ = _dex->string(_dex->methodIdNameIdx(idx));
+		sig_ = buildSignature(*_dex, _dex->methodIdProtoIdx(idx));
 	} catch (const std::exception& e) {
 		throw DexLoaderException(fmt::format("Failed to resolve method at index {}: {}", idx, e.what()));
 	}
@@ -137,24 +141,19 @@ void Dex::resolveClass(uint16_t idx, std::string& class_) const {
 	}
 
 	try {
-		// Get the type_id item first
-		const auto& type_items = _dex->types();
-		if (idx >= type_items.size()) {
+		if (idx >= _dex->typeCount()) {
 			throw DexLoaderException(fmt::format("Type index {} out of range", idx));
 		}
-
-		// Get the specific type
-		const auto& type = type_items[idx];
-
+		Type type(_dex->typeDescriptor(idx));
 		switch (type.type()) {
-			case LIEF::DEX::Type::TYPES::CLASS:
+			case Type::TYPES::CLASS:
 				class_ = type.cls().pretty_name();
 				return;
-			case LIEF::DEX::Type::TYPES::PRIMITIVE:
-			case LIEF::DEX::Type::TYPES::ARRAY:
+			case Type::TYPES::PRIMITIVE:
+			case Type::TYPES::ARRAY:
 				class_ = get_type_descriptor(type);
 				return;
-			case LIEF::DEX::Type::TYPES::UNKNOWN:
+			case Type::TYPES::UNKNOWN:
 			default:
 				throw DexLoaderException(fmt::format("Unknown type at index {}", idx));
 		}
@@ -162,21 +161,18 @@ void Dex::resolveClass(uint16_t idx, std::string& class_) const {
 		throw DexLoaderException(fmt::format("Failed to resolve class at index {}: {}", idx, e.what()));
 	}
 }
+
 void Dex::resolveField(uint16_t idx, std::string& class_, std::string& field_) const {
 	if (!_dex) {
 		throw DexLoaderException("No DEX file loaded");
 	}
 
 	try {
-		const auto& fields = _dex->fields();
-		if (idx >= fields.size()) {
+		if (idx >= _dex->fieldIdCount()) {
 			throw DexLoaderException(fmt::format("Field index {} out of range", idx));
 		}
-
-		auto it = fields.begin();
-		std::advance(it, idx);
-		field_ = it->name();
-		class_ = it->cls()->pretty_name();
+		field_ = _dex->string(_dex->fieldIdNameIdx(idx));
+		class_ = dex::Class(_dex->typeDescriptor(_dex->fieldIdClassTypeIdx(idx))).pretty_name();
 	} catch (const std::exception& e) {
 		throw DexLoaderException(fmt::format("Failed to resolve field at index {}: {}", idx, e.what()));
 	}
@@ -186,26 +182,22 @@ std::string Dex::resolveType(uint16_t idx, TYPES& type_) {
 	if (!_dex) {
 		throw DexLoaderException("No DEX file loaded");
 	}
-	// Get the type_id item first
-	const auto& type_items = _dex->types();
-	if (idx >= type_items.size()) {
+	if (idx >= _dex->typeCount()) {
 		throw DexLoaderException(fmt::format("Type index {} out of range", idx));
 	}
 
-	// Get the specific type
-	const auto& type = type_items[idx];
-
+	Type type(_dex->typeDescriptor(idx));
 	switch (type.type()) {
-		case LIEF::DEX::Type::TYPES::CLASS:
+		case Type::TYPES::CLASS:
 			type_ = TYPES::CLASS;
 			return type.cls().pretty_name();
-		case LIEF::DEX::Type::TYPES::PRIMITIVE:
+		case Type::TYPES::PRIMITIVE:
 			type_ = TYPES::PRIMITIVE;
 			return get_primitive_type(get_type_descriptor(type));
-		case LIEF::DEX::Type::TYPES::ARRAY:
+		case Type::TYPES::ARRAY:
 			type_ = TYPES::ARRAY;
 			return get_type_descriptor(type);
-		case LIEF::DEX::Type::TYPES::UNKNOWN:
+		case Type::TYPES::UNKNOWN:
 		default:
 			type_ = TYPES::UNKNOWN;
 			return "<unknown>";
@@ -218,14 +210,10 @@ std::string Dex::resolveString(uint16_t idx) {
 	}
 
 	try {
-		const auto& strings = _dex->strings();
-		if (idx >= strings.size()) {
+		if (idx >= _dex->stringCount()) {
 			throw DexLoaderException(fmt::format("String index {} out of range", idx));
 		}
-
-		auto it = strings.begin();
-		std::advance(it, idx);
-		return *it;
+		return _dex->string(idx);
 	} catch (const std::exception& e) {
 		throw DexLoaderException(fmt::format("Failed to resolve string at index {}: {}", idx, e.what()));
 	}
@@ -236,86 +224,43 @@ std::vector<std::pair<std::string, uint32_t>> Dex::resolveArray(uint16_t idx) {
 		throw DexLoaderException("No DEX file loaded");
 	}
 
-	std::vector<std::pair<std::string, uint32_t>> _array;
+	std::vector<std::pair<std::string, uint32_t>> result;
 	try {
-		// Get the type_id item first
-		const auto& type_items = _dex->types();
-		if (idx >= type_items.size()) {
+		if (idx >= _dex->typeCount()) {
 			throw DexLoaderException(fmt::format("Type index {} out of range", idx));
 		}
-
-		// Get the specific type
-		const auto& type = type_items[idx];
-		if (type.type() != LIEF::DEX::Type::TYPES::ARRAY) {
-			throw DexLoaderException(fmt::format("Type at index {} is not a array", idx));
+		const std::string& descriptor = _dex->typeDescriptor(idx);
+		if (descriptor.empty() || descriptor[0] != '[') {
+			throw DexLoaderException(fmt::format("Type at index {} is not an array", idx));
 		}
-		// remove first [
-		auto descriptor = get_type_descriptor(type).substr(1);
-		for (const auto& item : type.array()) {
-			switch (item.type()) {
-				case LIEF::DEX::Type::TYPES::PRIMITIVE:
-					_array.push_back({get_primitive_type(descriptor), item.dim()});
-					break;
-				case LIEF::DEX::Type::TYPES::CLASS: {
-					if (!descriptor.empty()) {
-						if (descriptor.front() == 'L') {
-							descriptor = descriptor.substr(1);  // remove 'L'
-						} else {
-							logger.ferror("Expected class descriptor to start with 'L', got '{}'", descriptor);
-						}
-						if (descriptor.back() == ';') {
-							descriptor.pop_back();
-						} else {
-							logger.ferror("Expected class descriptor to end with ';', got '{}'", descriptor);
-						}
-						std::replace(descriptor.begin(), descriptor.end(), '/', '.');
-						_array.push_back({descriptor, item.dim()});
-					} else {
-						throw DexLoaderException("Empty class descriptor in array type");
-					}
-					break;
-				}
-				case LIEF::DEX::Type::TYPES::ARRAY: {
-					// Handle nested arrays by parsing the item's descriptor directly.
-					// Example descriptors: "[[I", "[[Ljava/lang/String;"
-					const std::string nested_desc = get_type_descriptor(item);
-					// Count leading '[' to get the array dimensionality
-					size_t dims = 0;
-					while (dims < nested_desc.size() && nested_desc[dims] == '[') {
-						++dims;
-					}
-					if (dims == 0) {
-						throw DexLoaderException(fmt::format("Malformed nested array descriptor: {}", nested_desc));
-					}
 
-					std::string base = nested_desc.substr(dims);
-					if (base.empty()) {
-						throw DexLoaderException(fmt::format("Empty base descriptor in nested array: {}", nested_desc));
-					}
+		// Strip the outermost '[' (this array's own dimension). What remains is the descriptor of
+		// the immediate element type; count any further leading '[' in it to get how many extra
+		// dimensions lie beyond that immediate element (0 for a plain T[], 1 for the outer level of
+		// a T[][], etc.) - see Interpreter::new_array, which needs exactly this.
+		std::string rest = descriptor.substr(1);
+		uint32_t extraDims = 0;
+		while (extraDims < rest.size() && rest[extraDims] == '[') {
+			++extraDims;
+		}
+		std::string base = rest.substr(extraDims);
+		if (base.empty()) {
+			throw DexLoaderException(fmt::format("Malformed array descriptor: {}", descriptor));
+		}
 
-					if (base.front() == 'L') {
-						// class descriptor: Ljava/lang/String; -> java.lang.String
-						if (base.back() == ';') {
-							base.pop_back();
-						} else {
-							logger.ferror("Expected class descriptor to end with ';', got '{}'", base);
-						}
-						base = base.substr(1);  // remove leading 'L'
-						std::ranges::replace(base, '/', '.');
-						_array.push_back({base, static_cast<uint32_t>(dims)});
-					} else {
-						// primitive descriptor like 'I', 'B', etc.
-						_array.push_back({get_primitive_type(base), static_cast<uint32_t>(dims)});
-					}
-					break;
-				}
-				case LIEF::DEX::Type::TYPES::UNKNOWN:
-				default:
-					throw DexLoaderException(fmt::format("Unknown type: {} [{}] not supported", get_type_descriptor(item), item.dim()));
+		std::string baseName;
+		if (base[0] == 'L') {
+			if (base.back() != ';') {
+				throw DexLoaderException(fmt::format("Malformed class descriptor in array type: {}", base));
 			}
+			baseName = base.substr(1, base.size() - 2);
+			std::replace(baseName.begin(), baseName.end(), '/', '.');
+		} else {
+			baseName = get_primitive_type(base);
 		}
+		result.push_back({baseName, extraDims});
 	} catch (const std::exception& e) {
-		throw DexLoaderException(fmt::format("Failed to resolve string at index {}: {}", idx, e.what()));
+		throw DexLoaderException(fmt::format("Failed to resolve array at index {}: {}", idx, e.what()));
 	}
-	return _array;
+	return result;
 }

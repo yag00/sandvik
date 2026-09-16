@@ -20,12 +20,11 @@
 
 #include <fmt/format.h>
 
-#include <LIEF/DEX/Class.hpp>
-#include <LIEF/DEX/Field.hpp>
-#include <LIEF/DEX/Type.hpp>
-
 #include "class.hpp"
 #include "exceptions.hpp"
+#include "loader/dex/Class.hpp"
+#include "loader/dex/Field.hpp"
+#include "loader/dex/Type.hpp"
 #include "object.hpp"
 #include "utils.hpp"
 
@@ -34,17 +33,35 @@ using namespace sandvik;
 Field::Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_, uint32_t index_)
     : _class(class_), _name(name_), _type(type_), _isStatic(isStatic_), _index(index_), _obj(Object::makeNull()) {
 }
-Field::Field(Class& class_, const LIEF::DEX::Field& field_)
+Field::Field(Class& class_, const dex::Field& field_)
     : _class(class_),
       _name(field_.name()),
       _type(get_type_descriptor(*field_.type())),
-      _isStatic(field_.has(LIEF::DEX::ACC_STATIC)),
+      _isStatic(field_.has(dex::ACC_STATIC)),
       _index(static_cast<uint32_t>(field_.index())),
-      _obj(Object::makeNull()) {
+      _obj(Object::makeNull()),
+      _annotations(field_.annotations()) {
 	_accessFlags = 0;
 	for (const auto& flag : field_.access_flags()) {
 		_accessFlags |= static_cast<uint32_t>(flag);
 	}
+}
+
+const std::vector<dex::Annotation>& Field::getAnnotations() const {
+	return _annotations;
+}
+
+const dex::Annotation* Field::getAnnotation(const std::string& typeName_) const {
+	for (const auto& annotation : _annotations) {
+		if (annotation.type() == typeName_) {
+			return &annotation;
+		}
+	}
+	return nullptr;
+}
+
+bool Field::hasAnnotation(const std::string& typeName_) const {
+	return getAnnotation(typeName_) != nullptr;
 }
 
 std::string Field::str() const {

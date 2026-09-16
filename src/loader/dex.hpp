@@ -25,13 +25,10 @@
 #include <string>
 #include <vector>
 
-namespace LIEF {
-	namespace DEX {
-		class File;
-	}  // namespace DEX
-}  // namespace LIEF
-
 namespace sandvik {
+	namespace dex {
+		class File;
+	}  // namespace dex
 	class ClassLoader;
 	class Class;
 	enum class TYPES;
@@ -129,7 +126,7 @@ namespace sandvik {
 
 		private:
 			std::string _path;
-			std::unique_ptr<const LIEF::DEX::File> _dex;
+			std::unique_ptr<const dex::File> _dex;
 	};
 }  // namespace sandvik
 #endif  // __DEX_LOADER_HPP__

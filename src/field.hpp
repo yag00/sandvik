@@ -24,13 +24,13 @@
 #include <type_traits>
 #include <vector>
 
+#include "loader/dex/Annotation.hpp"
 #include "object.hpp"
 
-namespace LIEF::DEX {
-	class Field;
-}  // namespace LIEF::DEX
-
 namespace sandvik {
+	namespace dex {
+		class Field;
+	}  // namespace dex
 	class Class;
 	/** @brief Represents a field in a Java class. */
 	class Field {
@@ -43,11 +43,11 @@ namespace sandvik {
 			 * @param index_ Index of the field
 			 */
 			Field(Class& class_, const std::string& name_, const std::string& type_, bool isStatic_, uint32_t index_);
-			/** @brief Constructs a Field from a LIEF DEX Field.
+			/** @brief Constructs a Field from a parsed DEX field.
 			 * @param class_ Reference to the Class that owns this field
-			 * @param field_ Reference to the LIEF DEX Field
+			 * @param field_ Reference to the parsed DEX field
 			 */
-			Field(Class& class_, const LIEF::DEX::Field& field_);
+			Field(Class& class_, const dex::Field& field_);
 			~Field() = default;
 
 			/** @brief Returns the index of the field in the class.
@@ -130,6 +130,19 @@ namespace sandvik {
 				}
 			}
 
+			/** @brief This field's annotations, if any (empty for fields not parsed from a DEX
+			 * class, e.g. ones synthesized via ClassBuilder).
+			 * @return This field's annotation set. */
+			const std::vector<dex::Annotation>& getAnnotations() const;
+			/** @brief Looks up an annotation on this field by its type name.
+			 * @param typeName_ Pretty (dotted) annotation type name, e.g. "dalvik.annotation.InnerClass".
+			 * @return Pointer to the annotation, or nullptr if this field has no such annotation. */
+			const dex::Annotation* getAnnotation(const std::string& typeName_) const;
+			/** @brief Checks whether this field carries a given annotation.
+			 * @param typeName_ Pretty (dotted) annotation type name.
+			 * @return true if present. */
+			bool hasAnnotation(const std::string& typeName_) const;
+
 		private:
 			Class& _class;
 			std::string _name;
@@ -141,6 +154,7 @@ namespace sandvik {
 			uint64_t _value = 0;
 			std::string _strValue = "";
 			ObjectRef _obj;
+			std::vector<dex::Annotation> _annotations;
 	};
 }  // namespace sandvik
 

@@ -25,15 +25,13 @@
 #include <string>
 #include <vector>
 
+#include "loader/dex/Annotation.hpp"
 #include "object.hpp"
 
-namespace LIEF {
-	namespace DEX {
-		class Method;
-	}
-}  // namespace LIEF
-
 namespace sandvik {
+	namespace dex {
+		class Method;
+	}  // namespace dex
 	class Frame;
 	class Class;
 	/** @brief Access flags for methods. */
@@ -69,11 +67,11 @@ namespace sandvik {
 			 * @param index_ Index of the method.
 			 */
 			Method(Class& class_, const std::string& name_, const std::string& signature_, uint32_t index_);
-			/** Constructor for Method from LIEF DEX Method.
+			/** Constructor for Method from a parsed DEX method.
 			 * @param class_ Reference to the Class object.
-			 * @param method_ Reference to the LIEF DEX Method object.
+			 * @param method_ Reference to the parsed DEX method.
 			 */
-			Method(Class& class_, const LIEF::DEX::Method& method_);
+			Method(Class& class_, const dex::Method& method_);
 			virtual ~Method() = default;
 
 			/** @brief Gets the class of the method.
@@ -198,6 +196,24 @@ namespace sandvik {
 			 */
 			void unhook();
 
+			/** @brief This method's own annotations, if any (empty for methods not parsed from a
+			 * DEX class, e.g. ones synthesized via ClassBuilder).
+			 * @return This method's annotation set. */
+			const std::vector<dex::Annotation>& getAnnotations() const;
+			/** @brief Looks up an annotation on this method by its type name.
+			 * @param typeName_ Pretty (dotted) annotation type name, e.g. "dalvik.annotation.Signature".
+			 * @return Pointer to the annotation, or nullptr if this method has no such annotation. */
+			const dex::Annotation* getAnnotation(const std::string& typeName_) const;
+			/** @brief Checks whether this method carries a given annotation.
+			 * @param typeName_ Pretty (dotted) annotation type name.
+			 * @return true if present. */
+			bool hasAnnotation(const std::string& typeName_) const;
+			/** @brief Annotations attached to one formal parameter, if any.
+			 * @param paramIdx_ Parameter index.
+			 * @return That parameter's annotation set, or an empty set if paramIdx_ is out of range
+			 * or has no annotations. */
+			const std::vector<dex::Annotation>& getParameterAnnotations(uint32_t paramIdx_) const;
+
 		private:
 			void parseArgumentTypes();
 
@@ -219,6 +235,8 @@ namespace sandvik {
 			};
 			std::vector<trycatch_item> _trycatch_items;
 			std::vector<std::string> _argsType;
+			std::vector<dex::Annotation> _annotations;
+			std::vector<std::vector<dex::Annotation>> _parameterAnnotations;
 
 			std::function<void(Frame&, std::vector<ObjectRef>&)> _function;
 
