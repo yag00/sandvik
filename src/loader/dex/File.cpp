@@ -18,10 +18,77 @@
 
 #include "File.hpp"
 
+#include <fmt/format.h>
+
+#include <cstring>
+
 using namespace sandvik::dex;
 
 namespace {
 	constexpr uint32_t NO_INDEX = 0xFFFFFFFFu;
+
+	// encoded_value's value_type tag (low 5 bits of the header byte).
+	constexpr uint8_t VALUE_BYTE = 0x00;
+	constexpr uint8_t VALUE_SHORT = 0x02;
+	constexpr uint8_t VALUE_CHAR = 0x03;
+	constexpr uint8_t VALUE_INT = 0x04;
+	constexpr uint8_t VALUE_LONG = 0x06;
+	constexpr uint8_t VALUE_FLOAT = 0x10;
+	constexpr uint8_t VALUE_DOUBLE = 0x11;
+	constexpr uint8_t VALUE_STRING = 0x17;
+	constexpr uint8_t VALUE_TYPE = 0x18;
+	constexpr uint8_t VALUE_FIELD = 0x19;
+	constexpr uint8_t VALUE_METHOD = 0x1a;
+	constexpr uint8_t VALUE_ENUM = 0x1b;
+	constexpr uint8_t VALUE_ARRAY = 0x1c;
+	constexpr uint8_t VALUE_ANNOTATION = 0x1d;
+	constexpr uint8_t VALUE_NULL = 0x1e;
+	constexpr uint8_t VALUE_BOOLEAN = 0x1f;
+
+	// Reads size_ (1-8) little-endian bytes at cursor_ (advancing it), sign-extending from the
+	// sign bit of the highest byte read - encoded_value's byte/short/int/long representation.
+	int64_t readSignedSized(const Reader& r_, size_t& cursor_, uint32_t size_) {
+		uint64_t v = 0;
+		for (uint32_t i = 0; i < size_; ++i) {
+			v |= static_cast<uint64_t>(r_.readU1(cursor_)) << (8 * i);
+		}
+		if (size_ < 8) {
+			uint64_t signBit = uint64_t(1) << (size_ * 8 - 1);
+			if (v & signBit) {
+				v |= ~uint64_t(0) << (size_ * 8);
+			}
+		}
+		return static_cast<int64_t>(v);
+	}
+
+	// Same, but zero-extended (unsigned) - encoded_value's char/string/type/field/method/enum
+	// index representation.
+	uint64_t readUnsignedSized(const Reader& r_, size_t& cursor_, uint32_t size_) {
+		uint64_t v = 0;
+		for (uint32_t i = 0; i < size_; ++i) {
+			v |= static_cast<uint64_t>(r_.readU1(cursor_)) << (8 * i);
+		}
+		return v;
+	}
+
+	// Reads size_ (1-4) bytes and right-zero-extends them into a 4-byte float bit pattern
+	// (encoded_value's VALUE_FLOAT representation: the bytes read form the HIGH-order bytes).
+	uint32_t readRightZeroExtended32(const Reader& r_, size_t& cursor_, uint32_t size_) {
+		uint32_t v = 0;
+		for (uint32_t i = 0; i < size_; ++i) {
+			v |= static_cast<uint32_t>(r_.readU1(cursor_)) << (8 * i);
+		}
+		return v << (8 * (4 - size_));
+	}
+
+	// Same for VALUE_DOUBLE (size 1-8, right-zero-extended into an 8-byte double bit pattern).
+	uint64_t readRightZeroExtended64(const Reader& r_, size_t& cursor_, uint32_t size_) {
+		uint64_t v = 0;
+		for (uint32_t i = 0; i < size_; ++i) {
+			v |= static_cast<uint64_t>(r_.readU1(cursor_)) << (8 * i);
+		}
+		return v << (8 * (8 - size_));
+	}
 
 	// Header field byte offsets (header_item is a fixed 0x70-byte layout).
 	constexpr size_t OFF_STRING_IDS_SIZE = 56;
@@ -264,12 +331,175 @@ std::unique_ptr<Method> File::buildMethod(const Reader& r_, uint32_t methodIdx_,
 	return std::make_unique<Method>(string(mid.nameIdx), std::move(proto), accessFlags_, isVirtual_, methodIdx_, std::move(bytecode), std::move(codeInfo));
 }
 
+EncodedValue File::parseEncodedValue(const Reader& r_, size_t& cursor_) const {
+	uint8_t header = r_.readU1(cursor_);
+	uint8_t valueType = header & 0x1f;
+	uint8_t valueArg = (header >> 5) & 0x7;
+	uint32_t size = static_cast<uint32_t>(valueArg) + 1;
+
+	switch (valueType) {
+		case VALUE_BYTE:
+		case VALUE_SHORT:
+		case VALUE_INT:
+		case VALUE_LONG:
+			return EncodedValue::makeInt(readSignedSized(r_, cursor_, size));
+		case VALUE_CHAR:
+			return EncodedValue::makeInt(static_cast<int64_t>(readUnsignedSized(r_, cursor_, size)));
+		case VALUE_FLOAT: {
+			uint32_t raw = readRightZeroExtended32(r_, cursor_, size);
+			float f;
+			std::memcpy(&f, &raw, sizeof(f));
+			return EncodedValue::makeFloat(static_cast<double>(f));
+		}
+		case VALUE_DOUBLE: {
+			uint64_t raw = readRightZeroExtended64(r_, cursor_, size);
+			double d;
+			std::memcpy(&d, &raw, sizeof(d));
+			return EncodedValue::makeFloat(d);
+		}
+		case VALUE_STRING: {
+			uint32_t idx = static_cast<uint32_t>(readUnsignedSized(r_, cursor_, size));
+			return EncodedValue::makeResolvedString(EncodedValue::Kind::String, string(idx));
+		}
+		case VALUE_TYPE: {
+			uint32_t idx = static_cast<uint32_t>(readUnsignedSized(r_, cursor_, size));
+			return EncodedValue::makeResolvedString(EncodedValue::Kind::Type, Class(typeDescriptor(idx)).pretty_name());
+		}
+		case VALUE_FIELD:
+		case VALUE_ENUM: {
+			uint32_t idx = static_cast<uint32_t>(readUnsignedSized(r_, cursor_, size));
+			const auto& fid = _fieldIds.at(idx);
+			std::string name = fmt::format("{}.{}", Class(typeDescriptor(fid.classTypeIdx)).pretty_name(), string(fid.nameIdx));
+			return EncodedValue::makeResolvedString(valueType == VALUE_FIELD ? EncodedValue::Kind::Field : EncodedValue::Kind::Enum, std::move(name));
+		}
+		case VALUE_METHOD: {
+			uint32_t idx = static_cast<uint32_t>(readUnsignedSized(r_, cursor_, size));
+			const auto& mid = _methodIds.at(idx);
+			std::string name = fmt::format("{}.{}", Class(typeDescriptor(mid.classTypeIdx)).pretty_name(), string(mid.nameIdx));
+			return EncodedValue::makeResolvedString(EncodedValue::Kind::Method, std::move(name));
+		}
+		case VALUE_ARRAY: {
+			uint32_t count = r_.readULEB128(cursor_);
+			std::vector<EncodedValue> items;
+			items.reserve(count);
+			for (uint32_t i = 0; i < count; ++i) {
+				items.push_back(parseEncodedValue(r_, cursor_));
+			}
+			return EncodedValue::makeArray(std::move(items));
+		}
+		case VALUE_ANNOTATION: {
+			auto [type, elements] = parseEncodedAnnotationBody(r_, cursor_);
+			return EncodedValue::makeAnnotation(std::move(type), std::move(elements));
+		}
+		case VALUE_NULL:
+			return EncodedValue::makeNull();
+		case VALUE_BOOLEAN:
+			// The boolean's value is valueArg itself (0 or 1); there are no following bytes.
+			return EncodedValue::makeBool(valueArg != 0);
+		default:
+			throw DexFormatException(fmt::format("Unknown encoded_value type 0x{:x}", valueType));
+	}
+}
+
+std::pair<std::string, std::vector<AnnotationElement>> File::parseEncodedAnnotationBody(const Reader& r_, size_t& cursor_) const {
+	uint32_t typeIdx = r_.readULEB128(cursor_);
+	uint32_t size = r_.readULEB128(cursor_);
+	std::vector<AnnotationElement> elements;
+	elements.reserve(size);
+	for (uint32_t i = 0; i < size; ++i) {
+		uint32_t nameIdx = r_.readULEB128(cursor_);
+		EncodedValue value = parseEncodedValue(r_, cursor_);
+		elements.push_back({string(nameIdx), std::move(value)});
+	}
+	return {Class(typeDescriptor(typeIdx)).pretty_name(), std::move(elements)};
+}
+
+Annotation File::parseAnnotationItem(const Reader& r_, uint32_t offset_) const {
+	size_t cursor = offset_;
+	uint8_t visibilityByte = r_.readU1(cursor);
+	auto [type, elements] = parseEncodedAnnotationBody(r_, cursor);
+	return Annotation(std::move(type), static_cast<AnnotationVisibility>(visibilityByte), std::move(elements));
+}
+
+std::vector<Annotation> File::parseAnnotationSetItem(const Reader& r_, uint32_t offset_) const {
+	size_t cursor = offset_;
+	uint32_t size = r_.readU4(cursor);
+	std::vector<Annotation> result;
+	result.reserve(size);
+	for (uint32_t i = 0; i < size; ++i) {
+		uint32_t annotationOff = r_.readU4(cursor);
+		result.push_back(parseAnnotationItem(r_, annotationOff));
+	}
+	return result;
+}
+
+void File::parseAnnotationsDirectory(const Reader& r_, uint32_t offset_, std::vector<Annotation>& classAnnotations_,
+                                     std::vector<std::unique_ptr<Field>>& fields_, std::vector<std::unique_ptr<Method>>& methods_) const {
+	size_t cursor = offset_;
+	uint32_t classAnnotationsOff = r_.readU4(cursor);
+	uint32_t fieldsSize = r_.readU4(cursor);
+	uint32_t annotatedMethodsSize = r_.readU4(cursor);
+	uint32_t annotatedParametersSize = r_.readU4(cursor);
+
+	if (classAnnotationsOff != 0) {
+		classAnnotations_ = parseAnnotationSetItem(r_, classAnnotationsOff);
+	}
+
+	for (uint32_t i = 0; i < fieldsSize; ++i) {
+		uint32_t fieldIdx = r_.readU4(cursor);
+		uint32_t annotationsOff = r_.readU4(cursor);
+		std::vector<Annotation> annotations = parseAnnotationSetItem(r_, annotationsOff);
+		for (auto& f : fields_) {
+			if (f->index() == fieldIdx) {
+				f->setAnnotations(std::move(annotations));
+				break;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < annotatedMethodsSize; ++i) {
+		uint32_t methodIdx = r_.readU4(cursor);
+		uint32_t annotationsOff = r_.readU4(cursor);
+		std::vector<Annotation> annotations = parseAnnotationSetItem(r_, annotationsOff);
+		for (auto& m : methods_) {
+			if (m->index() == methodIdx) {
+				m->setAnnotations(std::move(annotations));
+				break;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < annotatedParametersSize; ++i) {
+		uint32_t methodIdx = r_.readU4(cursor);
+		uint32_t refListOff = r_.readU4(cursor);
+		std::vector<std::vector<Annotation>> parameterAnnotations;
+		if (refListOff != 0) {
+			// annotation_set_ref_list: size u4, then that many u4 offsets to annotation_set_item
+			// (0 = that parameter has no annotations), one per formal parameter.
+			size_t listCursor = refListOff;
+			uint32_t listSize = r_.readU4(listCursor);
+			parameterAnnotations.reserve(listSize);
+			for (uint32_t p = 0; p < listSize; ++p) {
+				uint32_t setOff = r_.readU4(listCursor);
+				parameterAnnotations.push_back(setOff != 0 ? parseAnnotationSetItem(r_, setOff) : std::vector<Annotation>{});
+			}
+		}
+		for (auto& m : methods_) {
+			if (m->index() == methodIdx) {
+				m->setParameterAnnotations(std::move(parameterAnnotations));
+				break;
+			}
+		}
+	}
+}
+
 std::unique_ptr<Class> File::parseClassDef(const Reader& r_, uint32_t classDefOffset_, size_t index_) {
 	uint32_t classIdx = r_.u4(classDefOffset_);
 	uint32_t accessFlags = r_.u4(classDefOffset_ + 4);
 	uint32_t superclassIdx = r_.u4(classDefOffset_ + 8);
 	uint32_t interfacesOff = r_.u4(classDefOffset_ + 12);
-	// source_file_idx (+16) and annotations_off (+20): unused, no debug/annotation support.
+	// source_file_idx (+16): unused, no debug-info support.
+	uint32_t annotationsOff = r_.u4(classDefOffset_ + 20);
 	uint32_t classDataOff = r_.u4(classDefOffset_ + 24);
 	// static_values_off (+28): unused - static fields are already default-initialized elsewhere
 	// (see Field's value storage), and encoded initial values are an optimization sandvik doesn't
@@ -330,8 +560,13 @@ std::unique_ptr<Class> File::parseClassDef(const Reader& r_, uint32_t classDefOf
 		}
 	}
 
+	std::vector<Annotation> classAnnotations;
+	if (annotationsOff != 0) {
+		parseAnnotationsDirectory(r_, annotationsOff, classAnnotations, fields, methods);
+	}
+
 	return std::make_unique<Class>(std::move(descriptor), accessFlags, std::move(superDescriptor), std::move(methods), std::move(fields), std::move(interfaces),
-	                               index_);
+	                               std::move(classAnnotations), index_);
 }
 
 void File::parseClassDefs(const Reader& r_, uint32_t off_, uint32_t count_) {

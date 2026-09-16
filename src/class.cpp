@@ -67,6 +67,7 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const dex::Class
       _isInterface(class_.has(dex::ACC_INTERFACE)),
       _isAbstract(class_.has(dex::ACC_ABSTRACT)),
       _hasSuperClass(class_.has_parent()),
+      _annotations(class_.annotations()),
       _monitor(std::make_unique<Monitor>()) {
 	// Initialize methods
 	for (const auto& method : class_.methods()) {
@@ -405,6 +406,23 @@ std::string Class::getSuperClassname() const {
 
 const std::vector<std::string>& Class::getInterfaces() const {
 	return _interfaces;
+}
+
+const std::vector<dex::Annotation>& Class::getAnnotations() const {
+	return _annotations;
+}
+
+const dex::Annotation* Class::getAnnotation(const std::string& typeName_) const {
+	for (const auto& annotation : _annotations) {
+		if (annotation.type() == typeName_) {
+			return &annotation;
+		}
+	}
+	return nullptr;
+}
+
+bool Class::hasAnnotation(const std::string& typeName_) const {
+	return getAnnotation(typeName_) != nullptr;
 }
 
 bool Class::isExternal() const {

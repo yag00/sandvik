@@ -22,8 +22,10 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "Annotation.hpp"
 #include "Class.hpp"
 #include "iterator.hpp"
 #include "reader.hpp"
@@ -116,6 +118,25 @@ namespace sandvik {
 				Type resolveType(uint32_t typeIdx_) const;
 				Prototype resolveProto(uint32_t protoIdx_) const;
 				std::vector<uint32_t> parseTypeList(const Reader& r_, uint32_t off_) const;
+
+				/** @brief Decodes one encoded_value at cursor_, advancing it past the encoding.
+				 * Handles every encoded_value tag (not just the ones this project's callers
+				 * currently read), since a tag this project doesn't care about still has to be
+				 * skipped correctly or a later sibling element misparses. */
+				EncodedValue parseEncodedValue(const Reader& r_, size_t& cursor_) const;
+				/** @brief Decodes an encoded_annotation's type_idx + elements at cursor_, advancing
+				 * it past the encoding. Shared by parseAnnotationItem() (which has its own leading
+				 * visibility byte) and parseEncodedValue()'s VALUE_ANNOTATION case (which doesn't). */
+				std::pair<std::string, std::vector<AnnotationElement>> parseEncodedAnnotationBody(const Reader& r_, size_t& cursor_) const;
+				/** @brief Decodes one annotation_item (a visibility byte + encoded_annotation) at offset_. */
+				Annotation parseAnnotationItem(const Reader& r_, uint32_t offset_) const;
+				/** @brief Decodes an annotation_set_item at offset_ into its list of annotations. */
+				std::vector<Annotation> parseAnnotationSetItem(const Reader& r_, uint32_t offset_) const;
+				/** @brief Decodes an annotations_directory_item at offset_, attaching the decoded
+				 * class-level annotations to classAnnotations_ and field/method/parameter-level
+				 * annotations directly onto the matching (already-built) Field/Method by index. */
+				void parseAnnotationsDirectory(const Reader& r_, uint32_t offset_, std::vector<Annotation>& classAnnotations_,
+				                               std::vector<std::unique_ptr<Field>>& fields_, std::vector<std::unique_ptr<Method>>& methods_) const;
 
 				std::vector<uint8_t> _buffer;
 				std::vector<std::string> _strings;

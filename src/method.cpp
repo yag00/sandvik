@@ -51,7 +51,33 @@ Method::Method(Class& class_, const dex::Method& method_) : _class(class_), _nam
 	for (const auto& exc : method_.code_info().exceptions()) {
 		_trycatch_items.push_back({exc.start_addr, exc.insn_count, exc.handlers, exc.catch_all_addr});
 	}
+	_annotations = method_.annotations();
+	for (size_t i = 0; i < method_.prototype()->parameters_type().size(); ++i) {
+		_parameterAnnotations.push_back(method_.parameterAnnotations(i));
+	}
 	parseArgumentTypes();
+}
+
+const std::vector<dex::Annotation>& Method::getAnnotations() const {
+	return _annotations;
+}
+
+const dex::Annotation* Method::getAnnotation(const std::string& typeName_) const {
+	for (const auto& annotation : _annotations) {
+		if (annotation.type() == typeName_) {
+			return &annotation;
+		}
+	}
+	return nullptr;
+}
+
+bool Method::hasAnnotation(const std::string& typeName_) const {
+	return getAnnotation(typeName_) != nullptr;
+}
+
+const std::vector<dex::Annotation>& Method::getParameterAnnotations(uint32_t paramIdx_) const {
+	static const std::vector<dex::Annotation> empty;
+	return paramIdx_ < _parameterAnnotations.size() ? _parameterAnnotations[paramIdx_] : empty;
 }
 
 void Method::parseArgumentTypes() {

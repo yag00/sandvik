@@ -24,6 +24,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "loader/dex/Annotation.hpp"
 #include "object.hpp"
 
 namespace sandvik {
@@ -129,6 +130,19 @@ namespace sandvik {
 				}
 			}
 
+			/** @brief This field's annotations, if any (empty for fields not parsed from a DEX
+			 * class, e.g. ones synthesized via ClassBuilder).
+			 * @return This field's annotation set. */
+			const std::vector<dex::Annotation>& getAnnotations() const;
+			/** @brief Looks up an annotation on this field by its type name.
+			 * @param typeName_ Pretty (dotted) annotation type name, e.g. "dalvik.annotation.InnerClass".
+			 * @return Pointer to the annotation, or nullptr if this field has no such annotation. */
+			const dex::Annotation* getAnnotation(const std::string& typeName_) const;
+			/** @brief Checks whether this field carries a given annotation.
+			 * @param typeName_ Pretty (dotted) annotation type name.
+			 * @return true if present. */
+			bool hasAnnotation(const std::string& typeName_) const;
+
 		private:
 			Class& _class;
 			std::string _name;
@@ -140,6 +154,7 @@ namespace sandvik {
 			uint64_t _value = 0;
 			std::string _strValue = "";
 			ObjectRef _obj;
+			std::vector<dex::Annotation> _annotations;
 	};
 }  // namespace sandvik
 

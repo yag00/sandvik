@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "loader/dex/Annotation.hpp"
 #include "object.hpp"
 
 namespace sandvik {
@@ -204,6 +205,19 @@ namespace sandvik {
 			 */
 			const std::vector<std::string>& getInterfaces() const;
 
+			/** @brief This class's own annotations, if any (empty for classes not parsed from a DEX
+			 * file, e.g. ones synthesized via ClassBuilder).
+			 * @return This class's annotation set. */
+			const std::vector<dex::Annotation>& getAnnotations() const;
+			/** @brief Looks up an annotation on this class by its type name.
+			 * @param typeName_ Pretty (dotted) annotation type name, e.g. "dalvik.annotation.InnerClass".
+			 * @return Pointer to the annotation, or nullptr if this class has no such annotation. */
+			const dex::Annotation* getAnnotation(const std::string& typeName_) const;
+			/** @brief Checks whether this class carries a given annotation.
+			 * @param typeName_ Pretty (dotted) annotation type name.
+			 * @return true if present. */
+			bool hasAnnotation(const std::string& typeName_) const;
+
 			/** @brief Enters the monitor.
 			 *
 			 * used for synchronization of static fields
@@ -245,6 +259,7 @@ namespace sandvik {
 			std::map<std::string, std::unique_ptr<Method>, std::less<>> _methods;
 			std::map<std::string, std::unique_ptr<Field>, std::less<>> _fields;
 			std::vector<std::string> _interfaces;
+			std::vector<dex::Annotation> _annotations;
 			friend class ClassBuilder;
 
 			std::unique_ptr<Monitor> _monitor;

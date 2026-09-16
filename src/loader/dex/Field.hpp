@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "Annotation.hpp"
 #include "Type.hpp"
 #include "enums.hpp"
 
@@ -72,12 +73,25 @@ namespace sandvik {
 				size_t index() const {
 					return _index;
 				}
+				/** @brief This field's annotations, if any (empty if none, or if this field wasn't
+				 * built from a class with an annotations_directory_item). */
+				const std::vector<Annotation>& annotations() const {
+					return _annotations;
+				}
+				/** @brief Attaches this field's annotations, decoded from its class's
+				 * annotations_directory_item. Called at most once, right after construction, by
+				 * File::parseAnnotationsDirectory().
+				 * @param annotations_ This field's annotation set. */
+				void setAnnotations(std::vector<Annotation> annotations_) {
+					_annotations = std::move(annotations_);
+				}
 
 			private:
 				std::string _name;
 				Type _type;
 				uint32_t _accessFlags;
 				size_t _index;
+				std::vector<Annotation> _annotations;
 		};
 	}  // namespace dex
 }  // namespace sandvik

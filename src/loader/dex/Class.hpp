@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "Annotation.hpp"
 #include "Field.hpp"
 #include "Method.hpp"
 #include "enums.hpp"
@@ -53,15 +54,17 @@ namespace sandvik {
 				 * @param methods_ This class's own methods (direct + virtual).
 				 * @param fields_ This class's own fields (static + instance).
 				 * @param interfaces_ Pretty (dotted) names of implemented interfaces.
+				 * @param annotations_ This class's own annotations (class_annotations), if any.
 				 * @param index_ Index of this class_def within the DEX class_defs table.
 				 */
 				Class(std::string descriptor_, uint32_t accessFlags_, std::string superclassDescriptor_, std::vector<std::unique_ptr<Method>> methods_,
-				      std::vector<std::unique_ptr<Field>> fields_, std::vector<std::string> interfaces_, size_t index_)
+				      std::vector<std::unique_ptr<Field>> fields_, std::vector<std::string> interfaces_, std::vector<Annotation> annotations_, size_t index_)
 				    : _descriptor(std::move(descriptor_)),
 				      _accessFlags(accessFlags_),
 				      _methods(std::move(methods_)),
 				      _fields(std::move(fields_)),
 				      _interfaces(std::move(interfaces_)),
+				      _annotations(std::move(annotations_)),
 				      _index(index_) {
 					if (!superclassDescriptor_.empty()) {
 						_parent = std::make_unique<Class>(std::move(superclassDescriptor_));
@@ -116,6 +119,10 @@ namespace sandvik {
 				const std::vector<std::string>& interfaces() const {
 					return _interfaces;
 				}
+				/** @brief This class's own annotations (class_annotations), if any. */
+				const std::vector<Annotation>& annotations() const {
+					return _annotations;
+				}
 
 				/** @brief Index of this class_def within the DEX class_defs table. */
 				size_t index() const {
@@ -128,6 +135,7 @@ namespace sandvik {
 				std::vector<std::unique_ptr<Method>> _methods;
 				std::vector<std::unique_ptr<Field>> _fields;
 				std::vector<std::string> _interfaces;
+				std::vector<Annotation> _annotations;
 				std::unique_ptr<Class> _parent;
 				size_t _index = 0;
 		};

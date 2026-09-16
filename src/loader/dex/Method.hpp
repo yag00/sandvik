@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "Annotation.hpp"
 #include "CodeInfo.hpp"
 #include "Prototype.hpp"
 #include "enums.hpp"
@@ -97,6 +98,33 @@ namespace sandvik {
 				const CodeInfo& code_info() const {
 					return _codeInfo;
 				}
+				/** @brief This method's own annotations, if any (empty if none, or if this method
+				 * wasn't built from a class with an annotations_directory_item). */
+				const std::vector<Annotation>& annotations() const {
+					return _annotations;
+				}
+				/** @brief Attaches this method's annotations, decoded from its class's
+				 * annotations_directory_item. Called at most once, right after construction, by
+				 * File::parseAnnotationsDirectory().
+				 * @param annotations_ This method's annotation set. */
+				void setAnnotations(std::vector<Annotation> annotations_) {
+					_annotations = std::move(annotations_);
+				}
+				/** @brief Annotations attached to one formal parameter, if any.
+				 * @param paramIdx_ Parameter index.
+				 * @return That parameter's annotation set, or an empty set if paramIdx_ is out of
+				 * range or has no annotations. */
+				const std::vector<Annotation>& parameterAnnotations(size_t paramIdx_) const {
+					static const std::vector<Annotation> empty;
+					return paramIdx_ < _parameterAnnotations.size() ? _parameterAnnotations[paramIdx_] : empty;
+				}
+				/** @brief Attaches this method's per-parameter annotations, decoded from its class's
+				 * annotations_directory_item. Called at most once, right after construction, by
+				 * File::parseAnnotationsDirectory().
+				 * @param parameterAnnotations_ One annotation set per formal parameter, in order. */
+				void setParameterAnnotations(std::vector<std::vector<Annotation>> parameterAnnotations_) {
+					_parameterAnnotations = std::move(parameterAnnotations_);
+				}
 
 			private:
 				std::string _name;
@@ -106,6 +134,8 @@ namespace sandvik {
 				size_t _index;
 				bytecode_t _bytecode;
 				CodeInfo _codeInfo;
+				std::vector<Annotation> _annotations;
+				std::vector<std::vector<Annotation>> _parameterAnnotations;
 		};
 	}  // namespace dex
 }  // namespace sandvik

@@ -39,11 +39,29 @@ Field::Field(Class& class_, const dex::Field& field_)
       _type(get_type_descriptor(*field_.type())),
       _isStatic(field_.has(dex::ACC_STATIC)),
       _index(static_cast<uint32_t>(field_.index())),
-      _obj(Object::makeNull()) {
+      _obj(Object::makeNull()),
+      _annotations(field_.annotations()) {
 	_accessFlags = 0;
 	for (const auto& flag : field_.access_flags()) {
 		_accessFlags |= static_cast<uint32_t>(flag);
 	}
+}
+
+const std::vector<dex::Annotation>& Field::getAnnotations() const {
+	return _annotations;
+}
+
+const dex::Annotation* Field::getAnnotation(const std::string& typeName_) const {
+	for (const auto& annotation : _annotations) {
+		if (annotation.type() == typeName_) {
+			return &annotation;
+		}
+	}
+	return nullptr;
+}
+
+bool Field::hasAnnotation(const std::string& typeName_) const {
+	return getAnnotation(typeName_) != nullptr;
 }
 
 std::string Field::str() const {

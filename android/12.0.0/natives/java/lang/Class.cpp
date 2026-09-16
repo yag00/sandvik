@@ -26,6 +26,7 @@
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
+#include "loader/dex/Annotation.hpp"
 #include "method.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
@@ -88,10 +89,18 @@ extern "C" {
 
 		auto& classloader = jenv->getClassLoader();
 		auto& clazz = classObj->getClassType();
-		const auto& name = clazz.getFullname();
 
-		// TODO: This is a simplified approach. In Java, the declaring class is determined by the InnerClass attribute in the class file, which may not always
-		// correspond to the naming convention. For now, we will use the naming convention to find the declaring class.
+		const auto* enclosingClass = clazz.getAnnotation("dalvik.annotation.EnclosingClass");
+		if (enclosingClass) {
+			const auto* value = enclosingClass->element("value");
+			if (value && value->kind() == dex::EncodedValue::Kind::Type) {
+				auto& declaringClass = classloader.getOrLoad(value->asString());
+				return (jobject)Object::makeConstClass(classloader, declaringClass);
+			}
+		}
+
+		// Fallback for classes with no EnclosingClass annotation (e.g. hand-built test dex).
+		const auto& name = clazz.getFullname();
 		auto pos = name.rfind('$');
 		if (pos == std::string::npos) {
 			return (jobject)Object::makeNull();
@@ -105,7 +114,26 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getEnclosingClass(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getEnclosingClass not implemented!");
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto classObj = sandvik::native::getObject(obj);
+		if (!classObj || classObj->isNull()) {
+			return (jobject)Object::makeNull();
+		}
+
+		auto& classloader = jenv->getClassLoader();
+		auto& clazz = classObj->getClassType();
+
+		const auto* enclosingClass = clazz.getAnnotation("dalvik.annotation.EnclosingClass");
+		if (!enclosingClass) {
+			return (jobject)Object::makeNull();
+		}
+		const auto* value = enclosingClass->element("value");
+		if (!value || value->kind() != dex::EncodedValue::Kind::Type) {
+			return (jobject)Object::makeNull();
+		}
+
+		auto& enclosing = classloader.getOrLoad(value->asString());
+		return (jobject)Object::makeConstClass(classloader, enclosing);
 	}
 
 	JNIEXPORT jboolean JNICALL Java_java_lang_Class_isAnonymousClass(JNIEnv* env, jobject obj) {
@@ -138,10 +166,25 @@ extern "C" {
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredClasses(JNIEnv* env, jobject obj) {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto& classloader = jenv->getClassLoader();
-		// TODO: getDeclaredClasses() requires to parse annotations InnerClass/EnclosingClass/MemberClasses from DEX (not managed by LIEF/Class).
-		// Temporary Stub: empty array.
+		auto classObj = sandvik::native::getObject(obj);
+		auto& classType = classObj->getClassType();
 		auto& classArrayType = classloader.getOrLoad("java/lang/Class");
-		auto array = Array::make(classArrayType, 0u);
+
+		const auto* memberClasses = classType.getAnnotation("dalvik.annotation.MemberClasses");
+		if (!memberClasses) {
+			return (jobjectArray)Array::make(classArrayType, 0u);
+		}
+		const auto* value = memberClasses->element("value");
+		if (!value || value->kind() != dex::EncodedValue::Kind::Array) {
+			return (jobjectArray)Array::make(classArrayType, 0u);
+		}
+
+		const auto& items = value->asArray();
+		auto array = Array::make(classArrayType, static_cast<uint32_t>(items.size()));
+		for (size_t i = 0; i < items.size(); ++i) {
+			auto& memberClass = classloader.getOrLoad(items[i].asString());
+			array->setElement(static_cast<uint32_t>(i), Object::makeConstClass(classloader, memberClass));
+		}
 		return (jobjectArray)array;
 	}
 
@@ -221,15 +264,36 @@ extern "C" {
 	}
 
 	JNIEXPORT jstring JNICALL Java_java_lang_Class_getInnerClassName(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getInnerClassName not implemented!");
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto classObj = sandvik::native::getObject(obj);
+		auto& classloader = jenv->getClassLoader();
+		auto& classType = classObj->getClassType();
+
+		const auto* innerClass = classType.getAnnotation("dalvik.annotation.InnerClass");
+		if (!innerClass) {
+			return (jstring)Object::makeNull();
+		}
+		const auto* name = innerClass->element("name");
+		if (!name || name->kind() != dex::EncodedValue::Kind::String) {
+			return (jstring)Object::makeNull();
+		}
+		return (jstring)Object::make(classloader, name->asString());
 	}
 
 	JNIEXPORT jint JNICALL Java_java_lang_Class_getInnerClassFlags(JNIEnv* env, jobject obj, jint defaultValue) {
 		(void)env;
-		(void)obj;
-		// Fallback to the caller-provided metadata when InnerClass attributes are unavailable.
-		logger.fwarning("Java_java_lang_Class_getInnerClassFlags: InnerClass attributes unavailable, returning default value {}", defaultValue);
-		return defaultValue;
+		auto classObj = sandvik::native::getObject(obj);
+		auto& classType = classObj->getClassType();
+
+		const auto* innerClass = classType.getAnnotation("dalvik.annotation.InnerClass");
+		if (!innerClass) {
+			return defaultValue;
+		}
+		const auto* accessFlags = innerClass->element("accessFlags");
+		if (!accessFlags || accessFlags->kind() != dex::EncodedValue::Kind::Int) {
+			return defaultValue;
+		}
+		return static_cast<jint>(accessFlags->asInt());
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredAnnotation(JNIEnv* env, jobject obj, jobject annotationClass) {
@@ -241,11 +305,38 @@ extern "C" {
 	}
 
 	JNIEXPORT jboolean JNICALL Java_java_lang_Class_isDeclaredAnnotationPresent(JNIEnv* env, jobject obj, jobject annotationClass) {
-		throw VmException("Java_java_lang_Class_isDeclaredAnnotationPresent not implemented!");
+		auto classObj = sandvik::native::getObject(obj);
+		auto annotationClassObj = sandvik::native::getObject(annotationClass);
+		if (!annotationClassObj || annotationClassObj->isNull()) {
+			return JNI_FALSE;
+		}
+		auto& classType = classObj->getClassType();
+		auto& annotationType = annotationClassObj->getClassType();
+		return classType.hasAnnotation(annotationType.getFullname()) ? JNI_TRUE : JNI_FALSE;
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getSignatureAnnotation(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getSignatureAnnotation not implemented!");
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto classObj = sandvik::native::getObject(obj);
+		auto& classloader = jenv->getClassLoader();
+		auto& classType = classObj->getClassType();
+		auto& stringClass = classloader.getOrLoad("java/lang/String");
+
+		const auto* signature = classType.getAnnotation("dalvik.annotation.Signature");
+		if (!signature) {
+			return (jobjectArray)Object::makeNull();
+		}
+		const auto* value = signature->element("value");
+		if (!value || value->kind() != dex::EncodedValue::Kind::Array) {
+			return (jobjectArray)Object::makeNull();
+		}
+
+		const auto& items = value->asArray();
+		auto array = Array::make(stringClass, static_cast<uint32_t>(items.size()));
+		for (size_t i = 0; i < items.size(); ++i) {
+			array->setElement(static_cast<uint32_t>(i), Object::make(classloader, items[i].asString()));
+		}
+		return (jobjectArray)array;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredMethodInternal(JNIEnv* env, jobject obj, jstring name, jobjectArray args) {
