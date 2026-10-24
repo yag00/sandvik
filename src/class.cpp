@@ -152,11 +152,11 @@ uint32_t Class::getDexIdx() const {
 	return _dexIdx;
 }
 
-std::string Class::getName() const {
+const std::string& Class::getName() const {
 	return _name;
 }
 
-std::string Class::getFullname() const {
+const std::string& Class::getFullname() const {
 	return _fullname;
 }
 

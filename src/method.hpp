@@ -81,11 +81,11 @@ namespace sandvik {
 			/** @brief Gets the name of the method.
 			 * @return Name of the method.
 			 */
-			std::string getName() const;
+			const std::string& getName() const;
 			/** @brief Gets the signature of the method.
 			 * @return Signature of the method.
 			 */
-			std::string getSignature() const;
+			const std::string& getSignature() const;
 			/** @brief Gets the number of arguments of the method.
 			 * @return Number of arguments.
 			 */

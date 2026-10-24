@@ -73,11 +73,11 @@ namespace sandvik {
 			/** @brief Gets the class name.
 			 * @return Class name.
 			 */
-			std::string getName() const;
+			const std::string& getName() const;
 			/** @brief Gets the full name of the class.
 			 * @return Full name of the class.
 			 */
-			std::string getFullname() const;
+			const std::string& getFullname() const;
 			/** @brief Retrieves the full name of the class within the array.
 			 * @return The full name of the class.
 			 */

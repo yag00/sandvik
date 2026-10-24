@@ -106,7 +106,7 @@ namespace sandvik {
 			/** @brief Gets the name of the field.
 			 * @return Name of the field.
 			 */
-			std::string getName() const;
+			const std::string& getName() const;
 			/** @brief Gets the type of the field.
 			 * @return Type of the field.
 			 */

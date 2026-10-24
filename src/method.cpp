@@ -117,7 +117,7 @@ void Method::parseArgumentTypes() {
 Class& Method::getClass() const {
 	return _class;
 }
-std::string Method::getName() const {
+const std::string& Method::getName() const {
 	return _name;
 }
 
@@ -125,7 +125,7 @@ uint32_t Method::getNbArguments() const {
 	return static_cast<uint32_t>(_argsType.size());
 }
 
-std::string Method::getSignature() const {
+const std::string& Method::getSignature() const {
 	return _signature;
 }
 

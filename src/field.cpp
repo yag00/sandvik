@@ -89,7 +89,7 @@ Class& Field::getClass() const {
 	return _class;
 }
 
-std::string Field::getName() const {
+const std::string& Field::getName() const {
 	return _name;
 }
 
