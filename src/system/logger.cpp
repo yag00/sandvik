@@ -18,17 +18,55 @@
 
 #include "logger.hpp"
 
+#include <unistd.h>
+
 #include <fmt/color.h>
 #include <fmt/format.h>
 
+#include <array>
 #include <chrono>
-#include <iomanip>
-#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <iterator>
 #include <string>
 
 using namespace sandvik;
 
-Logger::Logger() = default;
+namespace {
+	/** marker and console color of a kind of log line */
+	struct KindStyle {
+			std::string_view marker;
+			uint32_t color;
+			bool bold;
+	};
+
+	/** indexed by Logger::Kind */
+	constexpr std::array<KindStyle, 10> kindStyles = {{
+	    {"[v]", 0x808080, false},    // VERBOSE: grey
+	    {"[t]", 0x9370DB, false},    // TRACE: medium purple
+	    {"[d]", 0xFF1493, false},    // DEBUG: deep pink
+	    {"[*]", 0xFFFFFF, false},    // INFO: white
+	    {"[w]", 0xFFFF00, false},    // WARNING: yellow
+	    {"[+]", 0x7CFC00, false},    // OK: lawn green
+	    {"[!]", 0xFF0000, true},     // ERROR: bold red
+	    {"[i]", 0x6495ED, false},    // INSTRUCTION: cornflower blue
+	    {"[c]", 0x00CED1, false},    // CALL: dark turquoise
+	    {"[app]", 0xFFA500, false},  // APP: orange
+	}};
+
+	/** LogLevel and Kind share the same order for the VM levels */
+	constexpr Logger::Kind kindOf(Logger::LogLevel level_) {
+		return static_cast<Logger::Kind>(static_cast<int>(level_));
+	}
+
+	/** name of the current thread, set by the thread itself through Logger::addThread */
+	thread_local std::string currentThreadName;
+}  // namespace
+
+Logger::Logger() {
+	const char *noColor = std::getenv("NO_COLOR");
+	_colors = isatty(fileno(stderr)) && (noColor == nullptr || noColor[0] == '\0');
+}
 
 Logger::~Logger() {
 	if (_file.is_open()) {
@@ -42,10 +80,15 @@ Logger::~Logger() {
 }
 
 void Logger::logToConsole(bool enable_) {
-	_stdout = enable_;
+	_console = enable_;
+}
+
+void Logger::useColors(bool enable_) {
+	_colors = enable_;
 }
 
 void Logger::logToFile(const std::string &filename_) {
+	std::scoped_lock lock(_mutex);
 	if (_file.is_open()) {
 		_file.flush();
 		_file.close();
@@ -57,10 +100,19 @@ void Logger::logToFile(const std::string &filename_) {
 }
 
 void Logger::addThread(std::thread::id tid_, const std::string &name_) {
+	if (tid_ == std::this_thread::get_id()) {
+		currentThreadName = name_;
+		return;
+	}
+	std::scoped_lock lock(_threadsMutex);
 	_threads[tid_] = name_;
 }
 
 void Logger::removeThread(std::thread::id tid_) {
+	if (tid_ == std::this_thread::get_id()) {
+		currentThreadName.clear();
+	}
+	std::scoped_lock lock(_threadsMutex);
 	_threads.erase(tid_);
 }
 
@@ -68,11 +120,20 @@ void Logger::displayThreadName(bool enable_) {
 	_logThreadName = enable_;
 }
 
+std::string Logger::getThreadName() const {
+	if (!currentThreadName.empty()) {
+		return currentThreadName;
+	}
+	std::scoped_lock lock(const_cast<std::mutex &>(_threadsMutex));
+	auto thread = _threads.find(std::this_thread::get_id());
+	return thread != _threads.end() ? thread->second : std::string();
+}
+
 Logger::LogLevel Logger::getLevel() const {
-	return _level;
+	return _level.load(std::memory_order_relaxed);
 }
 void Logger::setLevel(Logger::LogLevel level_) {
-	_level = level_;
+	_level.store(level_, std::memory_order_relaxed);
 }
 
 bool Logger::isDisplayingTime() const {
@@ -85,6 +146,10 @@ void Logger::displayTime(bool enable) {
 
 void Logger::info(const std::string &msg) {
 	log(LogLevel::INFO, msg);
+}
+
+void Logger::debug(const std::string &msg) {
+	log(LogLevel::DEBUG, msg);
 }
 
 void Logger::warning(const std::string &msg) {
@@ -100,26 +165,11 @@ void Logger::ok(const std::string &msg) {
 }
 
 void Logger::color(uint32_t color_, char marker_, const std::string &msg_) {
-	if (LogLevel::INFO < _level) {
+	if (!isEnabled(LogLevel::INFO)) {
 		return;
 	}
-
-	if (_file.is_open()) {
-		std::string rawlog;
-		if (_time) {
-			rawlog += fmt::format("[{}] ", getTime());
-		}
-		rawlog += fmt::format("[{}] {}", marker_, msg_);
-		_file << rawlog << std::endl;
-	}
-
-	if (_stdout) {
-		if (_time) {
-			fmt::print(fmt::fg(fmt::color::white), "[{}] ", getTime());
-		}
-		fmt::print(fmt::fg(fmt::rgb(color_)), "[{}] {}", marker_, msg_);
-		fmt::print(fmt::fg(fmt::color::white), "\n");
-	}
+	const char marker[] = {'[', marker_, ']'};
+	writeLine(Kind::INFO, std::string_view(marker, sizeof(marker)), color_, false, msg_);
 }
 
 std::string Logger::getTime() const {
@@ -133,75 +183,70 @@ std::string Logger::getTime() const {
 }
 
 void Logger::log(LogLevel level, const std::string &msg) {
-	if (level < _level) {
+	if (level == LogLevel::NONE || !isEnabled(level)) {
 		return;
 	}
-	// Mask out ALWAYS bit
-	level &= 0xF;
+	write(kindOf(level), msg);
+}
 
-	std::string threadname = "";
+void Logger::vlog(LogLevel level_, fmt::string_view fmt_, fmt::format_args args_) {
+	if (level_ == LogLevel::NONE) {
+		return;
+	}
+	fmt::memory_buffer msg;
+	fmt::vformat_to(std::back_inserter(msg), fmt_, args_);
+	write(kindOf(level_), std::string_view(msg.data(), msg.size()));
+}
+
+void Logger::write(Kind kind_, std::string_view msg_) {
+	const auto &style = kindStyles[static_cast<size_t>(kind_)];
+	writeLine(kind_, style.marker, style.color, style.bold, msg_);
+}
+
+void Logger::writeLine(Kind kind_, std::string_view marker_, uint32_t color_, bool bold_, std::string_view msg_) {
+	// Build the whole line before taking the lock, then write it at once
+	fmt::memory_buffer head;
+	if (_time) {
+		fmt::format_to(std::back_inserter(head), "[{}] ", getTime());
+	}
 	if (_logThreadName) {
-		auto thread = _threads.find(std::this_thread::get_id());
-		if (thread != _threads.end()) {
-			// Prefix message with thread name
-			threadname = fmt::format("[{}] ", thread->second);
+		auto name = getThreadName();
+		if (!name.empty()) {
+			fmt::format_to(std::back_inserter(head), "[{}] ", name);
 		}
 	}
 
+	fmt::memory_buffer console;
+	if (_console) {
+		console.append(head);
+		if (_colors) {
+			auto style = fmt::fg(fmt::rgb(color_));
+			if (bold_) {
+				style |= fmt::emphasis::bold;
+			}
+			if (kind_ == Kind::WARNING || kind_ == Kind::ERROR) {
+				// warnings and errors must stand out: color the whole line
+				fmt::format_to(std::back_inserter(console), style, "{} {}", marker_, msg_);
+			} else {
+				fmt::format_to(std::back_inserter(console), style, "{}", marker_);
+				fmt::format_to(std::back_inserter(console), " {}", msg_);
+			}
+		} else {
+			fmt::format_to(std::back_inserter(console), "{} {}", marker_, msg_);
+		}
+		console.push_back('\n');
+	}
+
+	std::scoped_lock lock(_mutex);
 	if (_file.is_open()) {
-		std::string rawlog;
-		if (_time) {
-			rawlog += fmt::format("[{}] ", getTime());
+		_file.write(head.data(), static_cast<std::streamsize>(head.size()));
+		_file << marker_ << ' ' << msg_ << '\n';
+		// Keep warnings and errors even if the VM crashes right after
+		if (kind_ == Kind::WARNING || kind_ == Kind::ERROR) {
+			_file.flush();
 		}
-		rawlog += threadname;
-		switch (level) {
-			case LogLevel::INFO:
-				rawlog += fmt::format("[*] {}", msg);
-				break;
-			case LogLevel::DEBUG:
-				rawlog += fmt::format("{}", msg);
-				break;
-			case LogLevel::WARNING:
-				rawlog += fmt::format("[w] {}", msg);
-				break;
-			case LogLevel::ERROR:
-				rawlog += fmt::format("[!] {}", msg);
-				break;
-			case LogLevel::OK:
-				rawlog += fmt::format("[+] {}", msg);
-				break;
-			default:
-				break;
-		}
-		std::scoped_lock lock(_mutex);
-		_file << rawlog << std::endl;
 	}
-
-	if (_stdout) {
-		std::scoped_lock lock(_mutex);
-		if (_time) {
-			fmt::print(fmt::fg(fmt::color::white), "[{}] ", getTime());
-		}
-		fmt::print(fmt::fg(fmt::color::white), "{}", threadname);
-		switch (level) {
-			case LogLevel::INFO:
-				fmt::print(fmt::fg(fmt::color::white), "[*] {}", msg);
-				break;
-			case LogLevel::DEBUG:
-				fmt::print(fmt::fg(fmt::color::deep_pink), "{}", msg);
-				break;
-			case LogLevel::WARNING:
-				fmt::print(fmt::fg(fmt::color::yellow), "[w] {}", msg);
-				break;
-			case LogLevel::ERROR:
-				fmt::print(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "[!] {}", msg);
-				break;
-			case LogLevel::OK:
-				fmt::print(fmt::fg(fmt::color::lawn_green), "[+] {}", msg);
-				break;
-			default:
-				break;
-		}
-		fmt::print(fmt::fg(fmt::color::white), "\n");
+	if (_console) {
+		std::fwrite(console.data(), 1, console.size(), stderr);
 	}
 }

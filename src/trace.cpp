@@ -18,7 +18,6 @@
 
 #include "trace.hpp"
 
-#include <fmt/color.h>
 #include <fmt/format.h>
 
 #include <bit>
@@ -116,7 +115,7 @@ void Trace::logInstruction(const uint64_t pc_, const std::string& function_, con
 		return;
 	}
 	auto inst = _disassembler->disassemble(bytecode_);
-	logger.log(Logger::LogLevel::INFO | Logger::LogLevel::ALWAYS, fmt::format("{:04x}: {:<80} {:<20} ", pc_ / 2, inst, function_));
+	logger.write(Logger::Kind::INSTRUCTION, fmt::format("{:04x}: {:<80} {:<20} ", pc_ / 2, inst, function_));
 }
 
 void Trace::logCall(const std::string& type_, const std::string& class_, const std::string& method_, const std::string& signature_,
@@ -171,7 +170,5 @@ void Trace::logCall(const std::string& type_, const std::string& class_, const s
 	}
 	args_str += ")";
 
-	std::string msg = fmt::format("{} {}.{}{} {}", type_, fmt::styled(class_, fmt::fg(fmt::color::cyan)), fmt::styled(method_, fmt::fg(fmt::color::lawn_green)),
-	                              fmt::styled(signature_, fmt::fg(fmt::color::yellow)), fmt::styled(args_str, fmt::fg(fmt::color::magenta)));
-	logger.log(Logger::LogLevel::INFO | Logger::LogLevel::ALWAYS, msg);
+	logger.write(Logger::Kind::CALL, fmt::format("{} {}.{}{} {}", type_, class_, method_, signature_, args_str));
 }

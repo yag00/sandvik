@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	args::Flag version(parser, "version", "Display the version of this program", {"version"});
 	args::CompletionFlag completion(parser, {"complete"});
 
-	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
+	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, VERBOSE, TRACE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
 	args::ValueFlag<std::string> logFile(parser, "logfile", "Set the log output file", {"logfile"}, "");
 	args::Flag noConsole(parser, "no-console", "Disable console output", {"no-console"});
 	args::Flag displayThread(parser, "thread", "Display thread name in logs", {'t', "display-thread"});
@@ -96,11 +96,15 @@ int main(int argc, char** argv) {
 	}
 	logger.displayThreadName(args::get(displayThread));
 
-	logger.fok(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit());
+	SLOG_OK(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit());
 	if (logLevel) {
 		std::string level = args::get(logLevel);
 		if (level == "NONE") {
 			logger.setLevel(Logger::LogLevel::NONE);
+		} else if (level == "VERBOSE") {
+			logger.setLevel(Logger::LogLevel::VERBOSE);
+		} else if (level == "TRACE") {
+			logger.setLevel(Logger::LogLevel::TRACE);
 		} else if (level == "DEBUG") {
 			logger.setLevel(Logger::LogLevel::DEBUG);
 		} else if (level == "INFO") {
@@ -111,9 +115,12 @@ int main(int argc, char** argv) {
 			logger.setLevel(Logger::LogLevel::ERROR);
 		} else {
 			std::cerr << "Invalid log level: " << level << std::endl;
-			std::cerr << "Valid log levels are: NONE, DEBUG, INFO, WARN, ERROR" << std::endl << std::endl;
+			std::cerr << "Valid log levels are: NONE, VERBOSE, TRACE, DEBUG, INFO, WARN, ERROR" << std::endl << std::endl;
 			std::cerr << parser;
 			return 1;
+		}
+		if (static_cast<int>(logger.getLevel()) < SANDVIK_LOG_ACTIVE_LEVEL) {
+			SLOG_WARN("log level {} is not compiled in this build, reconfigure with --debug to get these messages", level);
 		}
 	}
 
@@ -183,10 +190,10 @@ int main(int argc, char** argv) {
 		}
 	} catch (const std::exception& e) {
 		logger.setLevel(Logger::LogLevel::INFO);
-		logger.error(e.what());
+		SLOG_ERROR("{}", e.what());
 		return 1;
 	}
 
-	logger.info(" === end ===");
+	SLOG_INFO(" === end ===");
 	return 0;
 }
