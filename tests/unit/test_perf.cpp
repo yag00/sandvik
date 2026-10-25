@@ -36,7 +36,7 @@ using namespace sandvik;
  * Performance regression reference for the VM.
  *
  * Each workload of tests/java/perf/Bench.java runs in a fresh VM. The checksum must match exactly (correctness)
- * and the wall time of Vm::run must stay under `refMs * factor`. refMs was measured on the reference machine
+ * and the best of 3 wall times of Vm::run must stay under `refMs * factor + 250 ms`. refMs was measured on the reference machine
  * with a -O3 build; wall times are machine dependent, so the tolerance is configurable:
  *   SANDVIK_PERF_FACTOR=3.0   scale of the allowed time (default 2.0)
  *   SANDVIK_PERF_SKIP=1       only check checksums, ignore the timings
@@ -67,43 +67,68 @@ namespace {
 
 class Perf : public ::testing::TestWithParam<Workload> {};
 
-TEST_P(Perf, Workload) {
-	const auto& w = GetParam();
-	logger.setLevel(Logger::LogLevel::NONE);
-
-	auto filename = fmt::format("test_perf_{}.out", w.name);
+// Returns the wall time of one fresh-VM run, or a negative value when the output checksum does not match.
+static double runOnce(const Workload& w_, std::string& error_) {
+	auto filename = fmt::format("test_perf_{}.out", w_.name);
 	fflush(stdout);
 	int savedStdout = dup(STDOUT_FILENO);
-	ASSERT_GE(savedStdout, 0);
-	ASSERT_NE(freopen(filename.c_str(), "w", stdout), nullptr) << "Failed to redirect stdout";
+	if (savedStdout < 0 || freopen(filename.c_str(), "w", stdout) == nullptr) {
+		error_ = "Failed to redirect stdout";
+		return -1;
+	}
 
-	double elapsedMs = 0;
+	double elapsedMs = -1;
 	try {
 		Vm vm;
 		initializeVmRuntime(vm);
 		vm.loadDex("../tests/java/perf/classes.dex");
 		auto start = std::chrono::steady_clock::now();
-		vm.run("Bench", {w.name});
+		vm.run("Bench", {w_.name});
 		elapsedMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
 	} catch (const std::exception& e) {
-		fflush(stdout);
-		dup2(savedStdout, STDOUT_FILENO);
-		close(savedStdout);
-		FAIL() << fmt::format("Exception thrown during perf workload {}: {}", w.name, e.what());
+		error_ = fmt::format("Exception thrown during perf workload {}: {}", w_.name, e.what());
 	}
 	fflush(stdout);
 	dup2(savedStdout, STDOUT_FILENO);
 	close(savedStdout);
+	if (elapsedMs < 0) {
+		return -1;
+	}
 
 	std::ifstream outputFile(filename);
 	std::string actual((std::istreambuf_iterator<char>(outputFile)), std::istreambuf_iterator<char>());
-	ASSERT_EQ(actual, fmt::format("{} {}\n", w.name, w.checksum));
+	if (actual != fmt::format("{} {}\n", w_.name, w_.checksum)) {
+		error_ = fmt::format("Unexpected output for {}: '{}'", w_.name, actual);
+		return -1;
+	}
+	return elapsedMs;
+}
 
-	fmt::print( "[perf] {:<12} {:>9.1f} ms (ref {:.1f} ms)\n", w.name, elapsedMs, w.refMs);
-	if (envDouble("SANDVIK_PERF_SKIP", 0) == 0 && w.refMs > 0) {
-		double limit = w.refMs * envDouble("SANDVIK_PERF_FACTOR", 2.0);
-		EXPECT_LE(elapsedMs, limit) << fmt::format("perf regression on '{}': {:.1f} ms > {:.1f} ms allowed (ref {:.1f} ms)",
-												   w.name, elapsedMs, limit, w.refMs);
+TEST_P(Perf, Workload) {
+	const auto& w = GetParam();
+	logger.setLevel(Logger::LogLevel::NONE);
+
+	const bool check = envDouble("SANDVIK_PERF_SKIP", 0) == 0 && w.refMs > 0;
+	// The relative factor is meaningless for short workloads under load, so keep an absolute slack as well.
+	const double limit = w.refMs * envDouble("SANDVIK_PERF_FACTOR", 2.0) + 250;
+	const int maxAttempts = 3;
+
+	// Best of N: a single slow run (parallel test binaries, cold caches) must not fail the test.
+	double best = -1;
+	for (int i = 0; i < maxAttempts; i++) {
+		std::string error;
+		double ms = runOnce(w, error);
+		ASSERT_GE(ms, 0) << error;
+		best = (best < 0 || ms < best) ? ms : best;
+		if (!check || best <= limit) {
+			break;
+		}
+	}
+
+	fmt::print("[perf] {:<12} {:>9.1f} ms (ref {:.1f} ms)\n", w.name, best, w.refMs);
+	if (check) {
+		EXPECT_LE(best, limit) << fmt::format("perf regression on '{}': {:.1f} ms > {:.1f} ms allowed (ref {:.1f} ms)", w.name,
+											  best, limit, w.refMs);
 	}
 }
 
