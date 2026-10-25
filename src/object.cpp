@@ -405,11 +405,6 @@ Monitor& Object::getMonitor() const {
 	return *_monitor;
 }
 
-void Object::initField(const std::string& name_, ObjectRef value_) {
-	std::lock_guard lock(_fieldsMutex);
-	_fields.try_emplace(name_, value_);
-}
-
 void Object::monitorEnter() {
 	getMonitor().enter();
 }
