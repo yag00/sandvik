@@ -19,13 +19,17 @@
 #ifndef __CLASS_LOADER_HPP__
 #define __CLASS_LOADER_HPP__
 
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
+
+#include "types.hpp"
 
 namespace sandvik {
 	class Class;
@@ -35,7 +39,6 @@ namespace sandvik {
 	class Apk;
 	class Dex;
 	class Vm;
-	enum class TYPES;
 	/** @brief Class Loader class
 	 */
 	class ClassLoader {
@@ -193,6 +196,41 @@ namespace sandvik {
 			std::map<std::string, std::unique_ptr<Class>, std::less<>> _classes;
 			mutable std::recursive_mutex _mutex;
 			Vm* _vm = nullptr;
+
+			// Per-dex constant-pool resolution caches: dex method_id/field_id/type_id indices
+			// are immutable once a dex is loaded, so the decoded symbol (and, where it does not
+			// depend on any receiver's runtime type, the fully resolved Method*/Field*/Class*)
+			// can be cached forever after the first resolution. This avoids re-decoding the dex
+			// constant pool and re-walking the class hierarchy on every execution of the same
+			// iget/iput/sget/sput/invoke-*/new-instance/... bytecode instruction.
+			struct CachedMethodRef {
+					std::string classname;
+					std::string method;
+					std::string sig;
+					Method* resolved = nullptr;  // only set for statically-bound resolutions (invoke-static/-direct)
+			};
+			struct CachedFieldRef {
+					std::string classname;
+					std::string field;
+					Field* resolved = nullptr;
+			};
+			struct CachedClassRef {
+					std::string classname;
+					Class* resolved = nullptr;
+			};
+			struct CachedTypeRef {
+					std::string name;
+					TYPES type = TYPES::UNKNOWN;
+			};
+			struct CachedArrayRef {
+					std::vector<std::pair<std::string, uint32_t>> descriptor;
+			};
+			std::vector<std::unordered_map<uint16_t, CachedMethodRef>> _methodRefCache;
+			std::vector<std::unordered_map<uint16_t, CachedFieldRef>> _fieldRefCache;
+			std::vector<std::unordered_map<uint16_t, CachedClassRef>> _classRefCache;
+			std::vector<std::unordered_map<uint16_t, CachedTypeRef>> _typeRefCache;
+			std::vector<std::unordered_map<uint16_t, std::string>> _stringRefCache;
+			std::vector<std::unordered_map<uint16_t, CachedArrayRef>> _arrayRefCache;
 	};
 }  // namespace sandvik
 

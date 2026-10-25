@@ -110,6 +110,16 @@ namespace sandvik {
 			 * @return Reference to the Method object.
 			 */
 			Method& getMethod(uint32_t idx_);
+			/** @brief Gets a class method by name and descriptor, without throwing.
+			 * Same resolution logic as getMethod(name, descriptor), but returns nullptr
+			 * instead of throwing when the method is not found anywhere in the hierarchy.
+			 * Intended for callers that need to probe the hierarchy (e.g. virtual/interface
+			 * dispatch) without relying on C++ exceptions as control flow.
+			 * @param name_ Name of the method.
+			 * @param descriptor_ Descriptor of the method.
+			 * @return Pointer to the Method object, or nullptr if not found.
+			 */
+			Method* findMethodOrNull(const std::string& name_, const std::string& descriptor_);
 
 			/** @brief Checks if a class field exists.
 			 * @param name_ Name of the field.

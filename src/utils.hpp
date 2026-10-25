@@ -47,6 +47,12 @@ namespace sandvik {
 	 * @return true if the class name is a primitive type, false otherwise.
 	 */
 	bool is_primitive_type(const std::string& classname);
+	/** @brief Get the single-character type descriptor for a given primitive type name.
+	 * Inverse of get_primitive_type().
+	 * @param type_name Primitive type name (e.g. "int").
+	 * @return Type descriptor as a string (e.g. "I").
+	 */
+	std::string get_primitive_descriptor(const std::string& type_name);
 }  // namespace sandvik
 
 #endif  // __CLASS_HPP__

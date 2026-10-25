@@ -320,6 +320,24 @@ namespace sandvik {
 			void setField(const std::string& name_, ObjectRef value_);
 
 			/**
+			 * @brief Sets a numeric field's value without boxing a new NumberObject on every call.
+			 *
+			 * Every declared primitive field already holds a boxed NumberObject from construction
+			 * onward (its identity matters: sun.misc.Unsafe's compareAndSwapInt/getAndAddInt/... and
+			 * the atomic classes built on it mutate that NumberObject in place and rely on it staying
+			 * the same object across calls). Writing a field with a fresh Object::make() every time -
+			 * the common case being a loop repeatedly updating an instance field - re-allocates and
+			 * re-tracks a NumberObject for no reason: mutate the existing one's value atomically
+			 * instead, and only allocate the (rare) first time a field is written or if it currently
+			 * holds something other than a number.
+			 * @param name_ Name of the field.
+			 * @param value_ Value to set (interpreted by the caller based on the field's declared
+			 *   type: the low 8/16/32 bits for byte/char/short/int, or the full 64 bits for
+			 *   long/double).
+			 */
+			void setFieldValue(const std::string& name_, uint64_t value_);
+
+			/**
 			 * @brief Gets the value of a field.
 			 * @param name_ Name of the field.
 			 * @return ObjectRef of the field value.
@@ -434,12 +452,20 @@ namespace sandvik {
 			 * @note for use by subclasses populating their initial field set; ordinary
 			 * field updates should go through setField() instead. */
 			void initField(const std::string& name_, ObjectRef value_);
+			/** Gets this object's Monitor, creating it on first use.
+			 * Most objects are never synchronized on, so the Monitor (a mutex plus two
+			 * condition_variables) is allocated lazily instead of unconditionally at construction.
+			 * @return reference to the Monitor.
+			 */
+			Monitor& getMonitor() const;
 
 		private:
 			/** Map storing field names and their corresponding values. */
 			std::map<std::string, std::atomic<ObjectRef>, std::less<>> _fields;
-			/** Monitor for thread synchronization */
-			std::unique_ptr<Monitor> _monitor;
+			/** Guards the lazy creation of _monitor */
+			mutable std::once_flag _monitorInit;
+			/** Monitor for thread synchronization, created on first use (see getMonitor()) */
+			mutable std::unique_ptr<Monitor> _monitor;
 			/** Mark bit for GC */
 			std::atomic<bool> _marked{false};
 			/** Mutex protecting field map structure and lookups */

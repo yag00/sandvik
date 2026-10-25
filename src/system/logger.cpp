@@ -87,10 +87,6 @@ void Logger::info(const std::string &msg) {
 	log(LogLevel::INFO, msg);
 }
 
-void Logger::debug(const std::string &msg) {
-	log(LogLevel::DEBUG, msg);
-}
-
 void Logger::warning(const std::string &msg) {
 	log(LogLevel::WARNING, msg);
 }

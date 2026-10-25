@@ -242,10 +242,17 @@ Method& ClassLoader::resolveMethod(uint32_t dex_, uint16_t idx_, std::string& cl
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		_dexs[dex_]->resolveMethod(idx_, classname_, method_, sig_);
+		findMethod(dex_, idx_, classname_, method_, sig_);
+		auto& entry = _methodRefCache[dex_][idx_];
+		if (entry.resolved != nullptr) {
+			return *entry.resolved;
+		}
 		auto& cls = getOrLoad(classname_);
-		return cls.getMethod(method_, sig_);
+		Method& method = cls.getMethod(method_, sig_);
+		entry.resolved = &method;
+		return method;
 	} catch (std::exception& e) {
 		throw VmException("Method {}.{}{} not found: {} ({})", classname_, method_, sig_, idx_, e.what());
 	}
@@ -260,16 +267,45 @@ void ClassLoader::findMethod(uint32_t dex_, uint16_t idx_, std::string& classnam
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
-	_dexs[dex_]->resolveMethod(idx_, classname_, method_, sig_);
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	if (_methodRefCache.size() <= dex_) {
+		_methodRefCache.resize(dex_ + 1);
+	}
+	auto& cache = _methodRefCache[dex_];
+	auto it = cache.find(idx_);
+	if (it == cache.end()) {
+		_dexs[dex_]->resolveMethod(idx_, classname_, method_, sig_);
+		cache.emplace(idx_, CachedMethodRef{classname_, method_, sig_, nullptr});
+		return;
+	}
+	classname_ = it->second.classname;
+	method_ = it->second.method;
+	sig_ = it->second.sig;
 }
 
 Class& ClassLoader::resolveClass(uint32_t dex_, uint16_t idx_, std::string& classname_) {
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		_dexs[dex_]->resolveClass(idx_, classname_);
-		return getOrLoad(classname_);
+		if (_classRefCache.size() <= dex_) {
+			_classRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _classRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			_dexs[dex_]->resolveClass(idx_, classname_);
+			it = cache.emplace(idx_, CachedClassRef{classname_, nullptr}).first;
+		} else {
+			classname_ = it->second.classname;
+		}
+		if (it->second.resolved != nullptr) {
+			return *it->second.resolved;
+		}
+		auto& cls = getOrLoad(classname_);
+		it->second.resolved = &cls;
+		return cls;
 	} catch (std::exception& e) {
 		throw VmException("Class not found: {} ({})", idx_, e.what());
 	}
@@ -289,10 +325,27 @@ Field& ClassLoader::resolveField(uint32_t dex_, uint16_t idx_, std::string& clas
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		_dexs[dex_]->resolveField(idx_, classname_, field_);
+		if (_fieldRefCache.size() <= dex_) {
+			_fieldRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _fieldRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			_dexs[dex_]->resolveField(idx_, classname_, field_);
+			it = cache.emplace(idx_, CachedFieldRef{classname_, field_, nullptr}).first;
+		} else {
+			classname_ = it->second.classname;
+			field_ = it->second.field;
+		}
+		if (it->second.resolved != nullptr) {
+			return *it->second.resolved;
+		}
 		auto& cls = getOrLoad(classname_);
-		return cls.getField(field_);
+		Field& field = cls.getField(field_);
+		it->second.resolved = &field;
+		return field;
 	} catch (std::exception& e) {
 		throw VmException("Field not found: {} ({})", idx_, e.what());
 	}
@@ -302,8 +355,19 @@ std::string ClassLoader::resolveType(uint32_t dex_, uint16_t idx_, TYPES& type_)
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		return _dexs[dex_]->resolveType(idx_, type_);
+		if (_typeRefCache.size() <= dex_) {
+			_typeRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _typeRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			std::string name = _dexs[dex_]->resolveType(idx_, type_);
+			it = cache.emplace(idx_, CachedTypeRef{name, type_}).first;
+		}
+		type_ = it->second.type;
+		return it->second.name;
 	} catch (const std::exception& e) {
 		throw VmException("Type not found: {} ({})", idx_, e.what());
 	}
@@ -313,8 +377,17 @@ std::string ClassLoader::resolveString(uint32_t dex_, uint16_t idx_) {
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		return _dexs[dex_]->resolveString(idx_);
+		if (_stringRefCache.size() <= dex_) {
+			_stringRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _stringRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			it = cache.emplace(idx_, _dexs[dex_]->resolveString(idx_)).first;
+		}
+		return it->second;
 	} catch (const std::exception& e) {
 		throw VmException("String not found: {} ({})", idx_, e.what());
 	}
@@ -324,8 +397,17 @@ std::vector<std::pair<std::string, uint32_t>> ClassLoader::resolveArray(uint32_t
 	if (dex_ >= _dexs.size()) {
 		throw VmException("Invalid DEX index: {} (size: {})", dex_, _dexs.size());
 	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	try {
-		return _dexs[dex_]->resolveArray(idx_);
+		if (_arrayRefCache.size() <= dex_) {
+			_arrayRefCache.resize(dex_ + 1);
+		}
+		auto& cache = _arrayRefCache[dex_];
+		auto it = cache.find(idx_);
+		if (it == cache.end()) {
+			it = cache.emplace(idx_, CachedArrayRef{_dexs[dex_]->resolveArray(idx_)}).first;
+		}
+		return it->second.descriptor;
 	} catch (const std::exception& e) {
 		throw VmException("Array not found: {} ({})", idx_, e.what());
 	}

@@ -40,278 +40,266 @@
 #include "system/logger.hpp"
 #include "trace.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 #include "vm.hpp"
 
 using namespace sandvik;
 
 Interpreter::Interpreter(JThread& rt_) : _rt(rt_) {
-	_dispatch.resize(256, [](const uint8_t*) { throw VmException("Invalid instruction!"); });
+	_dispatch.fill(&Interpreter::invalidInstruction);
 
-	_dispatch[0x00] = std::bind_front(&Interpreter::nop, this);
-	_dispatch[0x01] = std::bind_front(&Interpreter::move, this);
-	_dispatch[0x02] = std::bind_front(&Interpreter::move_from16, this);
-	_dispatch[0x03] = std::bind_front(&Interpreter::move_16, this);
-	_dispatch[0x04] = std::bind_front(&Interpreter::move_wide, this);
-	_dispatch[0x05] = std::bind_front(&Interpreter::move_wide_from16, this);
-	_dispatch[0x06] = std::bind_front(&Interpreter::move_wide16, this);
-	_dispatch[0x07] = std::bind_front(&Interpreter::move_object, this);
-	_dispatch[0x08] = std::bind_front(&Interpreter::move_object_from16, this);
-	_dispatch[0x09] = std::bind_front(&Interpreter::move_object16, this);
-	_dispatch[0x0A] = std::bind_front(&Interpreter::move_result, this);
-	_dispatch[0x0B] = std::bind_front(&Interpreter::move_result_wide, this);
-	_dispatch[0x0C] = std::bind_front(&Interpreter::move_result_object, this);
-	_dispatch[0x0D] = std::bind_front(&Interpreter::move_exception, this);
-	_dispatch[0x0E] = std::bind_front(&Interpreter::return_void, this);
-	_dispatch[0x0F] = std::bind_front(&Interpreter::return_, this);
-	_dispatch[0x10] = std::bind_front(&Interpreter::return_wide, this);
-	_dispatch[0x11] = std::bind_front(&Interpreter::return_object, this);
-	_dispatch[0x12] = std::bind_front(&Interpreter::const_4, this);
-	_dispatch[0x13] = std::bind_front(&Interpreter::const_16, this);
-	_dispatch[0x14] = std::bind_front(&Interpreter::const_, this);
-	_dispatch[0x15] = std::bind_front(&Interpreter::const_high16, this);
-	_dispatch[0x16] = std::bind_front(&Interpreter::const_wide_16, this);
-	_dispatch[0x17] = std::bind_front(&Interpreter::const_wide_32, this);
-	_dispatch[0x18] = std::bind_front(&Interpreter::const_wide, this);
-	_dispatch[0x19] = std::bind_front(&Interpreter::const_wide_high16, this);
-	_dispatch[0x1A] = std::bind_front(&Interpreter::const_string, this);
-	_dispatch[0x1B] = std::bind_front(&Interpreter::const_string_jumbo, this);
-	_dispatch[0x1C] = std::bind_front(&Interpreter::const_class, this);
-	_dispatch[0x1D] = std::bind_front(&Interpreter::monitor_enter, this);
-	_dispatch[0x1E] = std::bind_front(&Interpreter::monitor_exit, this);
-	_dispatch[0x1F] = std::bind_front(&Interpreter::check_cast, this);
-	_dispatch[0x20] = std::bind_front(&Interpreter::instance_of, this);
-	_dispatch[0x21] = std::bind_front(&Interpreter::array_length, this);
-	_dispatch[0x22] = std::bind_front(&Interpreter::new_instance, this);
-	_dispatch[0x23] = std::bind_front(&Interpreter::new_array, this);
-	_dispatch[0x24] = std::bind_front(&Interpreter::filled_new_array, this);
-	_dispatch[0x25] = std::bind_front(&Interpreter::filled_new_array_range, this);
-	_dispatch[0x26] = std::bind_front(&Interpreter::fill_array_data, this);
-	_dispatch[0x27] = std::bind_front(&Interpreter::throw_, this);
-	_dispatch[0x28] = std::bind_front(&Interpreter::goto_, this);
-	_dispatch[0x29] = std::bind_front(&Interpreter::goto_16, this);
-	_dispatch[0x2A] = std::bind_front(&Interpreter::goto_32, this);
-	_dispatch[0x2B] = std::bind_front(&Interpreter::packed_switch, this);
-	_dispatch[0x2C] = std::bind_front(&Interpreter::sparse_switch, this);
-	_dispatch[0x2D] = std::bind_front(&Interpreter::cmpl_float, this);
-	_dispatch[0x2E] = std::bind_front(&Interpreter::cmpg_float, this);
-	_dispatch[0x2F] = std::bind_front(&Interpreter::cmpl_double, this);
-	_dispatch[0x30] = std::bind_front(&Interpreter::cmpg_double, this);
-	_dispatch[0x31] = std::bind_front(&Interpreter::cmp_long, this);
-	_dispatch[0x32] = std::bind_front(&Interpreter::if_eq, this);
-	_dispatch[0x33] = std::bind_front(&Interpreter::if_ne, this);
-	_dispatch[0x34] = std::bind_front(&Interpreter::if_lt, this);
-	_dispatch[0x35] = std::bind_front(&Interpreter::if_ge, this);
-	_dispatch[0x36] = std::bind_front(&Interpreter::if_gt, this);
-	_dispatch[0x37] = std::bind_front(&Interpreter::if_le, this);
-	_dispatch[0x38] = std::bind_front(&Interpreter::if_eqz, this);
-	_dispatch[0x39] = std::bind_front(&Interpreter::if_nez, this);
-	_dispatch[0x3A] = std::bind_front(&Interpreter::if_ltz, this);
-	_dispatch[0x3B] = std::bind_front(&Interpreter::if_gez, this);
-	_dispatch[0x3C] = std::bind_front(&Interpreter::if_gtz, this);
-	_dispatch[0x3D] = std::bind_front(&Interpreter::if_lez, this);
+	_dispatch[0x00] = &Interpreter::nop;
+	_dispatch[0x01] = &Interpreter::move;
+	_dispatch[0x02] = &Interpreter::move_from16;
+	_dispatch[0x03] = &Interpreter::move_16;
+	_dispatch[0x04] = &Interpreter::move_wide;
+	_dispatch[0x05] = &Interpreter::move_wide_from16;
+	_dispatch[0x06] = &Interpreter::move_wide16;
+	_dispatch[0x07] = &Interpreter::move_object;
+	_dispatch[0x08] = &Interpreter::move_object_from16;
+	_dispatch[0x09] = &Interpreter::move_object16;
+	_dispatch[0x0A] = &Interpreter::move_result;
+	_dispatch[0x0B] = &Interpreter::move_result_wide;
+	_dispatch[0x0C] = &Interpreter::move_result_object;
+	_dispatch[0x0D] = &Interpreter::move_exception;
+	_dispatch[0x0E] = &Interpreter::return_void;
+	_dispatch[0x0F] = &Interpreter::return_;
+	_dispatch[0x10] = &Interpreter::return_wide;
+	_dispatch[0x11] = &Interpreter::return_object;
+	_dispatch[0x12] = &Interpreter::const_4;
+	_dispatch[0x13] = &Interpreter::const_16;
+	_dispatch[0x14] = &Interpreter::const_;
+	_dispatch[0x15] = &Interpreter::const_high16;
+	_dispatch[0x16] = &Interpreter::const_wide_16;
+	_dispatch[0x17] = &Interpreter::const_wide_32;
+	_dispatch[0x18] = &Interpreter::const_wide;
+	_dispatch[0x19] = &Interpreter::const_wide_high16;
+	_dispatch[0x1A] = &Interpreter::const_string;
+	_dispatch[0x1B] = &Interpreter::const_string_jumbo;
+	_dispatch[0x1C] = &Interpreter::const_class;
+	_dispatch[0x1D] = &Interpreter::monitor_enter;
+	_dispatch[0x1E] = &Interpreter::monitor_exit;
+	_dispatch[0x1F] = &Interpreter::check_cast;
+	_dispatch[0x20] = &Interpreter::instance_of;
+	_dispatch[0x21] = &Interpreter::array_length;
+	_dispatch[0x22] = &Interpreter::new_instance;
+	_dispatch[0x23] = &Interpreter::new_array;
+	_dispatch[0x24] = &Interpreter::filled_new_array;
+	_dispatch[0x25] = &Interpreter::filled_new_array_range;
+	_dispatch[0x26] = &Interpreter::fill_array_data;
+	_dispatch[0x27] = &Interpreter::throw_;
+	_dispatch[0x28] = &Interpreter::goto_;
+	_dispatch[0x29] = &Interpreter::goto_16;
+	_dispatch[0x2A] = &Interpreter::goto_32;
+	_dispatch[0x2B] = &Interpreter::packed_switch;
+	_dispatch[0x2C] = &Interpreter::sparse_switch;
+	_dispatch[0x2D] = &Interpreter::cmpl_float;
+	_dispatch[0x2E] = &Interpreter::cmpg_float;
+	_dispatch[0x2F] = &Interpreter::cmpl_double;
+	_dispatch[0x30] = &Interpreter::cmpg_double;
+	_dispatch[0x31] = &Interpreter::cmp_long;
+	_dispatch[0x32] = &Interpreter::if_eq;
+	_dispatch[0x33] = &Interpreter::if_ne;
+	_dispatch[0x34] = &Interpreter::if_lt;
+	_dispatch[0x35] = &Interpreter::if_ge;
+	_dispatch[0x36] = &Interpreter::if_gt;
+	_dispatch[0x37] = &Interpreter::if_le;
+	_dispatch[0x38] = &Interpreter::if_eqz;
+	_dispatch[0x39] = &Interpreter::if_nez;
+	_dispatch[0x3A] = &Interpreter::if_ltz;
+	_dispatch[0x3B] = &Interpreter::if_gez;
+	_dispatch[0x3C] = &Interpreter::if_gtz;
+	_dispatch[0x3D] = &Interpreter::if_lez;
 	// 0x3E ... 0x43 (unused)
-	_dispatch[0x44] = std::bind_front(&Interpreter::aget, this);
-	_dispatch[0x45] = std::bind_front(&Interpreter::aget_wide, this);
-	_dispatch[0x46] = std::bind_front(&Interpreter::aget_object, this);
-	_dispatch[0x47] = std::bind_front(&Interpreter::aget_boolean, this);
-	_dispatch[0x48] = std::bind_front(&Interpreter::aget_byte, this);
-	_dispatch[0x49] = std::bind_front(&Interpreter::aget_char, this);
-	_dispatch[0x4A] = std::bind_front(&Interpreter::aget_short, this);
-	_dispatch[0x4B] = std::bind_front(&Interpreter::aput, this);
-	_dispatch[0x4C] = std::bind_front(&Interpreter::aput_wide, this);
-	_dispatch[0x4D] = std::bind_front(&Interpreter::aput_object, this);
-	_dispatch[0x4E] = std::bind_front(&Interpreter::aput_boolean, this);
-	_dispatch[0x4F] = std::bind_front(&Interpreter::aput_byte, this);
-	_dispatch[0x50] = std::bind_front(&Interpreter::aput_char, this);
-	_dispatch[0x51] = std::bind_front(&Interpreter::aput_short, this);
-	_dispatch[0x52] = std::bind_front(&Interpreter::iget, this);
-	_dispatch[0x53] = std::bind_front(&Interpreter::iget_wide, this);
-	_dispatch[0x54] = std::bind_front(&Interpreter::iget_object, this);
-	_dispatch[0x55] = std::bind_front(&Interpreter::iget_boolean, this);
-	_dispatch[0x56] = std::bind_front(&Interpreter::iget_byte, this);
-	_dispatch[0x57] = std::bind_front(&Interpreter::iget_char, this);
-	_dispatch[0x58] = std::bind_front(&Interpreter::iget_short, this);
-	_dispatch[0x59] = std::bind_front(&Interpreter::iput, this);
-	_dispatch[0x5A] = std::bind_front(&Interpreter::iput_wide, this);
-	_dispatch[0x5B] = std::bind_front(&Interpreter::iput_object, this);
-	_dispatch[0x5C] = std::bind_front(&Interpreter::iput_boolean, this);
-	_dispatch[0x5D] = std::bind_front(&Interpreter::iput_byte, this);
-	_dispatch[0x5E] = std::bind_front(&Interpreter::iput_char, this);
-	_dispatch[0x5F] = std::bind_front(&Interpreter::iput_short, this);
-	_dispatch[0x60] = std::bind_front(&Interpreter::sget, this);
-	_dispatch[0x61] = std::bind_front(&Interpreter::sget_wide, this);
-	_dispatch[0x62] = std::bind_front(&Interpreter::sget_object, this);
-	_dispatch[0x63] = std::bind_front(&Interpreter::sget_boolean, this);
-	_dispatch[0x64] = std::bind_front(&Interpreter::sget_byte, this);
-	_dispatch[0x65] = std::bind_front(&Interpreter::sget_char, this);
-	_dispatch[0x66] = std::bind_front(&Interpreter::sget_short, this);
-	_dispatch[0x67] = std::bind_front(&Interpreter::sput, this);
-	_dispatch[0x68] = std::bind_front(&Interpreter::sput_wide, this);
-	_dispatch[0x69] = std::bind_front(&Interpreter::sput_object, this);
-	_dispatch[0x6A] = std::bind_front(&Interpreter::sput_boolean, this);
-	_dispatch[0x6B] = std::bind_front(&Interpreter::sput_byte, this);
-	_dispatch[0x6C] = std::bind_front(&Interpreter::sput_char, this);
-	_dispatch[0x6D] = std::bind_front(&Interpreter::sput_short, this);
-	_dispatch[0x6E] = std::bind_front(&Interpreter::invoke_virtual, this);
-	_dispatch[0x6F] = std::bind_front(&Interpreter::invoke_super, this);
-	_dispatch[0x70] = std::bind_front(&Interpreter::invoke_direct, this);
-	_dispatch[0x71] = std::bind_front(&Interpreter::invoke_static, this);
-	_dispatch[0x72] = std::bind_front(&Interpreter::invoke_interface, this);
+	_dispatch[0x44] = &Interpreter::aget;
+	_dispatch[0x45] = &Interpreter::aget_wide;
+	_dispatch[0x46] = &Interpreter::aget_object;
+	_dispatch[0x47] = &Interpreter::aget_boolean;
+	_dispatch[0x48] = &Interpreter::aget_byte;
+	_dispatch[0x49] = &Interpreter::aget_char;
+	_dispatch[0x4A] = &Interpreter::aget_short;
+	_dispatch[0x4B] = &Interpreter::aput;
+	_dispatch[0x4C] = &Interpreter::aput_wide;
+	_dispatch[0x4D] = &Interpreter::aput_object;
+	_dispatch[0x4E] = &Interpreter::aput_boolean;
+	_dispatch[0x4F] = &Interpreter::aput_byte;
+	_dispatch[0x50] = &Interpreter::aput_char;
+	_dispatch[0x51] = &Interpreter::aput_short;
+	_dispatch[0x52] = &Interpreter::iget;
+	_dispatch[0x53] = &Interpreter::iget_wide;
+	_dispatch[0x54] = &Interpreter::iget_object;
+	_dispatch[0x55] = &Interpreter::iget_boolean;
+	_dispatch[0x56] = &Interpreter::iget_byte;
+	_dispatch[0x57] = &Interpreter::iget_char;
+	_dispatch[0x58] = &Interpreter::iget_short;
+	_dispatch[0x59] = &Interpreter::iput;
+	_dispatch[0x5A] = &Interpreter::iput_wide;
+	_dispatch[0x5B] = &Interpreter::iput_object;
+	_dispatch[0x5C] = &Interpreter::iput_boolean;
+	_dispatch[0x5D] = &Interpreter::iput_byte;
+	_dispatch[0x5E] = &Interpreter::iput_char;
+	_dispatch[0x5F] = &Interpreter::iput_short;
+	_dispatch[0x60] = &Interpreter::sget;
+	_dispatch[0x61] = &Interpreter::sget_wide;
+	_dispatch[0x62] = &Interpreter::sget_object;
+	_dispatch[0x63] = &Interpreter::sget_boolean;
+	_dispatch[0x64] = &Interpreter::sget_byte;
+	_dispatch[0x65] = &Interpreter::sget_char;
+	_dispatch[0x66] = &Interpreter::sget_short;
+	_dispatch[0x67] = &Interpreter::sput;
+	_dispatch[0x68] = &Interpreter::sput_wide;
+	_dispatch[0x69] = &Interpreter::sput_object;
+	_dispatch[0x6A] = &Interpreter::sput_boolean;
+	_dispatch[0x6B] = &Interpreter::sput_byte;
+	_dispatch[0x6C] = &Interpreter::sput_char;
+	_dispatch[0x6D] = &Interpreter::sput_short;
+	_dispatch[0x6E] = &Interpreter::invoke_virtual;
+	_dispatch[0x6F] = &Interpreter::invoke_super;
+	_dispatch[0x70] = &Interpreter::invoke_direct;
+	_dispatch[0x71] = &Interpreter::invoke_static;
+	_dispatch[0x72] = &Interpreter::invoke_interface;
 	// 73 unused
-	_dispatch[0x74] = std::bind_front(&Interpreter::invoke_virtual_range, this);
-	_dispatch[0x75] = std::bind_front(&Interpreter::invoke_super_range, this);
-	_dispatch[0x76] = std::bind_front(&Interpreter::invoke_direct_range, this);
-	_dispatch[0x77] = std::bind_front(&Interpreter::invoke_static_range, this);
-	_dispatch[0x78] = std::bind_front(&Interpreter::invoke_interface_range, this);
+	_dispatch[0x74] = &Interpreter::invoke_virtual_range;
+	_dispatch[0x75] = &Interpreter::invoke_super_range;
+	_dispatch[0x76] = &Interpreter::invoke_direct_range;
+	_dispatch[0x77] = &Interpreter::invoke_static_range;
+	_dispatch[0x78] = &Interpreter::invoke_interface_range;
 	// 0x79 ... 0x7A (unused)
-	_dispatch[0x7B] = std::bind_front(&Interpreter::neg_int, this);
-	_dispatch[0x7C] = std::bind_front(&Interpreter::not_int, this);
-	_dispatch[0x7D] = std::bind_front(&Interpreter::neg_long, this);
-	_dispatch[0x7E] = std::bind_front(&Interpreter::not_long, this);
-	_dispatch[0x7F] = std::bind_front(&Interpreter::neg_float, this);
-	_dispatch[0x80] = std::bind_front(&Interpreter::neg_double, this);
-	_dispatch[0x81] = std::bind_front(&Interpreter::int_to_long, this);
-	_dispatch[0x82] = std::bind_front(&Interpreter::int_to_float, this);
-	_dispatch[0x83] = std::bind_front(&Interpreter::int_to_double, this);
-	_dispatch[0x84] = std::bind_front(&Interpreter::long_to_int, this);
-	_dispatch[0x85] = std::bind_front(&Interpreter::long_to_float, this);
-	_dispatch[0x86] = std::bind_front(&Interpreter::long_to_double, this);
-	_dispatch[0x87] = std::bind_front(&Interpreter::float_to_int, this);
-	_dispatch[0x88] = std::bind_front(&Interpreter::float_to_long, this);
-	_dispatch[0x89] = std::bind_front(&Interpreter::float_to_double, this);
-	_dispatch[0x8A] = std::bind_front(&Interpreter::double_to_int, this);
-	_dispatch[0x8B] = std::bind_front(&Interpreter::double_to_long, this);
-	_dispatch[0x8C] = std::bind_front(&Interpreter::double_to_float, this);
-	_dispatch[0x8D] = std::bind_front(&Interpreter::int_to_byte, this);
-	_dispatch[0x8E] = std::bind_front(&Interpreter::int_to_char, this);
-	_dispatch[0x8F] = std::bind_front(&Interpreter::int_to_short, this);
-	_dispatch[0x90] = std::bind_front(&Interpreter::add_int, this);
-	_dispatch[0x91] = std::bind_front(&Interpreter::sub_int, this);
-	_dispatch[0x92] = std::bind_front(&Interpreter::mul_int, this);
-	_dispatch[0x93] = std::bind_front(&Interpreter::div_int, this);
-	_dispatch[0x94] = std::bind_front(&Interpreter::rem_int, this);
-	_dispatch[0x95] = std::bind_front(&Interpreter::and_int, this);
-	_dispatch[0x96] = std::bind_front(&Interpreter::or_int, this);
-	_dispatch[0x97] = std::bind_front(&Interpreter::xor_int, this);
-	_dispatch[0x98] = std::bind_front(&Interpreter::shl_int, this);
-	_dispatch[0x99] = std::bind_front(&Interpreter::shr_int, this);
-	_dispatch[0x9A] = std::bind_front(&Interpreter::ushr_int, this);
-	_dispatch[0x9B] = std::bind_front(&Interpreter::add_long, this);
-	_dispatch[0x9C] = std::bind_front(&Interpreter::sub_long, this);
-	_dispatch[0x9D] = std::bind_front(&Interpreter::mul_long, this);
-	_dispatch[0x9E] = std::bind_front(&Interpreter::div_long, this);
-	_dispatch[0x9F] = std::bind_front(&Interpreter::rem_long, this);
-	_dispatch[0xA0] = std::bind_front(&Interpreter::and_long, this);
-	_dispatch[0xA1] = std::bind_front(&Interpreter::or_long, this);
-	_dispatch[0xA2] = std::bind_front(&Interpreter::xor_long, this);
-	_dispatch[0xA3] = std::bind_front(&Interpreter::shl_long, this);
-	_dispatch[0xA4] = std::bind_front(&Interpreter::shr_long, this);
-	_dispatch[0xA5] = std::bind_front(&Interpreter::ushr_long, this);
-	_dispatch[0xA6] = std::bind_front(&Interpreter::add_float, this);
-	_dispatch[0xA7] = std::bind_front(&Interpreter::sub_float, this);
-	_dispatch[0xA8] = std::bind_front(&Interpreter::mul_float, this);
-	_dispatch[0xA9] = std::bind_front(&Interpreter::div_float, this);
-	_dispatch[0xAA] = std::bind_front(&Interpreter::rem_float, this);
-	_dispatch[0xAB] = std::bind_front(&Interpreter::add_double, this);
-	_dispatch[0xAC] = std::bind_front(&Interpreter::sub_double, this);
-	_dispatch[0xAD] = std::bind_front(&Interpreter::mul_double, this);
-	_dispatch[0xAE] = std::bind_front(&Interpreter::div_double, this);
-	_dispatch[0xAF] = std::bind_front(&Interpreter::rem_double, this);
-	_dispatch[0xB0] = std::bind_front(&Interpreter::add_int_2addr, this);
-	_dispatch[0xB1] = std::bind_front(&Interpreter::sub_int_2addr, this);
-	_dispatch[0xB2] = std::bind_front(&Interpreter::mul_int_2addr, this);
-	_dispatch[0xB3] = std::bind_front(&Interpreter::div_int_2addr, this);
-	_dispatch[0xB4] = std::bind_front(&Interpreter::rem_int_2addr, this);
-	_dispatch[0xB5] = std::bind_front(&Interpreter::and_int_2addr, this);
-	_dispatch[0xB6] = std::bind_front(&Interpreter::or_int_2addr, this);
-	_dispatch[0xB7] = std::bind_front(&Interpreter::xor_int_2addr, this);
-	_dispatch[0xB8] = std::bind_front(&Interpreter::shl_int_2addr, this);
-	_dispatch[0xB9] = std::bind_front(&Interpreter::shr_int_2addr, this);
-	_dispatch[0xBA] = std::bind_front(&Interpreter::ushr_int_2addr, this);
-	_dispatch[0xBB] = std::bind_front(&Interpreter::add_long_2addr, this);
-	_dispatch[0xBC] = std::bind_front(&Interpreter::sub_long_2addr, this);
-	_dispatch[0xBD] = std::bind_front(&Interpreter::mul_long_2addr, this);
-	_dispatch[0xBE] = std::bind_front(&Interpreter::div_long_2addr, this);
-	_dispatch[0xBF] = std::bind_front(&Interpreter::rem_long_2addr, this);
-	_dispatch[0xC0] = std::bind_front(&Interpreter::and_long_2addr, this);
-	_dispatch[0xC1] = std::bind_front(&Interpreter::or_long_2addr, this);
-	_dispatch[0xC2] = std::bind_front(&Interpreter::xor_long_2addr, this);
-	_dispatch[0xC3] = std::bind_front(&Interpreter::shl_long_2addr, this);
-	_dispatch[0xC4] = std::bind_front(&Interpreter::shr_long_2addr, this);
-	_dispatch[0xC5] = std::bind_front(&Interpreter::ushr_long_2addr, this);
-	_dispatch[0xC6] = std::bind_front(&Interpreter::add_float_2addr, this);
-	_dispatch[0xC7] = std::bind_front(&Interpreter::sub_float_2addr, this);
-	_dispatch[0xC8] = std::bind_front(&Interpreter::mul_float_2addr, this);
-	_dispatch[0xC9] = std::bind_front(&Interpreter::div_float_2addr, this);
-	_dispatch[0xCA] = std::bind_front(&Interpreter::rem_float_2addr, this);
-	_dispatch[0xCB] = std::bind_front(&Interpreter::add_double_2addr, this);
-	_dispatch[0xCC] = std::bind_front(&Interpreter::sub_double_2addr, this);
-	_dispatch[0xCD] = std::bind_front(&Interpreter::mul_double_2addr, this);
-	_dispatch[0xCE] = std::bind_front(&Interpreter::div_double_2addr, this);
-	_dispatch[0xCF] = std::bind_front(&Interpreter::rem_double_2addr, this);
-	_dispatch[0xD0] = std::bind_front(&Interpreter::add_int_lit16, this);
-	_dispatch[0xD1] = std::bind_front(&Interpreter::rsub_int_lit16, this);
-	_dispatch[0xD2] = std::bind_front(&Interpreter::mul_int_lit16, this);
-	_dispatch[0xD3] = std::bind_front(&Interpreter::div_int_lit16, this);
-	_dispatch[0xD4] = std::bind_front(&Interpreter::rem_int_lit16, this);
-	_dispatch[0xD5] = std::bind_front(&Interpreter::and_int_lit16, this);
-	_dispatch[0xD6] = std::bind_front(&Interpreter::or_int_lit16, this);
-	_dispatch[0xD7] = std::bind_front(&Interpreter::xor_int_lit16, this);
-	_dispatch[0xD8] = std::bind_front(&Interpreter::add_int_lit8, this);
-	_dispatch[0xD9] = std::bind_front(&Interpreter::rsub_int_lit8, this);
-	_dispatch[0xDA] = std::bind_front(&Interpreter::mul_int_lit8, this);
-	_dispatch[0xDB] = std::bind_front(&Interpreter::div_int_lit8, this);
-	_dispatch[0xDC] = std::bind_front(&Interpreter::rem_int_lit8, this);
-	_dispatch[0xDD] = std::bind_front(&Interpreter::and_int_lit8, this);
-	_dispatch[0xDE] = std::bind_front(&Interpreter::or_int_lit8, this);
-	_dispatch[0xDF] = std::bind_front(&Interpreter::xor_int_lit8, this);
-	_dispatch[0xE0] = std::bind_front(&Interpreter::shl_int_lit8, this);
-	_dispatch[0xE1] = std::bind_front(&Interpreter::shr_int_lit8, this);
-	_dispatch[0xE2] = std::bind_front(&Interpreter::ushr_int_lit8, this);
+	_dispatch[0x7B] = &Interpreter::neg_int;
+	_dispatch[0x7C] = &Interpreter::not_int;
+	_dispatch[0x7D] = &Interpreter::neg_long;
+	_dispatch[0x7E] = &Interpreter::not_long;
+	_dispatch[0x7F] = &Interpreter::neg_float;
+	_dispatch[0x80] = &Interpreter::neg_double;
+	_dispatch[0x81] = &Interpreter::int_to_long;
+	_dispatch[0x82] = &Interpreter::int_to_float;
+	_dispatch[0x83] = &Interpreter::int_to_double;
+	_dispatch[0x84] = &Interpreter::long_to_int;
+	_dispatch[0x85] = &Interpreter::long_to_float;
+	_dispatch[0x86] = &Interpreter::long_to_double;
+	_dispatch[0x87] = &Interpreter::float_to_int;
+	_dispatch[0x88] = &Interpreter::float_to_long;
+	_dispatch[0x89] = &Interpreter::float_to_double;
+	_dispatch[0x8A] = &Interpreter::double_to_int;
+	_dispatch[0x8B] = &Interpreter::double_to_long;
+	_dispatch[0x8C] = &Interpreter::double_to_float;
+	_dispatch[0x8D] = &Interpreter::int_to_byte;
+	_dispatch[0x8E] = &Interpreter::int_to_char;
+	_dispatch[0x8F] = &Interpreter::int_to_short;
+	_dispatch[0x90] = &Interpreter::add_int;
+	_dispatch[0x91] = &Interpreter::sub_int;
+	_dispatch[0x92] = &Interpreter::mul_int;
+	_dispatch[0x93] = &Interpreter::div_int;
+	_dispatch[0x94] = &Interpreter::rem_int;
+	_dispatch[0x95] = &Interpreter::and_int;
+	_dispatch[0x96] = &Interpreter::or_int;
+	_dispatch[0x97] = &Interpreter::xor_int;
+	_dispatch[0x98] = &Interpreter::shl_int;
+	_dispatch[0x99] = &Interpreter::shr_int;
+	_dispatch[0x9A] = &Interpreter::ushr_int;
+	_dispatch[0x9B] = &Interpreter::add_long;
+	_dispatch[0x9C] = &Interpreter::sub_long;
+	_dispatch[0x9D] = &Interpreter::mul_long;
+	_dispatch[0x9E] = &Interpreter::div_long;
+	_dispatch[0x9F] = &Interpreter::rem_long;
+	_dispatch[0xA0] = &Interpreter::and_long;
+	_dispatch[0xA1] = &Interpreter::or_long;
+	_dispatch[0xA2] = &Interpreter::xor_long;
+	_dispatch[0xA3] = &Interpreter::shl_long;
+	_dispatch[0xA4] = &Interpreter::shr_long;
+	_dispatch[0xA5] = &Interpreter::ushr_long;
+	_dispatch[0xA6] = &Interpreter::add_float;
+	_dispatch[0xA7] = &Interpreter::sub_float;
+	_dispatch[0xA8] = &Interpreter::mul_float;
+	_dispatch[0xA9] = &Interpreter::div_float;
+	_dispatch[0xAA] = &Interpreter::rem_float;
+	_dispatch[0xAB] = &Interpreter::add_double;
+	_dispatch[0xAC] = &Interpreter::sub_double;
+	_dispatch[0xAD] = &Interpreter::mul_double;
+	_dispatch[0xAE] = &Interpreter::div_double;
+	_dispatch[0xAF] = &Interpreter::rem_double;
+	_dispatch[0xB0] = &Interpreter::add_int_2addr;
+	_dispatch[0xB1] = &Interpreter::sub_int_2addr;
+	_dispatch[0xB2] = &Interpreter::mul_int_2addr;
+	_dispatch[0xB3] = &Interpreter::div_int_2addr;
+	_dispatch[0xB4] = &Interpreter::rem_int_2addr;
+	_dispatch[0xB5] = &Interpreter::and_int_2addr;
+	_dispatch[0xB6] = &Interpreter::or_int_2addr;
+	_dispatch[0xB7] = &Interpreter::xor_int_2addr;
+	_dispatch[0xB8] = &Interpreter::shl_int_2addr;
+	_dispatch[0xB9] = &Interpreter::shr_int_2addr;
+	_dispatch[0xBA] = &Interpreter::ushr_int_2addr;
+	_dispatch[0xBB] = &Interpreter::add_long_2addr;
+	_dispatch[0xBC] = &Interpreter::sub_long_2addr;
+	_dispatch[0xBD] = &Interpreter::mul_long_2addr;
+	_dispatch[0xBE] = &Interpreter::div_long_2addr;
+	_dispatch[0xBF] = &Interpreter::rem_long_2addr;
+	_dispatch[0xC0] = &Interpreter::and_long_2addr;
+	_dispatch[0xC1] = &Interpreter::or_long_2addr;
+	_dispatch[0xC2] = &Interpreter::xor_long_2addr;
+	_dispatch[0xC3] = &Interpreter::shl_long_2addr;
+	_dispatch[0xC4] = &Interpreter::shr_long_2addr;
+	_dispatch[0xC5] = &Interpreter::ushr_long_2addr;
+	_dispatch[0xC6] = &Interpreter::add_float_2addr;
+	_dispatch[0xC7] = &Interpreter::sub_float_2addr;
+	_dispatch[0xC8] = &Interpreter::mul_float_2addr;
+	_dispatch[0xC9] = &Interpreter::div_float_2addr;
+	_dispatch[0xCA] = &Interpreter::rem_float_2addr;
+	_dispatch[0xCB] = &Interpreter::add_double_2addr;
+	_dispatch[0xCC] = &Interpreter::sub_double_2addr;
+	_dispatch[0xCD] = &Interpreter::mul_double_2addr;
+	_dispatch[0xCE] = &Interpreter::div_double_2addr;
+	_dispatch[0xCF] = &Interpreter::rem_double_2addr;
+	_dispatch[0xD0] = &Interpreter::add_int_lit16;
+	_dispatch[0xD1] = &Interpreter::rsub_int_lit16;
+	_dispatch[0xD2] = &Interpreter::mul_int_lit16;
+	_dispatch[0xD3] = &Interpreter::div_int_lit16;
+	_dispatch[0xD4] = &Interpreter::rem_int_lit16;
+	_dispatch[0xD5] = &Interpreter::and_int_lit16;
+	_dispatch[0xD6] = &Interpreter::or_int_lit16;
+	_dispatch[0xD7] = &Interpreter::xor_int_lit16;
+	_dispatch[0xD8] = &Interpreter::add_int_lit8;
+	_dispatch[0xD9] = &Interpreter::rsub_int_lit8;
+	_dispatch[0xDA] = &Interpreter::mul_int_lit8;
+	_dispatch[0xDB] = &Interpreter::div_int_lit8;
+	_dispatch[0xDC] = &Interpreter::rem_int_lit8;
+	_dispatch[0xDD] = &Interpreter::and_int_lit8;
+	_dispatch[0xDE] = &Interpreter::or_int_lit8;
+	_dispatch[0xDF] = &Interpreter::xor_int_lit8;
+	_dispatch[0xE0] = &Interpreter::shl_int_lit8;
+	_dispatch[0xE1] = &Interpreter::shr_int_lit8;
+	_dispatch[0xE2] = &Interpreter::ushr_int_lit8;
 	// 0xE3 ... 0xFF (unused)
 }
 
 Interpreter::~Interpreter() {
-#if 0
-	/*std::vector<std::pair<uint8_t, uint64_t>> sortedCoverage(_instcoverage.begin(), _instcoverage.end());
-	std::sort(sortedCoverage.begin(), sortedCoverage.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
-	for (const auto& [key, value] : sortedCoverage) {
-	    logger.finfo("Instruction 0x{:02x} executed {} times", key, value);
-	}*/
-	auto count = 0;
-	for (uint16_t i = 0; i < 0xE3; ++i) {
-		if (_instcoverage.find(i) == _instcoverage.end()) {
-			auto s = _disassembler->disassemble(i);
-			if (!s.empty()) {
-				logger.fwarning("Missing coverage for instruction 0x{:02x} {}", i, s);
-				count++;
-			}
-		}
-	}
-	logger.finfo("{} tested, missing coverage for {} instructions", _instcoverage.size(), count - 8);
-#endif
+}
+
+void Interpreter::invalidInstruction(const uint8_t* operand_) {
+	throw VmException("Invalid instruction!");
 }
 
 void Interpreter::execute() {
 	auto& frame = _rt.currentFrame();
 	const auto& method = frame.getMethod();
 	auto code = method.getBytecode();
-	auto func = fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature());
 	if (code == nullptr) {
-		throw VmException("Method {} has no bytecode!", func);
+		throw VmException("Method {}::{}{} has no bytecode!", method.getClass().getFullname(), method.getName(), method.getSignature());
 	}
 	if (frame.pc() >= method.getBytecodeSize()) {
-		throw VmException("Current frame {} has invalid pc: {}", func, frame.pc());
+		throw VmException("Current frame {}::{}{} has invalid pc: {}", method.getClass().getFullname(), method.getName(), method.getSignature(), frame.pc());
 	}
 	auto bytecode = code + frame.pc();
-	trace.logInstruction(frame.pc(), func, bytecode);
+	if (trace.isInstructionTraceEnabled()) {
+		trace.logInstruction(frame.pc(), fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature()), bytecode);
+	}
 	frame.pc()++;
-	_instcoverage[*bytecode]++;
 	try {
-		_dispatch[*bytecode](bytecode + 1);
+		(this->*_dispatch[*bytecode])(bytecode + 1);
 	} catch (JavaException& e) {
 		auto exctype = e.getExceptionType();
-		logger.fdebug("handling exception {} ({}) in method {}", exctype, e.what(), func);
+		logger.fdebug("handling exception {} ({}) in method {}::{}{}", exctype, e.what(), method.getClass().getFullname(), method.getName(),
+		              method.getSignature());
 		auto exc = Object::make(_rt.getClassLoader().getOrLoad(exctype));
 		exc->setField("detailMessage", Object::make(_rt.getClassLoader(), e.getMessage()));
 		handleException(exc);
@@ -414,12 +402,10 @@ Method* Interpreter::resolveInterfaceHierarchyMethod(Class& interfaceClass_, con
 		return nullptr;
 	}
 
-	try {
-		auto& method = interfaceClass_.getMethod(methodname_, signature_);
-		if (!method.isStatic()) {
-			return &method;
+	if (auto* method = interfaceClass_.findMethodOrNull(methodname_, signature_)) {
+		if (!method->isStatic()) {
+			return method;
 		}
-	} catch (...) {
 	}
 
 	auto& classloader = _rt.getClassLoader();
@@ -442,12 +428,10 @@ Method* Interpreter::resolveInterfaceMethod(Class& instance_, const std::string&
 
 	Class* current = &instance_;
 	while (current) {
-		try {
-			auto& method = current->getMethod(methodname_, signature_);
-			if (!method.isStatic()) {
-				return &method;
+		if (auto* method = current->findMethodOrNull(methodname_, signature_)) {
+			if (!method->isStatic()) {
+				return method;
 			}
-		} catch (...) {
 		}
 
 		if (current->hasSuperClass()) {
@@ -1031,8 +1015,25 @@ void Interpreter::new_array(const uint8_t* operand_) {
 	if (size < 0) {
 		throw NegativeArraySizeException("new_array: Array size cannot be negative");
 	}
-	const auto& type = classloader.getOrLoad(arrayType[0].first);
-	auto arrayObj = Array::make(type, size);
+	const auto& baseName = arrayType[0].first;
+	// resolveArray reports the leaf base type ("int") plus how many extra levels of array nesting
+	// remain beyond the immediate element (0 for a plain int[], 1 for the outer level of int[][],
+	// created one dimension at a time by new-array, etc.) - not the leaf type's own dim(), which is
+	// always 0 for a primitive/class item (see Dex::resolveArray).
+	uint32_t extraDims = arrayType[0].second;
+	const Class* elementType = nullptr;
+	if (extraDims == 0) {
+		elementType = &classloader.getOrLoad(baseName);
+	} else {
+		// This array's own element type is an array type in its own right (e.g. "[I" for the outer
+		// level of int[][]), not the leaf type - build that descriptor explicitly.
+		std::string baseDescriptor = sandvik::is_primitive_type(baseName) ? sandvik::get_primitive_descriptor(baseName)
+		                                                                  : "L" + std::regex_replace(baseName, std::regex("\\."), "/") + ";";
+		std::string componentDescriptor(extraDims, '[');
+		componentDescriptor += baseDescriptor;
+		elementType = &classloader.getOrLoad(componentDescriptor);
+	}
+	auto arrayObj = Array::make(*elementType, size);
 	frame.setObjRegister(dest, arrayObj);
 	frame.pc() += 3;
 }
@@ -1501,15 +1502,7 @@ void Interpreter::aget(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget: Array index out of bounds");
 	}
-	auto obj = array->getElement(index);
-	int32_t value = 0;
-	if (!obj->isNumberObject()) {
-		if (!obj->isNull()) {
-			throw VmException("aget: Array does not contain number");
-		}
-	} else {
-		value = obj->getValue();
-	}
+	int32_t value = static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index)));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1533,11 +1526,7 @@ void Interpreter::aget_wide(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-wide: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-wide: Array element is not a number object");
-	}
-	int64_t value = element->getLongValue();
+	int64_t value = static_cast<int64_t>(array->getRawElement(index));
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1585,11 +1574,7 @@ void Interpreter::aget_boolean(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-boolean: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-boolean: Array element is not a number object");
-	}
-	bool value = static_cast<uint8_t>(element->getValue()) != 0;
+	bool value = static_cast<uint8_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index)))) != 0;
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1613,11 +1598,7 @@ void Interpreter::aget_byte(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-byte: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-byte: Array element is not a number object");
-	}
-	int8_t value = static_cast<int8_t>(element->getValue());
+	int8_t value = static_cast<int8_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index))));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1641,11 +1622,7 @@ void Interpreter::aget_char(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-char: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-char: Array element is not a number object");
-	}
-	uint16_t value = static_cast<uint16_t>(element->getValue());
+	uint16_t value = static_cast<uint16_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index))));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1669,11 +1646,7 @@ void Interpreter::aget_short(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aget-short: Array index out of bounds");
 	}
-	auto element = array->getElement(index);
-	if (!element->isNumberObject()) {
-		throw VmException("aget-short: Array element is not a number object");
-	}
-	int16_t value = static_cast<int16_t>(element->getValue());
+	int16_t value = static_cast<int16_t>(static_cast<int32_t>(static_cast<int64_t>(array->getRawElement(index))));
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1700,7 +1673,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint32_t>(value));
 	frame.pc() += 3;
 }
 // aput-wide vAA, vBB, vCC
@@ -1724,7 +1697,7 @@ void Interpreter::aput_wide(const uint8_t* operand_) {
 		throw ArrayIndexOutOfBoundsException("aput-wide: Array index out of bounds");
 	}
 	auto value = frame.getLongRegister(valueReg);
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint64_t>(value));
 	frame.pc() += 3;
 }
 // aput-object vAA, vBB, vCC
@@ -1772,7 +1745,7 @@ void Interpreter::aput_boolean(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-boolean: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, value ? 1u : 0u);
 	frame.pc() += 3;
 }
 // aput-byte vAA, vBB, vCC
@@ -1796,7 +1769,7 @@ void Interpreter::aput_byte(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-byte: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // aput-char vAA, vBB, vCC
@@ -1820,7 +1793,7 @@ void Interpreter::aput_char(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-char: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, value);
 	frame.pc() += 3;
 }
 // aput-short vAA, vBB, vCC
@@ -1844,7 +1817,7 @@ void Interpreter::aput_short(const uint8_t* operand_) {
 	if (index < 0 || (uint32_t)index >= array->getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("aput-short: Array index out of bounds");
 	}
-	array->setElement(index, Object::make(value));
+	array->setRawElement(index, static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // iget vA, vB, field@CCCC
@@ -2052,7 +2025,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 	}
 	int32_t value = frame.getIntRegister(src);
 	logger.fdebug("iput {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint32_t>(value));
 	frame.pc() += 3;
 }
 // iput-wide vA, vB, field@CCCC
@@ -2079,7 +2052,7 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 
 	int64_t value = frame.getLongRegister(src);
 	logger.fdebug("iput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint64_t>(value));
 	frame.pc() += 3;
 }
 // iput-object vA, vB, field@CCCC
@@ -2130,7 +2103,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 
 	bool value = static_cast<uint8_t>(frame.getIntRegister(src)) != 0;
 	logger.fdebug("iput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), value ? 1u : 0u);
 	frame.pc() += 3;
 }
 // iput-byte vA, vB, field@CCCC
@@ -2153,7 +2126,7 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
 	logger.fdebug("iput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // iput-char vA, vB, field@CCCC
@@ -2176,7 +2149,7 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
 	logger.fdebug("iput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), value);
 	frame.pc() += 3;
 }
 // iput-short vA, vB, field@CCCC
@@ -2199,7 +2172,7 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
 	logger.fdebug("iput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
-	obj->setField(field.getName(), Object::make(value));
+	obj->setFieldValue(field.getName(), static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
 // sget vA, field@BBBB
@@ -2533,16 +2506,24 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 	std::string classname, methodname, signature;
 	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
 
+	Class* const receiverClass = instance;
+	auto& cacheEntry = _virtualCallCache[&frame.getMethod()][frame.pc()];
 	Method* vmethod = nullptr;
-	while (true) {
-		try {
-			vmethod = &instance->getMethod(methodname, signature);
-			if (!vmethod->isVirtual()) {
-				// throw exception here to go up the superclass chain
-				throw VmException();
+	if (cacheEntry.receiverClass == receiverClass) {
+		// Monomorphic fast path: same receiver class as last time this call site ran, so it
+		// resolves to the same method - skip the hierarchy walk below entirely.
+		vmethod = cacheEntry.resolvedMethod;
+		instance = cacheEntry.declaringClass;
+	} else {
+		while (true) {
+			Method* found = instance->findMethodOrNull(methodname, signature);
+			if (found != nullptr) {
+				vmethod = found;
+				if (vmethod->isVirtual()) {
+					break;  // Method found, exit loop
+				}
+				// not virtual: keep searching up the superclass chain (see comment below)
 			}
-			break;  // Method found, exit loop
-		} catch (std::exception& e) {
 			logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
 			if (instance->hasSuperClass()) {
 				// If the method is not found in the current class, try the superclass
@@ -2555,6 +2536,9 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 				break;
 			}
 		}
+		cacheEntry.receiverClass = receiverClass;
+		cacheEntry.declaringClass = instance;
+		cacheEntry.resolvedMethod = vmethod;
 	}
 	if (vmethod) {
 		if (!vmethod->isVirtual()) {
@@ -2594,25 +2578,24 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 	auto instance = &classloader.getOrLoad(classname);
 	Method* vmethod = nullptr;
 	while (true) {
-		try {
-			vmethod = &instance->getMethod(methodname, signature);
-			if (!vmethod->isVirtual()) {
-				// throw exception here to go up the superclass chain
-				throw VmException();
+		Method* found = instance->findMethodOrNull(methodname, signature);
+		if (found != nullptr) {
+			vmethod = found;
+			if (vmethod->isVirtual()) {
+				break;  // Method found, exit loop
 			}
-			break;  // Method found, exit loop
-		} catch (std::exception& e) {
-			logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
-			if (instance->hasSuperClass()) {
-				// If the method is not found in the current class, try the superclass
-				instance = &classloader.getOrLoad(instance->getSuperClassname());
-				if (!instance->isStaticInitialized()) {
-					executeClinit(*instance);
-				}
-			} else {
-				// If no superclass, break the loop
-				break;
+			// not virtual: keep searching up the superclass chain (see comment below)
+		}
+		logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
+		if (instance->hasSuperClass()) {
+			// If the method is not found in the current class, try the superclass
+			instance = &classloader.getOrLoad(instance->getSuperClassname());
+			if (!instance->isStaticInitialized()) {
+				executeClinit(*instance);
 			}
+		} else {
+			// If no superclass, break the loop
+			break;
 		}
 	}
 
@@ -2760,16 +2743,24 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 	std::string classname, methodname, signature;
 	classloader.findMethod(frame.getDexIdx(), methodRef, classname, methodname, signature);
 
+	Class* const receiverClass = instance;
+	auto& cacheEntry = _virtualCallCache[&frame.getMethod()][frame.pc()];
 	Method* vmethod = nullptr;
-	while (true) {
-		try {
-			vmethod = &instance->getMethod(methodname, signature);
-			if (!vmethod->isVirtual()) {
-				// throw exception here to go up the superclass chain
-				throw VmException();
+	if (cacheEntry.receiverClass == receiverClass) {
+		// Monomorphic fast path: same receiver class as last time this call site ran, so it
+		// resolves to the same method - skip the hierarchy walk below entirely.
+		vmethod = cacheEntry.resolvedMethod;
+		instance = cacheEntry.declaringClass;
+	} else {
+		while (true) {
+			Method* found = instance->findMethodOrNull(methodname, signature);
+			if (found != nullptr) {
+				vmethod = found;
+				if (vmethod->isVirtual()) {
+					break;  // Method found, exit loop
+				}
+				// not virtual: keep searching up the superclass chain (see comment below)
 			}
-			break;  // Method found, exit loop
-		} catch (std::exception& e) {
 			logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
 			if (instance->hasSuperClass()) {
 				// If the method is not found in the current class, try the superclass
@@ -2782,6 +2773,9 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 				break;
 			}
 		}
+		cacheEntry.receiverClass = receiverClass;
+		cacheEntry.declaringClass = instance;
+		cacheEntry.resolvedMethod = vmethod;
 	}
 	if (vmethod) {
 		if (vmethod->isStatic()) {

@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#include <functional>
+#include <array>
 #include <map>
 #include <memory>
 #include <string>
@@ -487,8 +487,11 @@ namespace sandvik {
 			void shr_int_lit8(const uint8_t* operand_);
 			// ushr-int/lit8 vAA, vBB, #+CC
 			void ushr_int_lit8(const uint8_t* operand_);
+			// fallback handler for unassigned/reserved opcodes
+			void invalidInstruction(const uint8_t* operand_);
 
-			std::vector<std::function<void(const uint8_t* operand_)>> _dispatch;
+			using OpHandler = void (Interpreter::*)(const uint8_t* operand_);
+			std::array<OpHandler, 256> _dispatch;
 
 			void handleException(ObjectRef exception_);
 			void executeClinit(Class& class_) const;
@@ -503,7 +506,30 @@ namespace sandvik {
 			void registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const;
 
 			JThread& _rt;
-			std::map<uint8_t, uint64_t> _instcoverage;
+
+			/** @brief Per-call-site inline cache for virtual dispatch (invoke-virtual/-virtual-range).
+			 *
+			 * Resolving a virtual call requires a std::map<string,...> lookup on the receiver's Class
+			 * (and possibly a superclass-chain walk) even after the dex-level symbol decode is cached
+			 * (see ClassLoader's per-dex resolution cache). Most call sites are monomorphic in
+			 * practice (the receiver's class rarely varies from one execution to the next), so
+			 * remember the last (receiver class -> resolved method) pair per call site and skip
+			 * re-resolving when the receiver's class hasn't changed. Falls back to full resolution,
+			 * degrading gracefully, when it has (polymorphic site) - this is a one-entry cache, not a
+			 * polymorphic inline cache with multiple remembered shapes.
+			 *
+			 * One thread-local cache per Interpreter (each JThread owns its own Interpreter), so no
+			 * synchronization is needed even though multiple threads may execute the same method.
+			 *
+			 * Keyed by (declaring Method*, pc): a bytecode instruction's address is unique within its
+			 * method, and Method objects persist for the VM's lifetime once loaded.
+			 */
+			struct VirtualCallCacheEntry {
+					const Class* receiverClass = nullptr;  ///< this_ptr->getClass() the last time this site ran
+					Class* declaringClass = nullptr;       ///< the class the method was actually found on (for logging)
+					Method* resolvedMethod = nullptr;
+			};
+			std::unordered_map<const Method*, std::unordered_map<uint16_t, VirtualCallCacheEntry>> _virtualCallCache;
 
 			std::unordered_map<Frame*, uint32_t> _stringCtorFixups;
 			struct StringFactoryMapping {
