@@ -24,7 +24,7 @@ extern "C" {
 
 	JNIEXPORT jint JNICALL Java_android_util_EventLog_writeEvent__IJ(JNIEnv* env, jclass clazz, jint tag, jlong value) {
 		(void)clazz;
-		logger.fdebug("EventLog.writeEvent called with tag {} and value {}", tag, value);
+		logger.ftrace("EventLog.writeEvent called with tag {} and value {}", tag, value);
 		return 0;
 	}
 }  // extern "C"

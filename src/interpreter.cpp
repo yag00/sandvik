@@ -291,14 +291,14 @@ void Interpreter::execute() {
 	}
 	auto bytecode = code + frame.pc();
 	if (trace.isInstructionTraceEnabled()) {
-		trace.logInstruction(frame.pc(), fmt::format("{}::{}{}", method.getClass().getFullname(), method.getName(), method.getSignature()), bytecode);
+		trace.logInstruction(frame.pc(), method, bytecode);
 	}
 	frame.pc()++;
 	try {
 		(this->*_dispatch[*bytecode])(bytecode + 1);
 	} catch (JavaException& e) {
 		auto exctype = e.getExceptionType();
-		logger.fdebug("handling exception {} ({}) in method {}::{}{}", exctype, e.what(), method.getClass().getFullname(), method.getName(),
+		logger.ftrace("handling exception {} ({}) in method {}::{}{}", exctype, e.what(), method.getClass().getFullname(), method.getName(),
 		              method.getSignature());
 		auto exc = Object::make(_rt.getClassLoader().getOrLoad(exctype));
 		exc->setField("detailMessage", Object::make(_rt.getClassLoader(), e.getMessage()));
@@ -370,7 +370,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	if (method_.isOverload()) {
 		symbolName += "__" + JNIHelper::mangleMethodSignature(method_.getSignature());
 	}
-	logger.fdebug("call native jni function {}", symbolName);
+	logger.ftrace("call native jni function {}", symbolName);
 	void* symbol = _rt.vm().findNativeSymbol(symbolName);
 	if (!symbol) {
 		throw VmException("Native method {} is not available!", symbolName);
@@ -384,7 +384,7 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	}
 	std::string params = match[1];
 	std::string returnType = match[2];
-	logger.fdebug("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(), symbolName,
+	logger.ftrace("Executing {}.{}{} -> native function {}@{:#x}", method_.getClass().getFullname(), method_.getName(), method_.getSignature(), symbolName,
 	              (uintptr_t)symbol);
 	ObjectRef staticClass = nullptr;
 	if (method_.isStatic()) {
@@ -465,7 +465,7 @@ void Interpreter::handleException(ObjectRef exception_) {
 	while (true) {
 		if (_rt.stackDepth() == 0) {
 			// uncaught exception
-			logger.fdebug("Unhandled exception {} : {}", exception_->getClass().getFullname(), msg);
+			logger.ftrace("Unhandled exception {} : {}", exception_->getClass().getFullname(), msg);
 			throw JavaException(exception_->getClass().getFullname(), msg);
 		}
 		auto& frame = _rt.currentFrame();
@@ -481,20 +481,20 @@ void Interpreter::handleException(ObjectRef exception_) {
 			for (auto& exc : handlers) {
 				const auto& exceptionType = _rt.getClassLoader().resolveClass(frame.getDexIdx(), exc.first);
 				if (exceptionType.isInstanceOf(exception_)) {
-					logger.fdebug("Catch exception {} at {:x}", exceptionType.getName(), exc.second);
+					logger.ftrace("Catch exception {} at {:x}", exceptionType.getName(), exc.second);
 					frame.pc() = exc.second << 1;
 					frame.setException(exception_);
 					return;
 				}
 			}
 			if (catchAllAddrress != 0) {
-				logger.fdebug("Catch all exception at {:x}", catchAllAddrress);
+				logger.ftrace("Catch all exception at {:x}", catchAllAddrress);
 				frame.pc() = catchAllAddrress << 1;
 				frame.setException(exception_);
 				return;
 			}
 		} catch (const std::exception& e) {
-			logger.fdebug("Exception handling failed: {}", e.what());
+			logger.ftrace("Exception handling failed: {}", e.what());
 		}
 		// No handler found - propagate to caller
 		if (_rt.stackDepth() > 0) {
@@ -534,7 +534,7 @@ bool Interpreter::tryRedirectToStringFactory(const Method& method, const std::ve
 			break;
 		}
 	}
-	logger.fdebug("Redirecting String constructor {} to StringFactory method {}", method.getSignature(), mapping ? mapping->targetSig : "none");
+	logger.ftrace("Redirecting String constructor {} to StringFactory method {}", method.getSignature(), mapping ? mapping->targetSig : "none");
 	// If no mapping is found, return false to fallback on the standard behavior
 	if (!mapping) {
 		return false;
@@ -871,7 +871,7 @@ void Interpreter::monitor_enter(const uint8_t* operand_) {
 		throw NullPointerException("monitor_enter on null object");
 	}
 	obj->monitorEnter();
-	logger.fdebug("monitor enter on object {}", obj->toString());
+	logger.fverbose("monitor-enter {}", describe(obj));
 	frame.pc()++;
 }
 // monitor-exit vAA
@@ -882,7 +882,7 @@ void Interpreter::monitor_exit(const uint8_t* operand_) {
 	if (obj->isNull()) {
 		throw NullPointerException("monitor_exit on null object");
 	}
-	logger.fdebug("monitor exit on object {}", obj->toString());
+	logger.fverbose("monitor-exit {}", describe(obj));
 	obj->monitorExit();
 	frame.pc()++;
 }
@@ -906,7 +906,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 	switch (type) {
 		case TYPES::PRIMITIVE:
 			// Primitive types: no casting needed, always valid
-			logger.fdebug("@todo check-cast to primitive type {}", type_name);
+			logger.fverbose("check-cast to primitive type {} not checked (@todo)", type_name);
 			break;
 		case TYPES::CLASS: {
 			auto& targetClass = classloader.resolveClass(frame.getDexIdx(), typeIndex);
@@ -927,7 +927,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 				pos++;
 			}
 			std::string element_type_name = type_name.substr(pos);
-			logger.fdebug("Array type: {} dimensions, element type {}", array_dims, element_type_name);
+			logger.fverbose("check-cast to array: {} dimension(s) of {}", array_dims, element_type_name);
 			// check object has good dimensions
 			if (array->getDimensions() != array_dims) {
 				throw ClassCastException(fmt::format("Cannot cast array of {} dimensions to {}", array->getDimensions(), array_dims));
@@ -942,7 +942,7 @@ void Interpreter::check_cast(const uint8_t* operand_) {
 				}
 			} else {
 				// Primitive types: no casting needed, always valid
-				logger.fdebug("@todo check-cast to array of primitive type {}", element_type_name);
+				logger.fverbose("check-cast to array of primitive type {} not checked (@todo)", element_type_name);
 			}
 			break;
 		}
@@ -993,7 +993,6 @@ void Interpreter::new_instance(const uint8_t* operand_) {
 		executeClinit(cls);
 	}
 
-	logger.fdebug("new {}", cls.getFullname());
 	auto obj = Object::make(cls);
 	frame.setObjRegister(dest, obj);
 
@@ -1657,7 +1656,7 @@ void Interpreter::aput(const uint8_t* operand_) {
 	uint8_t indexReg = operand_[2];
 	auto& frame = _rt.currentFrame();
 
-	logger.fdebug("aput: valueReg: {}, arrayReg: {}, indexReg: {}", valueReg, arrayReg, indexReg);
+	logger.fverbose("aput v{}[v{}] <- v{}", arrayReg, indexReg, valueReg);
 
 	auto arrayObj = frame.getObjRegister(arrayReg);
 	if (arrayObj->isNull()) {
@@ -1843,7 +1842,7 @@ void Interpreter::iget(const uint8_t* operand_) {
 		throw VmException("iget: Field {} is not a number object", field.getName());
 	}
 	int32_t value = fieldObj->getValue();
-	logger.fdebug("iget {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iget {}.{} -> {}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1870,7 +1869,7 @@ void Interpreter::iget_wide(const uint8_t* operand_) {
 	}
 
 	auto value = fieldObj->getLongValue();
-	logger.fdebug("iget_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iget-wide {}.{} -> {}", field.getClass().getFullname(), field.getName(), value);
 	frame.setLongRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1894,7 +1893,7 @@ void Interpreter::iget_object(const uint8_t* operand_) {
 	}
 
 	auto fieldObj = obj->getField(field.getName());
-	logger.fdebug("iget_object {}.{}={}", field.getClass().getFullname(), field.getName(), fieldObj ? fieldObj->toString() : "null");
+	logger.fverbose("iget-object {}.{} -> {}", field.getClass().getFullname(), field.getName(), describe(fieldObj));
 	frame.setObjRegister(dest, fieldObj);
 	frame.pc() += 3;
 }
@@ -1921,7 +1920,7 @@ void Interpreter::iget_boolean(const uint8_t* operand_) {
 		throw VmException("iget_boolean: Field {} is not a number object", field.getName());
 	}
 	bool value = static_cast<uint8_t>(fieldObj->getValue()) != 0;
-	logger.fdebug("iget_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iget-boolean {}.{} -> {}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1948,7 +1947,7 @@ void Interpreter::iget_byte(const uint8_t* operand_) {
 		throw VmException("iget_byte: Field {} is not a number object", field.getName());
 	}
 	int8_t value = static_cast<int8_t>(fieldObj->getValue());
-	logger.fdebug("iget_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iget-byte {}.{} -> {}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -1975,7 +1974,7 @@ void Interpreter::iget_char(const uint8_t* operand_) {
 		throw VmException("iget_byte: Field {} is not a number object", field.getName());
 	}
 	uint16_t value = static_cast<uint16_t>(fieldObj->getValue());
-	logger.fdebug("iget_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iget-char {}.{} -> {}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -2002,7 +2001,7 @@ void Interpreter::iget_short(const uint8_t* operand_) {
 		throw VmException("iget_byte: Field {} is not a number object", field.getName());
 	}
 	int16_t value = static_cast<int16_t>(fieldObj->getValue());
-	logger.fdebug("iget_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iget-short {}.{} -> {}", field.getClass().getFullname(), field.getName(), value);
 	frame.setIntRegister(dest, value);
 	frame.pc() += 3;
 }
@@ -2024,7 +2023,7 @@ void Interpreter::iput(const uint8_t* operand_) {
 		throw VmException("iput: Field {} type mismatch, expected int but got {}", field.getName(), field.getType());
 	}
 	int32_t value = frame.getIntRegister(src);
-	logger.fdebug("iput {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iput {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	obj->setFieldValue(field.getName(), static_cast<uint32_t>(value));
 	frame.pc() += 3;
 }
@@ -2051,7 +2050,7 @@ void Interpreter::iput_wide(const uint8_t* operand_) {
 	}
 
 	int64_t value = frame.getLongRegister(src);
-	logger.fdebug("iput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iput-wide {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	obj->setFieldValue(field.getName(), static_cast<uint64_t>(value));
 	frame.pc() += 3;
 }
@@ -2079,7 +2078,7 @@ void Interpreter::iput_object(const uint8_t* operand_) {
 	}
 
 	auto value = frame.getObjRegister(src);
-	logger.fdebug("iput_object {}.{}={}", field.getClass().getFullname(), field.getName(), value->toString());
+	logger.fverbose("iput-object {}.{} <- {}", field.getClass().getFullname(), field.getName(), describe(value));
 	obj->setField(field.getName(), value);
 	frame.pc() += 3;
 }
@@ -2102,7 +2101,7 @@ void Interpreter::iput_boolean(const uint8_t* operand_) {
 	}
 
 	bool value = static_cast<uint8_t>(frame.getIntRegister(src)) != 0;
-	logger.fdebug("iput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iput-boolean {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	obj->setFieldValue(field.getName(), value ? 1u : 0u);
 	frame.pc() += 3;
 }
@@ -2125,7 +2124,7 @@ void Interpreter::iput_byte(const uint8_t* operand_) {
 	}
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
-	logger.fdebug("iput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iput-byte {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	obj->setFieldValue(field.getName(), static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
@@ -2148,7 +2147,7 @@ void Interpreter::iput_char(const uint8_t* operand_) {
 	}
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
-	logger.fdebug("iput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iput-char {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	obj->setFieldValue(field.getName(), value);
 	frame.pc() += 3;
 }
@@ -2171,7 +2170,7 @@ void Interpreter::iput_short(const uint8_t* operand_) {
 	}
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
-	logger.fdebug("iput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("iput-short {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	obj->setFieldValue(field.getName(), static_cast<uint32_t>(static_cast<int32_t>(value)));
 	frame.pc() += 3;
 }
@@ -2352,7 +2351,7 @@ void Interpreter::sput(const uint8_t* operand_) {
 	}
 
 	int32_t value = frame.getIntRegister(src);
-	logger.fdebug("sput {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("sput {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2372,7 +2371,7 @@ void Interpreter::sput_wide(const uint8_t* operand_) {
 	}
 
 	int64_t value = frame.getLongRegister(src);
-	logger.fdebug("sput_wide {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("sput-wide {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	field.setLongValue(value);
 	frame.pc() += 3;
 }
@@ -2418,7 +2417,7 @@ void Interpreter::sput_boolean(const uint8_t* operand_) {
 	}
 
 	bool value = static_cast<uint8_t>(frame.getIntRegister(src)) != 0;
-	logger.fdebug("sput_boolean {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("sput-boolean {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2438,7 +2437,7 @@ void Interpreter::sput_byte(const uint8_t* operand_) {
 	}
 
 	int8_t value = static_cast<int8_t>(frame.getIntRegister(src));
-	logger.fdebug("sput_byte {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("sput-byte {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2458,7 +2457,7 @@ void Interpreter::sput_char(const uint8_t* operand_) {
 	}
 
 	uint16_t value = static_cast<uint16_t>(frame.getIntRegister(src));
-	logger.fdebug("sput_char {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("sput-char {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2478,7 +2477,7 @@ void Interpreter::sput_short(const uint8_t* operand_) {
 	}
 
 	int16_t value = static_cast<int16_t>(frame.getIntRegister(src));
-	logger.fdebug("sput_short {}.{}={}", field.getClass().getFullname(), field.getName(), value);
+	logger.fverbose("sput-short {}.{} <- {}", field.getClass().getFullname(), field.getName(), value);
 	field.setIntValue(value);
 	frame.pc() += 3;
 }
@@ -2524,7 +2523,7 @@ void Interpreter::invoke_virtual(const uint8_t* operand_) {
 				}
 				// not virtual: keep searching up the superclass chain (see comment below)
 			}
-			logger.fdebug("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
+			logger.ftrace("invoke-virtual: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
 			if (instance->hasSuperClass()) {
 				// If the method is not found in the current class, try the superclass
 				instance = &classloader.getOrLoad(instance->getSuperClassname());
@@ -2586,7 +2585,7 @@ void Interpreter::invoke_super(const uint8_t* operand_) {
 			}
 			// not virtual: keep searching up the superclass chain (see comment below)
 		}
-		logger.fdebug("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
+		logger.ftrace("invoke-supper: method {}->{}{} not found, trying superclass", classname, methodname, signature);
 		if (instance->hasSuperClass()) {
 			// If the method is not found in the current class, try the superclass
 			instance = &classloader.getOrLoad(instance->getSuperClassname());
@@ -2685,7 +2684,7 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 	std::string ifclassname, methodname, signature;
 	classloader.findMethod(frame.getDexIdx(), methodRef, ifclassname, methodname, signature);
 
-	logger.fdebug("invoke-interface {}->{}{} for class {}", ifclassname, methodname, signature, instance->getFullname());
+	logger.ftrace("invoke-interface {}->{}{} for class {}", ifclassname, methodname, signature, instance->getFullname());
 
 	Method* vmethod = resolveInterfaceMethod(*instance, ifclassname, methodname, signature);
 	if (vmethod) {
@@ -2761,7 +2760,7 @@ void Interpreter::invoke_virtual_range(const uint8_t* operand_) {
 				}
 				// not virtual: keep searching up the superclass chain (see comment below)
 			}
-			logger.fdebug("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
+			logger.ftrace("invoke-virtual/range: method {}->{}{} not found, trying superclass", instance->getFullname(), methodname, signature);
 			if (instance->hasSuperClass()) {
 				// If the method is not found in the current class, try the superclass
 				instance = &classloader.getOrLoad(instance->getSuperClassname());

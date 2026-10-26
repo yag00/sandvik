@@ -34,7 +34,7 @@ extern "C" {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		auto selectorObj = sandvik::native::getObject(selector);
 
-		logger.fdebug("[NativeCrypto.get_cipher_names] selector={}", selectorObj ? selectorObj->toString() : "null");
+		logger.ftrace("[NativeCrypto.get_cipher_names] selector={}", selectorObj ? selectorObj->toString() : "null");
 
 		// TODO: Improve this list
 		std::vector<std::string> ciphers = {"ECDHE-ECDSA-AES128-GCM-SHA256",
@@ -77,7 +77,7 @@ extern "C" {
 	}
 
 	JNIEXPORT jboolean JNICALL Java_com_android_org_conscrypt_NativeCrypto_EVP_has_aes_hardware(JNIEnv* env, jclass clazz) {
-		logger.fdebug("[NativeCrypto.EVP_has_aes_hardware]");
+		logger.ftrace("[NativeCrypto.EVP_has_aes_hardware]");
 
 		return JNI_FALSE;
 	}

@@ -706,10 +706,18 @@ void StringObject::setString(const std::string& str_) {
 ///////////////////////////////////////////////////////////////////////////////
 
 ObjectClass::ObjectClass(Class& class_) : _class(class_) {
+	// the field list is only built for the VERBOSE log: "new A { a:I } < B { b:J } < java.lang.Object { ... }"
+	const bool verbose = SANDVIK_LOG_ACTIVE_LEVEL <= static_cast<int>(Logger::LogLevel::VERBOSE) && Logger::isEnabled(Logger::LogLevel::VERBOSE);
+	std::string layout;
+	if (verbose) {
+		layout = _class.getFullname() + " {";
+	}
 	for (const auto& fieldname : _class.getFieldList()) {
 		const auto& field = _class.getField(fieldname);
 		if (!field.isStatic()) {
-			logger.fdebug("New instance of {}: Adding field {} type={}", _class.getFullname(), fieldname, field.getType());
+			if (verbose) {
+				layout += fmt::format(" {}:{}", fieldname, field.getType());
+			}
 			switch (field.getType()[0]) {
 				case 'I':
 				case 'Z':
@@ -729,13 +737,16 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 	}
 	Class* current = &_class;
 	while (current->hasSuperClass()) {
-		logger.fdebug("super class {}", current->getSuperClassname());
 		current = &current->getSuperClass();
+		if (verbose) {
+			layout += fmt::format(" }} < {} {{", current->getFullname());
+		}
 		for (const auto& fieldname : current->getFieldList()) {
 			const auto& field = current->getField(fieldname);
 			if (!field.isStatic()) {
-				logger.fdebug("New instance of {} inherits from ({}): Adding field {} type={}", _class.getFullname(), current->getFullname(), fieldname,
-				              field.getType());
+				if (verbose) {
+					layout += fmt::format(" {}:{}", fieldname, field.getType());
+				}
 				switch (field.getType()[0]) {
 					case 'I':
 					case 'Z':
@@ -753,6 +764,9 @@ ObjectClass::ObjectClass(Class& class_) : _class(class_) {
 				}
 			}
 		}
+	}
+	if (verbose) {
+		logger.fverbose("new {} }}", layout);
 	}
 }
 bool ObjectClass::isClass() const {
@@ -801,4 +815,21 @@ bool NullObject::isNull() const {
 }
 std::string NullObject::toString() const {
 	return "Null";
+}
+
+std::string sandvik::describe(const Object* obj_) {
+	if (obj_ == nullptr) {
+		return "null";
+	}
+	// a number register holding 0 is also how a null reference looks like: show what the register holds
+	if (obj_->isNumberObject()) {
+		return obj_->toString();
+	}
+	if (obj_->isNull()) {
+		return "null";
+	}
+	if (obj_->isString() || obj_->isArray()) {
+		return obj_->toString();
+	}
+	return fmt::format("{}@{:x}", obj_->toString(), static_cast<uint32_t>(obj_->identityHashCode()));
 }

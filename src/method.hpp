@@ -81,11 +81,11 @@ namespace sandvik {
 			/** @brief Gets the name of the method.
 			 * @return Name of the method.
 			 */
-			std::string getName() const;
+			const std::string& getName() const;
 			/** @brief Gets the signature of the method.
 			 * @return Signature of the method.
 			 */
-			std::string getSignature() const;
+			const std::string& getSignature() const;
 			/** @brief Gets the number of arguments of the method.
 			 * @return Number of arguments.
 			 */
@@ -110,6 +110,10 @@ namespace sandvik {
 			 * @return Index of the method.
 			 */
 			uint32_t getIndex() const;
+			/** @brief Gets the access flags of the method.
+			 * @return Access flags of the method.
+			 */
+			uint32_t getAccessFlags() const;
 			/** @brief Gets the exception handler for the specified program counter.
 			 * @param pc_ Program counter.
 			 * @param catchAllAddr_ Reference to store the catch-all address.

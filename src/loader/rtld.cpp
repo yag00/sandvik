@@ -18,6 +18,7 @@
 
 #include "rtld.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <string>
 #include <vector>

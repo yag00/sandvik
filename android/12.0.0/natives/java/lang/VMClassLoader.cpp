@@ -108,10 +108,10 @@ extern "C" {
 		auto nameObj = sandvik::native::getString(name);
 		std::string resourceName = nameObj->str();
 
-		logger.fdebug("VMClassLoader.getResource(\"{}\")", resourceName);
+		logger.ftrace("VMClassLoader.getResource(\"{}\")", resourceName);
 		auto data = classloader.findResource(resourceName);
 		if (!data) {
-			logger.fdebug("Resource '{}' not found in any loaded JAR", resourceName);
+			logger.ftrace("Resource '{}' not found in any loaded JAR", resourceName);
 			return nullptr;
 		}
 

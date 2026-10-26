@@ -37,7 +37,7 @@ std::string VFS::resolve(const std::string& virtualPath) {
 	if (virtualPath[0] == '/') {
 		// It the file does not exist in the host filesystem, resolve to virtual path in the Android Root directory.
 		if (!std::filesystem::exists(virtualPath)) {
-			logger.fdebug("VFS::resolve('{}') -> '{}'", virtualPath, androidRoot + virtualPath);
+			logger.ftrace("VFS::resolve('{}') -> '{}'", virtualPath, androidRoot + virtualPath);
 			return androidRoot + virtualPath;
 		}
 	}

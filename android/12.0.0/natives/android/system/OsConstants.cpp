@@ -26,6 +26,6 @@ extern "C" {
 
 	JNIEXPORT void JNICALL Java_android_system_OsConstants_initConstants(JNIEnv* env, jclass clazz) {
 		// Log for debugging purposes
-		logger.debug("Initializing constants");
+		logger.fdebug("Initializing constants");
 	}
 }  // extern "C"

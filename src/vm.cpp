@@ -42,7 +42,7 @@ using namespace sandvik;
 
 Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_unique<NativeInterface>(*this)) {
 	GC::getInstance().manageVm(this);
-	logger.info("VM instance created.");
+	logger.fdebug("VM instance created.");
 
 	ClassBuilder(*_classloader, "", "boolean").finalize();
 	ClassBuilder(*_classloader, "", "byte").finalize();
@@ -60,7 +60,7 @@ Vm::Vm() : _classloader(std::make_unique<ClassLoader>()), _jnienv(std::make_uniq
 }
 
 Vm::~Vm() {
-	logger.debug("VM instance destroyed.");
+	logger.fdebug("VM instance destroyed.");
 	GC::getInstance().unmanageVm(this);
 }
 
@@ -147,7 +147,7 @@ void Vm::run(const std::string& mainClass_, const std::vector<std::string>& args
 }
 
 void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
-	logger.info("Running class: " + clazz_.getFullname());
+	logger.finfo("Running class: {}", clazz_.getFullname());
 
 	JThread& mainThread = newThread("main");
 
@@ -188,7 +188,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	try {
 		mainThread.newFrame(clazz_.getMethod("<clinit>", "()V"));
 	} catch (const std::exception& e) {
-		logger.debug(e.what());
+		logger.fdebug("{}", e.what());
 	}
 	_isRunning.store(true);
 	mainThread.run(true);
@@ -197,7 +197,7 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 }
 
 void Vm::stop() {
-	logger.info("Stopping VM...");
+	logger.fdebug("Stopping VM...");
 	_isRunning.store(false);
 }
 

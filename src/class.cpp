@@ -152,11 +152,11 @@ uint32_t Class::getDexIdx() const {
 	return _dexIdx;
 }
 
-std::string Class::getName() const {
+const std::string& Class::getName() const {
 	return _name;
 }
 
-std::string Class::getFullname() const {
+const std::string& Class::getFullname() const {
 	return _fullname;
 }
 
@@ -334,6 +334,16 @@ Method* Class::findMethodOrNull(const std::string& name_, const std::string& des
 	}
 	if (hasSuperClass()) {
 		return getSuperClass().findMethodOrNull(name_, descriptor_);
+	}
+	return nullptr;
+}
+
+Method* Class::getDeclaredMethod(const std::string& name_, const std::string& parameters_) const {
+	// methods are keyed by name + descriptor, the return type is not known here
+	const auto prefix = name_ + "(" + parameters_ + ")";
+	auto it = _methods.lower_bound(prefix);
+	if (it != _methods.end() && it->first.starts_with(prefix)) {
+		return it->second.get();
 	}
 	return nullptr;
 }

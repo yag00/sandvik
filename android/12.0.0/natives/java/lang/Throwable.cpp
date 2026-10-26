@@ -35,7 +35,7 @@ extern "C" {
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Throwable_nativeFillInStackTrace(JNIEnv* env, jobject obj) {
 		auto throwable = sandvik::native::getObject(obj);
-		logger.fdebug("[Throwable.nativeFillInStackTrace] throwable={}", static_cast<void*>(throwable));
+		logger.ftrace("[Throwable.nativeFillInStackTrace] throwable={}", static_cast<void*>(throwable));
 		// Return the same object for now
 		return obj;
 	}

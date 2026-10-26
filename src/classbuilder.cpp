@@ -18,6 +18,8 @@
 
 #include "classbuilder.hpp"
 
+#include <algorithm>
+
 #include "class.hpp"
 #include "classloader.hpp"
 #include "field.hpp"

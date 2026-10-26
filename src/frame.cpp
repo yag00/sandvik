@@ -31,7 +31,7 @@
 using namespace sandvik;
 
 Frame::Frame(Method& method_) : _method(method_) {
-	logger.fdebug("new Frame for method={}.{} registers={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
+	logger.ftrace("new Frame for method={}.{} registers={}", method_.getClass().getFullname(), method_.getName(), method_.getNbRegisters());
 	if (!method_.isStatic() && method_.getNbRegisters() == 0) {
 		throw VmException("Method {}.{} has zero registers", method_.getClass().getFullname(), method_.getName());
 	}
@@ -94,7 +94,11 @@ uint64_t Frame::getRawLongRegister(uint32_t reg) const {
 }
 
 void Frame::setRawLongRegister(uint32_t reg, uint64_t value) {
-	logger.fdebug("setRawLongRegister: reg={}, value={:x}", reg, value);
+	logger.fverbose("v{}:v{} <- {:#x}", reg, reg + 1, value);
+	storeWideRegister(reg, value);
+}
+
+void Frame::storeWideRegister(uint32_t reg, uint64_t value) {
 	if (reg + 1 >= _registers.size()) {
 		throw VmException("setRawLongRegister: reg={} out of bounds", reg);
 	}
@@ -103,7 +107,7 @@ void Frame::setRawLongRegister(uint32_t reg, uint64_t value) {
 }
 
 void Frame::setIntRegister(uint32_t reg, int32_t value) {
-	logger.fdebug("setIntRegister: reg={}, value={:x}", reg, value);
+	logger.fverbose("v{} <- {} ({:#x})", reg, value, static_cast<uint32_t>(value));
 	if (reg >= _registers.size()) {
 		throw VmException("setIntRegister: reg={} out of bounds", reg);
 	}
@@ -118,7 +122,7 @@ int32_t Frame::getIntRegister(uint32_t reg) const {
 	uint32_t raw = 0;
 	if (slotAsRaw32(slot, raw)) {
 		auto number = static_cast<int32_t>(raw);
-		logger.fdebug("getIntRegister: reg={} -> {}", reg, number);
+		logger.fverbose("v{} -> {} ({:#x})", reg, number, static_cast<uint32_t>(number));
 		return number;
 	}
 	// A well-formed dex file never reads a register before writing it on every possible path
@@ -134,17 +138,18 @@ int32_t Frame::getIntRegister(uint32_t reg) const {
 }
 
 void Frame::setLongRegister(uint32_t reg, int64_t value) {
-	setRawLongRegister(reg, (uint64_t)value);
+	logger.fverbose("v{}:v{} <- {} ({:#x})", reg, reg + 1, value, static_cast<uint64_t>(value));
+	storeWideRegister(reg, (uint64_t)value);
 }
 
 int64_t Frame::getLongRegister(uint32_t reg) const {
 	uint64_t value = getRawLongRegister(reg);
-	logger.fdebug("getLongRegister: reg={} --> {:x}", reg, value);
+	logger.fverbose("v{}:v{} -> {} ({:#x})", reg, reg + 1, static_cast<int64_t>(value), value);
 	return (int64_t)value;
 }
 
 void Frame::setFloatRegister(uint32_t reg, float value) {
-	logger.fdebug("setFloatRegister: reg={}, value={}", reg, value);
+	logger.fverbose("v{} <- {} (float)", reg, value);
 	if (reg >= _registers.size()) {
 		throw VmException("setFloatRegister: reg={} out of bounds", reg);
 	}
@@ -153,7 +158,6 @@ void Frame::setFloatRegister(uint32_t reg, float value) {
 }
 
 float Frame::getFloatRegister(uint32_t reg) const {
-	logger.fdebug("getFloatRegister: reg={}", reg);
 	if (reg >= _registers.size()) {
 		throw VmException("getFloatRegister: reg={} out of bounds", reg);
 	}
@@ -162,23 +166,23 @@ float Frame::getFloatRegister(uint32_t reg) const {
 	if (!slotAsRaw32(slot, intValue)) {
 		throw VmException("Register does not contain an NumberObject");
 	}
+	logger.fverbose("v{} -> {} (float)", reg, std::bit_cast<float>(intValue));
 	return std::bit_cast<float>(intValue);
 }
 
 void Frame::setDoubleRegister(uint32_t reg, double value) {
-	logger.fdebug("setDoubleRegister: reg={}, value={}", reg, value);
-	uint64_t temp = std::bit_cast<uint64_t>(value);
-	setRawLongRegister(reg, temp);
+	logger.fverbose("v{}:v{} <- {} (double)", reg, reg + 1, value);
+	storeWideRegister(reg, std::bit_cast<uint64_t>(value));
 }
 
 double Frame::getDoubleRegister(uint32_t reg) const {
-	logger.fdebug("getDoubleRegister: reg={}", reg);
 	uint64_t value = getRawLongRegister(reg);
+	logger.fverbose("v{}:v{} -> {} (double)", reg, reg + 1, std::bit_cast<double>(value));
 	return std::bit_cast<double>(value);
 }
 
 void Frame::setObjRegister(uint32_t reg, ObjectRef value) {
-	logger.fdebug("setObjRegister: reg={}, obj=<{}>", reg, value->toString());
+	logger.fverbose("v{} <- {}", reg, describe(value));
 	if (reg >= _registers.size()) {
 		throw VmException("setObjRegister: reg={} out of bounds", reg);
 	}
@@ -199,7 +203,7 @@ ObjectRef Frame::getObjRegister(uint32_t reg) {
 		// register held a boxed Object regardless of the accessor used to read it.
 		return Object::make(slot.raw);
 	}
-	logger.fdebug("getObjRegister: reg={} => obj=<{}>", reg, slot.obj->toString());
+	logger.fverbose("v{} -> {}", reg, describe(slot.obj));
 	return slot.obj;
 }
 
@@ -247,7 +251,7 @@ void Frame::setReturnValue(int32_t ret_) {
 }
 void Frame::setReturnDoubleValue(int64_t ret_) {
 	_returnSlot = RegisterSlot::makeRaw(static_cast<uint64_t>(ret_));
-	logger.fdebug("setReturnDoubleValue: {:x} -> {:x}", ret_, _returnSlot.raw);
+	logger.fverbose("return <- {} ({:#x}) (wide)", ret_, static_cast<uint64_t>(ret_));
 }
 
 void Frame::debug() const {

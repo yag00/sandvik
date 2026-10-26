@@ -58,7 +58,7 @@ extern "C" {
 			auto value = sandvik::GetProp::getInstance().get(keyStr);
 			return (jstring)sandvik::Object::make(sandvik::native::getNativeInterface(env)->getClassLoader(), value);
 		}
-		logger.fwarning("SystemProperties.native_getString called with key: {}, returning default value", keyStr);
+		logger.fdebug("SystemProperties.native_getString called with key: {}, returning default value", keyStr);
 		return def;
 	}
 
@@ -76,7 +76,7 @@ extern "C" {
 				logger.fwarning("SystemProperties.native_getInt invalid numeric value for key: {}", keyStr);
 			}
 		}
-		logger.fwarning("SystemProperties.native_getInt called with key: {}, returning default value", keyStr);
+		logger.fdebug("SystemProperties.native_getInt called with key: {}, returning default value", keyStr);
 		return def;
 	}
 
@@ -93,7 +93,7 @@ extern "C" {
 			}
 			logger.fwarning("SystemProperties.native_getBoolean invalid bool value for key: {}", keyStr);
 		}
-		logger.fwarning("SystemProperties.native_getBoolean called with key: {}, returning default value", keyStr);
+		logger.fdebug("SystemProperties.native_getBoolean called with key: {}, returning default value", keyStr);
 		return def;
 	}
 

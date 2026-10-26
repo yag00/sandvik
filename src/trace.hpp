@@ -35,6 +35,7 @@
 
 namespace sandvik {
 	class Frame;
+	class Method;
 	class Disassembler;
 	/** @brief Trace class
 	 */
@@ -58,10 +59,10 @@ namespace sandvik {
 
 			/** log instruction trace entry.
 			 * @param pc_ program counter
-			 * @param function_ function name and signature
+			 * @param method_ function name and signature
 			 * @param bytecode_ opcode
 			 */
-			void logInstruction(const uint64_t pc_, const std::string& function_, const uint8_t* bytecode_);
+			void logInstruction(const uint64_t pc_, const Method& method_, const uint8_t* bytecode_);
 			/** log call trace entry.
 			 * @param type_ invoke type
 			 * @param class_ class name

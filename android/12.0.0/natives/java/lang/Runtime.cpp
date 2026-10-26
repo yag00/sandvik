@@ -19,6 +19,8 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include <algorithm>
+
 #include "exceptions.hpp"
 #include "gc.hpp"
 #include "jni.hpp"
@@ -91,7 +93,7 @@ JNIEXPORT void JNICALL Java_java_lang_Runtime_runFinalization0(JNIEnv* env, jobj
 			}
 			return nullptr;  // success
 		} catch (const std::exception& e) {
-			logger.error(e.what());
+			logger.ferror("{}", e.what());
 			return env->NewStringUTF(e.what());
 		}
 	}

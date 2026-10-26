@@ -155,7 +155,7 @@ void JThread::loop() {
 	try {
 		_interpreter->execute();
 	} catch (const VmException& e) {
-		logger.error(e.what());
+		logger.ferror("{}", e.what());
 		// terminate the whole VM on unhandled exception in thread
 		_vm.stop();
 		// clear the stack, call to end() will be true

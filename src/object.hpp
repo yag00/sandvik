@@ -471,6 +471,12 @@ namespace sandvik {
 			/** Mutex protecting field map structure and lookups */
 			mutable std::mutex _fieldsMutex;
 	};
+	/** @brief Short description of a value for the VERBOSE logs: null, a number, a quoted string, an array,
+	 * or the class of an object followed by its identity hash (to follow an instance across registers).
+	 * @param obj_ object to describe
+	 * @return description
+	 */
+	std::string describe(const Object* obj_);
 }  // namespace sandvik
 
 #endif  // __OBJECT_HPP__

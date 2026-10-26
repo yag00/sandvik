@@ -19,7 +19,10 @@
 #include <fmt/format.h>
 
 #include <args.hxx>
+#include <chrono>
 #include <filesystem>
+#include <map>
+#include <optional>
 
 #include "class.hpp"
 #include "classloader.hpp"
@@ -39,6 +42,20 @@
 
 using namespace sandvik;
 
+namespace {
+	/** parse a --log / --app-log value, TRACE only exists for the VM */
+	std::optional<Logger::LogLevel> parseLogLevel(const std::string& level_, bool vm_) {
+		static const std::map<std::string, Logger::LogLevel, std::less<>> levels = {
+		    {"NONE", Logger::LogLevel::NONE}, {"VERBOSE", Logger::LogLevel::VERBOSE}, {"TRACE", Logger::LogLevel::TRACE}, {"DEBUG", Logger::LogLevel::DEBUG},
+		    {"INFO", Logger::LogLevel::INFO}, {"WARN", Logger::LogLevel::WARNING},    {"ERROR", Logger::LogLevel::ERROR}};
+		auto it = levels.find(level_);
+		if (it == levels.end() || (!vm_ && it->second == Logger::LogLevel::TRACE)) {
+			return std::nullopt;
+		}
+		return it->second;
+	}
+}  // namespace
+
 int main(int argc, char** argv) {
 	args::ArgumentParser parser("sandvik", "Dalvik virtual machine");
 	args::HelpFlag help(parser, "help", "Display available options", {'h', "help"});
@@ -46,7 +63,9 @@ int main(int argc, char** argv) {
 	args::Flag version(parser, "version", "Display the version of this program", {"version"});
 	args::CompletionFlag completion(parser, {"complete"});
 
-	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
+	args::ValueFlag<std::string> logLevel(parser, "level", "Set the log level (NONE, VERBOSE, TRACE, DEBUG, INFO, WARN, ERROR)", {"log"}, "NONE");
+	args::ValueFlag<std::string> appLogLevel(parser, "level", "Set the log level of the Android application logs (NONE, VERBOSE, DEBUG, INFO, WARN, ERROR)",
+	                                         {"app-log"}, "INFO");
 	args::ValueFlag<std::string> logFile(parser, "logfile", "Set the log output file", {"logfile"}, "");
 	args::Flag noConsole(parser, "no-console", "Disable console output", {"no-console"});
 	args::Flag displayThread(parser, "thread", "Display thread name in logs", {'t', "display-thread"});
@@ -96,26 +115,30 @@ int main(int argc, char** argv) {
 	}
 	logger.displayThreadName(args::get(displayThread));
 
-	logger.fok(" === sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit());
 	if (logLevel) {
-		std::string level = args::get(logLevel);
-		if (level == "NONE") {
-			logger.setLevel(Logger::LogLevel::NONE);
-		} else if (level == "DEBUG") {
-			logger.setLevel(Logger::LogLevel::DEBUG);
-		} else if (level == "INFO") {
-			logger.setLevel(Logger::LogLevel::INFO);
-		} else if (level == "WARN") {
-			logger.setLevel(Logger::LogLevel::WARNING);
-		} else if (level == "ERROR") {
-			logger.setLevel(Logger::LogLevel::ERROR);
-		} else {
-			std::cerr << "Invalid log level: " << level << std::endl;
-			std::cerr << "Valid log levels are: NONE, DEBUG, INFO, WARN, ERROR" << std::endl << std::endl;
+		auto level = parseLogLevel(args::get(logLevel), true);
+		if (!level.has_value()) {
+			std::cerr << "Invalid log level: " << args::get(logLevel) << std::endl;
+			std::cerr << "Valid log levels are: NONE, VERBOSE, TRACE, DEBUG, INFO, WARN, ERROR" << std::endl << std::endl;
 			std::cerr << parser;
 			return 1;
 		}
+		logger.setLevel(level.value());
+		if (static_cast<int>(level.value()) < SANDVIK_LOG_ACTIVE_LEVEL) {
+			logger.fwarning("log level {} is not compiled in this build, reconfigure with --debug to get these messages", args::get(logLevel));
+		}
 	}
+	if (appLogLevel) {
+		auto level = parseLogLevel(args::get(appLogLevel), false);
+		if (!level.has_value()) {
+			std::cerr << "Invalid application log level: " << args::get(appLogLevel) << std::endl;
+			std::cerr << "Valid application log levels are: NONE, VERBOSE, DEBUG, INFO, WARN, ERROR" << std::endl << std::endl;
+			std::cerr << parser;
+			return 1;
+		}
+		logger.setAppLevel(level.value());
+	}
+	logger.fok("=== sandvik {}-{} ===", sandvik::version::getVersion(), sandvik::version::getShortCommit());
 
 	trace.enableInstructionTrace(args::get(instructiontrace));
 	trace.enableCallTrace(args::get(calltrace));
@@ -147,11 +170,14 @@ int main(int argc, char** argv) {
 	}
 	// Load JAR (containing DEX) files by directory or by explicit file list
 	if (!args::get(jarDir).empty()) {
+		logger.finfo("Runtime: {}", args::get(jarDir));
 		vm.loadRtByDir(args::get(jarDir));
 	} else if (baseFileDir.has_value()) {
+		logger.finfo("Runtime: Android {} ({}bin)", args::get(androidVersion), baseFileDir.value());
 		vm.loadRtByDir(baseFileDir.value() + "bin");
 	}
 	if (!args::get(jarFiles).empty()) {
+		logger.finfo("Runtime: {} jar file(s)", args::get(jarFiles).size());
 		for (const auto& jarFile : args::get(jarFiles)) {
 			vm.loadRtByFile(jarFile);
 		}
@@ -159,6 +185,7 @@ int main(int argc, char** argv) {
 
 	// Load APK file
 	if (!args::get(apkFile).empty()) {
+		logger.finfo("APK: {}", args::get(apkFile));
 		vm.loadApk(args::get(apkFile));
 	}
 
@@ -172,6 +199,7 @@ int main(int argc, char** argv) {
 	setupZygoteSocket();
 
 	// Run the VM
+	const auto start = std::chrono::steady_clock::now();
 	try {
 		if (!args::get(apkFile).empty()) {
 			// Running APK file, main class is extracted from the APK manifest
@@ -183,10 +211,11 @@ int main(int argc, char** argv) {
 		}
 	} catch (const std::exception& e) {
 		logger.setLevel(Logger::LogLevel::INFO);
-		logger.error(e.what());
+		logger.ferror("{}", e.what());
 		return 1;
 	}
 
-	logger.info(" === end ===");
+	const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+	logger.finfo("=== end ({:.3f}s) ===", elapsed.count());
 	return 0;
 }
