@@ -27,6 +27,10 @@ class UnitTest:
 	def run(self):
 		bld = self.bld
 
+		# googletest headers are included as system headers so that compiler
+		# warnings coming from them do not break the -Werror build
+		gtest_includes = ['-isystem', bld.path.find_node('ext/googletest/googletest/include').abspath()]
+
 		setenv(bld, paths=[
 			bld.path.find_node('tests/java/native').abspath(),
 			bld.path.find_node('tests/java/jni').abspath()
@@ -36,7 +40,8 @@ class UnitTest:
 			name		= 'googletest',
 			target		= 'googletest',
 			source		= bld.path.ant_glob(['ext/googletest/googletest/src/*.cc']),
-			includes	= ['ext/googletest/googletest', 'ext/googletest/googletest/include'],
+			includes	= ['ext/googletest/googletest'],
+			cxxflags	= gtest_includes,
 			install     = None,
 		)
 
@@ -51,7 +56,8 @@ class UnitTest:
 			target		= 'test_all',
 			source		= tests,
 			defines		= ['__unit_test__'],
-			includes	= ['.', 'src', 'ext/googletest/googletest/include', 'ext/fmt/include'],
+			includes	= ['.', 'src', 'ext/fmt/include'],
+			cxxflags	= gtest_includes,
 			use			= ['sandvik', 'googletest', 'PTHREAD', 'FMT'],
 			install     = None,
 		)
@@ -72,7 +78,8 @@ class UnitTest:
 				target		= testName,
 				source		= [test],
 				defines		= ['__unit_test__'],
-				includes	= ['.', 'src', 'ext/googletest/googletest/include'],
+				includes	= ['.', 'src'],
+				cxxflags	= gtest_includes,
 				use			= ['sandvik', 'googletest', 'PTHREAD', 'FMT'],
 				install     = None,
 			)
