@@ -27,15 +27,50 @@
 
 using namespace sandvik;
 
+namespace {
+	// Android log priorities: VERBOSE(2), DEBUG(3), INFO(4), WARN(5), ERROR(6), ASSERT(7)
+	char toPriority(jint priority_) {
+		switch (priority_) {
+			case 2:
+				return 'V';
+			case 3:
+				return 'D';
+			case 5:
+				return 'W';
+			case 6:
+				return 'E';
+			case 7:
+				return 'F';
+			default:
+				return 'I';
+		}
+	}
+
+	Logger::LogLevel toLogLevel(jint priority_) {
+		switch (toPriority(priority_)) {
+			case 'V':
+				return Logger::LogLevel::VERBOSE;
+			case 'D':
+				return Logger::LogLevel::DEBUG;
+			case 'W':
+				return Logger::LogLevel::WARNING;
+			case 'E':
+			case 'F':
+				return Logger::LogLevel::ERROR;
+			default:
+				return Logger::LogLevel::INFO;
+		}
+	}
+}  // namespace
+
 extern "C" {
 	jboolean Java_android_util_Log_isLoggable(JNIEnv* env, jclass clazz, jstring tag, jint level) {
+		(void)env;
 		(void)clazz;
 
 		auto sTag = sandvik::native::getString(tag);
-		logger.fdebug("Log.isLoggable called with tag '{}' and level {}", sTag->str(), level);
-		// Android log levels: VERBOSE(2) .. ASSERT(7)
-		// return (level >= 2 && level <= 7) ? JNI_TRUE : JNI_FALSE;
-		return JNI_TRUE;
+		logger.ftrace("Log.isLoggable called with tag '{}' and level {}", sTag->str(), level);
+		return logger.isAppEnabled(toLogLevel(level)) ? JNI_TRUE : JNI_FALSE;
 	}
 
 	JNIEXPORT jint JNICALL Java_android_util_Log_logger_entry_max_payload_native(JNIEnv* env, jclass clazz) {
@@ -51,27 +86,7 @@ extern "C" {
 
 		auto sTag = sandvik::native::getString(tag);
 		auto sMsg = sandvik::native::getString(msg);
-		switch (priority) {
-			case 2:
-				logger.fdebug("[{}] {}", sTag->str(), sMsg->str());
-				break;
-			case 3:
-				logger.finfo("[{}] {}", sTag->str(), sMsg->str());
-				break;
-			case 4:
-				logger.finfo("[{}] {}", sTag->str(), sMsg->str());
-				break;
-			case 5:
-				logger.fwarning("[{}] {}", sTag->str(), sMsg->str());
-				break;
-			case 6:
-			case 7:
-				logger.ferror("[{}] {}", sTag->str(), sMsg->str());
-				break;
-			default:
-				logger.finfo("[{}] {}", sTag->str(), sMsg->str());
-				break;
-		}
+		logger.app(toPriority(priority), sTag->str(), sMsg->str());
 
 		return static_cast<jint>(sMsg->str().size());
 	}

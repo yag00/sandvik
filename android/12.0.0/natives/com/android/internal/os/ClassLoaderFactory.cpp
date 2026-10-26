@@ -82,7 +82,7 @@ extern "C" {
 			permittedPathStr = obj->str();
 		}
 
-		logger.fdebug("createClassloaderNamespace: searchPath='{}', permittedLibPath='{}', dexPath='{}', permittedPath='{}'", searchPath, permittedLibPath,
+		logger.ftrace("createClassloaderNamespace: searchPath='{}', permittedLibPath='{}', dexPath='{}', permittedPath='{}'", searchPath, permittedLibPath,
 		              dexPathStr, permittedPathStr);
 
 		// Sandvik n'implémente pas de véritable namespace linker natif (pas de

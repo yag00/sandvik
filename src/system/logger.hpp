@@ -37,33 +37,11 @@
 /** Lowest log level compiled in (0: VERBOSE, 1: TRACE, 2: DEBUG, ...). Messages below are removed at compile time.
  * VERBOSE and TRACE are only available in debug builds, DEBUG stays available (runtime checked) in release builds.
  */
-#ifndef SANDVIK_LOG_ACTIVE_LEVEL
 #ifdef __debug__
 #define SANDVIK_LOG_ACTIVE_LEVEL 0
 #else
 #define SANDVIK_LOG_ACTIVE_LEVEL 2
 #endif
-#endif
-
-/** Log a formatted message. The level is checked before the arguments are evaluated and formatted,
- * so a disabled message costs a single branch (and nothing at all below SANDVIK_LOG_ACTIVE_LEVEL).
- */
-#define SANDVIK_LOG(level_, ...)                                              \
-	do {                                                                      \
-		if constexpr (static_cast<int>(level_) >= SANDVIK_LOG_ACTIVE_LEVEL) { \
-			if (::sandvik::Logger::isEnabled(level_)) [[unlikely]] {          \
-				logger.flog(level_, __VA_ARGS__);                             \
-			}                                                                 \
-		}                                                                     \
-	} while (0)
-
-#define SLOG_VERBOSE(...) SANDVIK_LOG(::sandvik::Logger::LogLevel::VERBOSE, __VA_ARGS__)
-#define SLOG_TRACE(...) SANDVIK_LOG(::sandvik::Logger::LogLevel::TRACE, __VA_ARGS__)
-#define SLOG_DEBUG(...) SANDVIK_LOG(::sandvik::Logger::LogLevel::DEBUG, __VA_ARGS__)
-#define SLOG_INFO(...) SANDVIK_LOG(::sandvik::Logger::LogLevel::INFO, __VA_ARGS__)
-#define SLOG_WARN(...) SANDVIK_LOG(::sandvik::Logger::LogLevel::WARNING, __VA_ARGS__)
-#define SLOG_OK(...) SANDVIK_LOG(::sandvik::Logger::LogLevel::OK, __VA_ARGS__)
-#define SLOG_ERROR(...) SANDVIK_LOG(::sandvik::Logger::LogLevel::ERROR, __VA_ARGS__)
 
 namespace sandvik {
 	/** @brief Logger class
@@ -131,6 +109,27 @@ namespace sandvik {
 			static bool isEnabled(LogLevel level_) {
 				return level_ >= _level.load(std::memory_order_relaxed);
 			}
+			/** set the log level of the running application (Android Log, System.log), independent of the VM log level
+			 * @param level_ log level
+			 */
+			void setAppLevel(LogLevel level_);
+			/** get the log level of the running application
+			 * @return log level
+			 */
+			LogLevel getAppLevel() const;
+			/** check if an application log level is enabled
+			 * @param level_ log level
+			 * @return true if application messages of this level are logged
+			 */
+			static bool isAppEnabled(LogLevel level_) {
+				return level_ >= _appLevel.load(std::memory_order_relaxed);
+			}
+			/** check if console lines are colored: callers can then build a colored variant of their message
+			 * @return true if the console is enabled and colored
+			 */
+			bool isColoredConsole() const {
+				return _console && _colors;
+			}
 			/** return true if log message is prefixed with time
 			 * @return if log message is prefixed with time
 			 */
@@ -168,64 +167,72 @@ namespace sandvik {
 			 */
 			void color(uint32_t color_, char marker_, const std::string &msg_);
 
-			/** formatted log message, use the SLOG_* macros instead: they skip argument evaluation when the level is disabled
+			/** formatted log message: the level is checked before formatting, and nothing is compiled below SANDVIK_LOG_ACTIVE_LEVEL
 			 * @param level_ log level
 			 * @param fmt_ format string
 			 * @param args_ arguments
 			 */
 			template <typename... Args>
-			void flog(LogLevel level_, fmt::format_string<Args...> fmt_, Args &&...args_) {
-				vlog(level_, fmt_.get(), fmt::make_format_args(args_...));
+			inline void flog(LogLevel level_, fmt::format_string<Args...> fmt_, Args &&...args_) {
+				if (static_cast<int>(level_) >= SANDVIK_LOG_ACTIVE_LEVEL && isEnabled(level_)) [[unlikely]] {
+					vlog(level_, fmt_.get(), fmt::make_format_args(args_...));
+				}
 			}
-			/** formatted debug log message (prefer SLOG_DEBUG)
+			/** formatted verbose log message
 			 * @param fmt_str format string
 			 * @param args arguments
 			 */
 			template <typename... Args>
-			void fdebug(fmt::format_string<Args...> fmt_str, Args &&...args) {
-				if (isEnabled(LogLevel::DEBUG)) {
-					vlog(LogLevel::DEBUG, fmt_str.get(), fmt::make_format_args(args...));
-				}
+			inline void fverbose(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				flog(LogLevel::VERBOSE, fmt_str, std::forward<Args>(args)...);
 			}
-			/** formatted info log message (prefer SLOG_INFO)
+			/** formatted trace log message
 			 * @param fmt_str format string
 			 * @param args arguments
 			 */
 			template <typename... Args>
-			void finfo(fmt::format_string<Args...> fmt_str, Args &&...args) {
-				if (isEnabled(LogLevel::INFO)) {
-					vlog(LogLevel::INFO, fmt_str.get(), fmt::make_format_args(args...));
-				}
+			inline void ftrace(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				flog(LogLevel::TRACE, fmt_str, std::forward<Args>(args)...);
 			}
-			/** formatted warning log message (prefer SLOG_WARN)
+			/** formatted debug log message
 			 * @param fmt_str format string
 			 * @param args arguments
 			 */
 			template <typename... Args>
-			void fwarning(fmt::format_string<Args...> fmt_str, Args &&...args) {
-				if (isEnabled(LogLevel::WARNING)) {
-					vlog(LogLevel::WARNING, fmt_str.get(), fmt::make_format_args(args...));
-				}
+			inline void fdebug(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				flog(LogLevel::DEBUG, fmt_str, std::forward<Args>(args)...);
 			}
-			/** formatted error log message (prefer SLOG_ERROR)
+			/** formatted info log message
 			 * @param fmt_str format string
 			 * @param args arguments
 			 */
 			template <typename... Args>
-			void ferror(fmt::format_string<Args...> fmt_str, Args &&...args) {
-				if (isEnabled(LogLevel::ERROR)) {
-					vlog(LogLevel::ERROR, fmt_str.get(), fmt::make_format_args(args...));
-				}
+			inline void finfo(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				flog(LogLevel::INFO, fmt_str, std::forward<Args>(args)...);
 			}
-			/** formatted ok log message (prefer SLOG_OK)
+			/** formatted warning log message
 			 * @param fmt_str format string
 			 * @param args arguments
 			 */
 			template <typename... Args>
-			void fok(fmt::format_string<Args...> fmt_str, Args &&...args) {
-				if (isEnabled(LogLevel::OK)) {
-					vlog(LogLevel::OK, fmt_str.get(), fmt::make_format_args(args...));
-				}
+			inline void fwarning(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				flog(LogLevel::WARNING, fmt_str, std::forward<Args>(args)...);
+			}
+			/** formatted error log message
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
+			template <typename... Args>
+			inline void ferror(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				flog(LogLevel::ERROR, fmt_str, std::forward<Args>(args)...);
+			}
+			/** formatted ok log message
+			 * @param fmt_str format string
+			 * @param args arguments
+			 */
+			template <typename... Args>
+			inline void fok(fmt::format_string<Args...> fmt_str, Args &&...args) {
+				flog(LogLevel::OK, fmt_str, std::forward<Args>(args)...);
 			}
 			/** log message
 			 * @param level log level
@@ -243,6 +250,18 @@ namespace sandvik {
 			 * @param msg_ message
 			 */
 			void write(Kind kind_, std::string_view msg_);
+			/** write a line of the given kind with a colored variant of the message for the console
+			 * @param kind_ kind of line
+			 * @param msg_ message, written to the log file and to an uncolored console
+			 * @param coloredMsg_ message written to a colored console (see isColoredConsole())
+			 */
+			void write(Kind kind_, std::string_view msg_, std::string_view coloredMsg_);
+			/** log a message of the running application, logcat style: "[app] I/tag: message", one line per message line
+			 * @param priority_ Android priority letter: V, D, I, W, E or F
+			 * @param tag_ log tag
+			 * @param msg_ message
+			 */
+			void app(char priority_, std::string_view tag_, std::string_view msg_);
 
 		private:
 			friend class Singleton<Logger>;
@@ -251,13 +270,14 @@ namespace sandvik {
 
 			std::string getTime() const;
 			std::string getThreadName() const;
-			void writeLine(Kind kind_, std::string_view marker_, uint32_t color_, bool bold_, std::string_view msg_);
+			void writeLine(std::string_view marker_, uint32_t color_, bool bold_, bool important_, std::string_view msg_, std::string_view coloredMsg_);
 
 			bool _console = true;
 			bool _colors = false;
 			bool _time = false;
 			bool _logThreadName = false;
 			static inline std::atomic<LogLevel> _level{LogLevel::INFO};
+			static inline std::atomic<LogLevel> _appLevel{LogLevel::INFO};
 			std::ofstream _file;
 
 			/** map thread id, thread name (for threads registered from another thread) */

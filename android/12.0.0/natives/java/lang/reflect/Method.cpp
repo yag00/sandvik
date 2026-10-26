@@ -99,7 +99,7 @@ JNIEXPORT void JNICALL Java_java_lang_reflect_Method_getDefaultValue(JNIEnv* env
 			throw IllegalArgumentException(fmt::format("Method.invoke: wrong number of arguments for {}.{}: expected {}, got {}",
 			                                           method->getClass().getFullname(), method->getName(), argTypes.size(), nbArgs));
 		}
-		logger.fdebug("Method.invoke {}.{}{}", method->getClass().getFullname(), method->getName(), method->getSignature());
+		logger.ftrace("Method.invoke {}.{}{}", method->getClass().getFullname(), method->getName(), method->getSignature());
 
 		auto& thread = jenv->getVm().newThread(fmt::format("{}.{}", method->getClass().getFullname(), method->getName()));
 		auto& frame = thread.newFrame(*method);

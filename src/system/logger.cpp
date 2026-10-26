@@ -42,7 +42,7 @@ namespace {
 
 	/** indexed by Logger::Kind */
 	constexpr std::array<KindStyle, 10> kindStyles = {{
-	    {"[v]", 0x808080, false},    // VERBOSE: grey
+	    {"[v]  ", 0x808080, false},  // VERBOSE: grey, indented under the instruction trace
 	    {"[t]", 0x9370DB, false},    // TRACE: medium purple
 	    {"[d]", 0xFF1493, false},    // DEBUG: deep pink
 	    {"[*]", 0xFFFFFF, false},    // INFO: white
@@ -136,6 +136,13 @@ void Logger::setLevel(Logger::LogLevel level_) {
 	_level.store(level_, std::memory_order_relaxed);
 }
 
+Logger::LogLevel Logger::getAppLevel() const {
+	return _appLevel.load(std::memory_order_relaxed);
+}
+void Logger::setAppLevel(Logger::LogLevel level_) {
+	_appLevel.store(level_, std::memory_order_relaxed);
+}
+
 bool Logger::isDisplayingTime() const {
 	return _time;
 }
@@ -169,7 +176,7 @@ void Logger::color(uint32_t color_, char marker_, const std::string &msg_) {
 		return;
 	}
 	const char marker[] = {'[', marker_, ']'};
-	writeLine(Kind::INFO, std::string_view(marker, sizeof(marker)), color_, false, msg_);
+	writeLine(std::string_view(marker, sizeof(marker)), color_, false, false, msg_, msg_);
 }
 
 std::string Logger::getTime() const {
@@ -199,11 +206,64 @@ void Logger::vlog(LogLevel level_, fmt::string_view fmt_, fmt::format_args args_
 }
 
 void Logger::write(Kind kind_, std::string_view msg_) {
-	const auto &style = kindStyles[static_cast<size_t>(kind_)];
-	writeLine(kind_, style.marker, style.color, style.bold, msg_);
+	write(kind_, msg_, msg_);
 }
 
-void Logger::writeLine(Kind kind_, std::string_view marker_, uint32_t color_, bool bold_, std::string_view msg_) {
+void Logger::write(Kind kind_, std::string_view msg_, std::string_view coloredMsg_) {
+	const auto &style = kindStyles[static_cast<size_t>(kind_)];
+	writeLine(style.marker, style.color, style.bold, kind_ == Kind::WARNING || kind_ == Kind::ERROR, msg_, coloredMsg_);
+}
+
+void Logger::app(char priority_, std::string_view tag_, std::string_view msg_) {
+	LogLevel level = LogLevel::INFO;
+	switch (priority_) {
+		case 'V':
+			level = LogLevel::VERBOSE;
+			break;
+		case 'D':
+			level = LogLevel::DEBUG;
+			break;
+		case 'W':
+			level = LogLevel::WARNING;
+			break;
+		case 'E':
+		case 'F':
+			level = LogLevel::ERROR;
+			break;
+		default:
+			break;
+	}
+	if (!isAppEnabled(level)) {
+		return;
+	}
+	const auto &style = kindStyles[static_cast<size_t>(Kind::APP)];
+	const bool important = level >= LogLevel::WARNING;
+	// like logcat, a multi-line message (e.g. a stack trace) gives one prefixed line per message line
+	size_t pos = 0;
+	while (pos <= msg_.size()) {
+		auto end = msg_.find('\n', pos);
+		if (end == std::string_view::npos) {
+			end = msg_.size();
+		}
+		auto line = msg_.substr(pos, end - pos);
+		if (!line.empty() || end < msg_.size()) {
+			auto plain = fmt::format("{}/{}: {}", priority_, tag_, line);
+			if (important && isColoredConsole()) {
+				const auto &levelStyle = kindStyles[static_cast<size_t>(level == LogLevel::WARNING ? Kind::WARNING : Kind::ERROR)];
+				auto color = fmt::fg(fmt::rgb(levelStyle.color));
+				if (levelStyle.bold) {
+					color |= fmt::emphasis::bold;
+				}
+				writeLine(style.marker, style.color, style.bold, false, plain, fmt::format(color, "{}", plain));
+			} else {
+				writeLine(style.marker, style.color, style.bold, important, plain, plain);
+			}
+		}
+		pos = end + 1;
+	}
+}
+
+void Logger::writeLine(std::string_view marker_, uint32_t color_, bool bold_, bool important_, std::string_view msg_, std::string_view coloredMsg_) {
 	// Build the whole line before taking the lock, then write it at once
 	fmt::memory_buffer head;
 	if (_time) {
@@ -224,12 +284,13 @@ void Logger::writeLine(Kind kind_, std::string_view marker_, uint32_t color_, bo
 			if (bold_) {
 				style |= fmt::emphasis::bold;
 			}
-			if (kind_ == Kind::WARNING || kind_ == Kind::ERROR) {
+			if (important_) {
 				// warnings and errors must stand out: color the whole line
 				fmt::format_to(std::back_inserter(console), style, "{} {}", marker_, msg_);
 			} else {
+				// only the marker is colored, the message may carry its own colors
 				fmt::format_to(std::back_inserter(console), style, "{}", marker_);
-				fmt::format_to(std::back_inserter(console), " {}", msg_);
+				fmt::format_to(std::back_inserter(console), " {}", coloredMsg_);
 			}
 		} else {
 			fmt::format_to(std::back_inserter(console), "{} {}", marker_, msg_);
@@ -242,7 +303,7 @@ void Logger::writeLine(Kind kind_, std::string_view marker_, uint32_t color_, bo
 		_file.write(head.data(), static_cast<std::streamsize>(head.size()));
 		_file << marker_ << ' ' << msg_ << '\n';
 		// Keep warnings and errors even if the VM crashes right after
-		if (kind_ == Kind::WARNING || kind_ == Kind::ERROR) {
+		if (important_) {
 			_file.flush();
 		}
 	}

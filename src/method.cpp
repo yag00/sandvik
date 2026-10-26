@@ -143,9 +143,9 @@ uint32_t Method::getAccessFlags() const {
 
 std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t pc_, uint32_t& catchAllAddr_) const {
 	uint16_t pc = pc_ >> 1;
-	logger.fdebug("getExceptionHandler: pc={:x} size={}", pc, _trycatch_items.size());
+	logger.ftrace("getExceptionHandler: pc={:x} size={}", pc, _trycatch_items.size());
 	for (const auto& exc : _trycatch_items) {
-		logger.fdebug("{}: Exception handler: start_addr: {:x}, insn_count: {:x}, catch_all_addr: {:x}", getName(), exc.start_addr, exc.insn_count,
+		logger.ftrace("{}: Exception handler: start_addr: {:x}, insn_count: {:x}, catch_all_addr: {:x}", getName(), exc.start_addr, exc.insn_count,
 		              exc.catch_all_addr);
 		if (pc >= exc.start_addr && pc < exc.start_addr + exc.insn_count) {
 			catchAllAddr_ = exc.catch_all_addr;

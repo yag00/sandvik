@@ -182,6 +182,9 @@ namespace sandvik {
 			void setRawLongRegister(uint32_t reg, uint64_t value);
 
 		private:
+			/** store a 64 bit value in reg and reg + 1 (without logging) */
+			void storeWideRegister(uint32_t reg, uint64_t value);
+
 			/** @brief A single 32/64-bit register (or return-value) slot.
 			 *
 			 * Dalvik registers are untyped 32-bit cells whose interpretation (int, float, or one

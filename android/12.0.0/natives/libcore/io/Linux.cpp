@@ -85,7 +85,7 @@ extern "C" {
 	}
 	JNIEXPORT jlong JNICALL Java_libcore_io_Linux_sysconf(JNIEnv* env, jclass, jint name) {
 		errno = 0;
-		logger.fdebug("call sysconf(name={})", name);
+		logger.ftrace("call sysconf(name={})", name);
 		long result = 0;  // sysconf(name);
 		if (result == -1 && errno != 0) {
 			logger.ferror("sysconf failed with error: {}", strerror(errno));
@@ -176,7 +176,7 @@ extern "C" {
 
 		jfieldID descriptorField = env->GetFieldID(fileDescriptorClass, "descriptor", "I");
 		env->SetIntField(fileDescriptorObj, descriptorField, fd);
-		logger.fdebug("Linux.open('{}') -> fd={}", realPath, fd);
+		logger.ftrace("Linux.open('{}') -> fd={}", realPath, fd);
 
 		return fileDescriptorObj;
 	}
@@ -203,7 +203,7 @@ extern "C" {
 
 	JNIEXPORT jint JNICALL Java_libcore_io_Linux_fcntlInt(JNIEnv* env, jobject obj, jobject fd, jint cmd, jint arg) {
 		auto fdObj = native::getObject(fd);
-		logger.fdebug("Linux.fcntlInt(fd={}, cmd={}, arg={})", static_cast<void*>(fdObj), cmd, arg);
+		logger.ftrace("Linux.fcntlInt(fd={}, cmd={}, arg={})", static_cast<void*>(fdObj), cmd, arg);
 		// F_SETFD
 		if (cmd == 1030) {
 			return 0;
@@ -218,7 +218,7 @@ extern "C" {
 		int fd = fdObject->getField("descriptor")->getValue();
 
 		struct stat st;
-		logger.fdebug("Linux.fstat(fd={})", fd);
+		logger.ftrace("Linux.fstat(fd={})", fd);
 		if (::fstat(fd, &st) == -1) {
 			throw IOException(fmt::format("fstat failed: {}", strerror(errno)));
 		}
@@ -235,7 +235,7 @@ extern "C" {
 		const char* pathCStr = env->GetStringUTFChars(path, nullptr);
 		std::string realPath = VFS::resolve(pathCStr);
 		struct stat st;
-		logger.fdebug("Linux.stat('{}')", realPath);
+		logger.ftrace("Linux.stat('{}')", realPath);
 		if (::stat(realPath.c_str(), &st) == -1) {
 			throw IOException(fmt::format("stat failed on '{}': {}", realPath, strerror(errno)));
 		}
@@ -262,7 +262,7 @@ extern "C" {
 		errno = 0;
 		int result = ::access(pathStr.c_str(), mode);
 
-		logger.fdebug("Linux.access: path='{}' mode={}", pathStr, mode);
+		logger.ftrace("Linux.access: path='{}' mode={}", pathStr, mode);
 		if (result != 0) {
 			throw IOException(fmt::format("access failed on path='{}' mode={}: {}", pathStr, mode, strerror(errno)));
 		}

@@ -19,6 +19,8 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include <cctype>
+
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
@@ -171,46 +173,18 @@ JNIEXPORT void JNICALL Java_java_lang_System_arraycopyBooleanUnchecked(JNIEnv* e
 	}
 
 	JNIEXPORT void JNICALL Java_java_lang_System_log(JNIEnv* env, jclass ignored, jchar type, jstring javaMessage, jthrowable exception) {
-		std::string priority;
-		switch (type) {
-			case 'D':
-			case 'd':
-				priority = "ANDROID_LOG_DEBUG";
-				break;
-			case 'E':
-			case 'e':
-				priority = "ANDROID_LOG_ERROR";
-				break;
-			case 'F':
-			case 'f':
-				priority = "ANDROID_LOG_FATAL";
-				break;
-			case 'I':
-			case 'i':
-				priority = "ANDROID_LOG_INFO";
-				break;
-			case 'S':
-			case 's':
-				priority = "ANDROID_LOG_SILENT";
-				break;
-			case 'V':
-			case 'v':
-				priority = "ANDROID_LOG_VERBOSE";
-				break;
-			case 'W':
-			case 'w':
-				priority = "ANDROID_LOG_WARN";
-				break;
-			default:
-				priority = "ANDROID_LOG_DEFAULT";
-				break;
+		(void)env;
+		(void)ignored;
+		(void)exception;
+		// libcore System.logW/logE/logI: same priorities as android.util.Log
+		char priority = static_cast<char>(std::toupper(static_cast<unsigned char>(type)));
+		if (priority == 'S') {
+			return;  // silent
 		}
-
-		logger.finfo("[{}] System {}", priority, sandvik::native::getString(javaMessage)->str());
-
-		/*if (exception != NULL) {
-		    logger.finfo("[{}] System Exception {}", priority, sandvik::native::getObject(exception)->getClass().getFullname());
-		}*/
+		if (priority != 'V' && priority != 'D' && priority != 'I' && priority != 'W' && priority != 'E' && priority != 'F') {
+			priority = 'I';
+		}
+		logger.app(priority, "System", sandvik::native::getString(javaMessage)->str());
 	}
 
 }  // extern "C"

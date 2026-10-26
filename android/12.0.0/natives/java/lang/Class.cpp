@@ -45,7 +45,7 @@ extern "C" {
 		auto objstr = sandvik::native::getString(className);
 		auto& classloader = jenv->getClassLoader();
 		auto& objclass = classloader.getOrLoad(objstr->str());
-		logger.debug(fmt::format("Class.forName: Loaded class {}", objclass.getFullname()));
+		logger.ftrace("Class.forName: Loaded class {}", objclass.getFullname());
 		return (jobject)sandvik::Object::makeConstClass(classloader, objclass);
 	}
 
@@ -53,7 +53,7 @@ extern "C" {
 		auto classObj = sandvik::native::getObject(obj);
 		const Class& targetClass = classObj->getClassType();
 
-		logger.debug(fmt::format("Class.newInstance: Creating new instance of {}", targetClass.getFullname()));
+		logger.ftrace("Class.newInstance: Creating new instance of {}", targetClass.getFullname());
 		jclass jtargetClass = (jclass)Object::make(const_cast<Class&>(targetClass));
 
 		jmethodID ctorID = env->GetMethodID(jtargetClass, "<init>", "()V");
@@ -111,7 +111,7 @@ extern "C" {
 		}
 
 		auto declaringName = name.substr(0, pos);
-		logger.fdebug("[Class.getDeclaringClass] {} -> {}", name, declaringName);
+		logger.ftrace("[Class.getDeclaringClass] {} -> {}", name, declaringName);
 		auto& declaringClass = classloader.getOrLoad(declaringName);
 
 		return (jobject)Object::makeConstClass(classloader, declaringClass);
@@ -239,7 +239,7 @@ extern "C" {
 		std::string primName = nameObj->str();
 
 		auto& classloader = jenv->getClassLoader();
-		logger.debug(fmt::format("Class.getPrimitiveClass: looking up primitive '{}'", primName));
+		logger.ftrace("Class.getPrimitiveClass: looking up primitive '{}'", primName);
 
 		// Obtain the internal class representation and wrap it in a java.lang.Class instance.
 		auto& primClass = classloader.getOrLoad(primName);
@@ -253,7 +253,7 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 
 		const Class& targetClass = classObj->getClassType();
-		logger.debug(fmt::format("Class.getDeclaredConstructor: Getting constructor for class {}", targetClass.getFullname()));
+		logger.ftrace("Class.getDeclaredConstructor: Getting constructor for class {}", targetClass.getFullname());
 
 		// Create a java.lang.reflect.Constructor object
 		auto& ctorClass = classloader.getOrLoad("java/lang/reflect/Constructor");
@@ -372,10 +372,10 @@ extern "C" {
 
 		auto* method = clazz.getDeclaredMethod(methodName, parameters);
 		if (method == nullptr || method->isConstructor() || method->isStaticInitializer()) {
-			logger.fdebug("Class.getDeclaredMethod: {}.{}({}) not found", clazz.getFullname(), methodName, parameters);
+			logger.ftrace("Class.getDeclaredMethod: {}.{}({}) not found", clazz.getFullname(), methodName, parameters);
 			return (jobject)Object::makeNull();
 		}
-		logger.fdebug("Class.getDeclaredMethod: {}.{}{}", clazz.getFullname(), methodName, method->getSignature());
+		logger.ftrace("Class.getDeclaredMethod: {}.{}{}", clazz.getFullname(), methodName, method->getSignature());
 
 		// Create a java.lang.reflect.Method object, artMethod holds the sandvik::Method address
 		auto& methodClass = classloader.getOrLoad("java.lang.reflect.Method");
