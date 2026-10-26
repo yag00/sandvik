@@ -338,6 +338,16 @@ Method* Class::findMethodOrNull(const std::string& name_, const std::string& des
 	return nullptr;
 }
 
+Method* Class::getDeclaredMethod(const std::string& name_, const std::string& parameters_) const {
+	// methods are keyed by name + descriptor, the return type is not known here
+	const auto prefix = name_ + "(" + parameters_ + ")";
+	auto it = _methods.lower_bound(prefix);
+	if (it != _methods.end() && it->first.starts_with(prefix)) {
+		return it->second.get();
+	}
+	return nullptr;
+}
+
 Method& Class::getMethod(uint32_t idx_) {
 	for (const auto& [name, method] : _methods) {
 		if (method->getIndex() == idx_) {

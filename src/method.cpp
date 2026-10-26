@@ -137,6 +137,10 @@ uint32_t Method::getIndex() const {
 	return _index;
 }
 
+uint32_t Method::getAccessFlags() const {
+	return static_cast<uint32_t>(_accessFlags);
+}
+
 std::vector<std::pair<uint32_t, uint32_t>> Method::getExceptionHandler(uint16_t pc_, uint32_t& catchAllAddr_) const {
 	uint16_t pc = pc_ >> 1;
 	logger.fdebug("getExceptionHandler: pc={:x} size={}", pc, _trycatch_items.size());

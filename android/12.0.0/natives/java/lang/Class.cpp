@@ -20,6 +20,9 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include <algorithm>
+#include <map>
+
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
@@ -31,6 +34,7 @@
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "utils.hpp"
 
 using namespace sandvik;
 
@@ -340,7 +344,49 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredMethodInternal(JNIEnv* env, jobject obj, jstring name, jobjectArray args) {
-		throw VmException("Java_java_lang_Class_getDeclaredMethodInternal not implemented!");
+		auto jenv = sandvik::native::getNativeInterface(env);
+		auto& classloader = jenv->getClassLoader();
+		auto classObj = sandvik::native::getObject(obj);
+		auto& clazz = classObj->getClassType();
+		auto methodName = sandvik::native::getString(name)->str();
+
+		// Build the parameters descriptor from the Class[] argument
+		std::string parameters;
+		auto* argsArray = sandvik::native::getArray(args);
+		uint32_t nbArgs = (argsArray == nullptr || argsArray->isNull()) ? 0 : argsArray->getArrayLength();
+		for (uint32_t i = 0; i < nbArgs; ++i) {
+			auto argClassObj = argsArray->getElement(i);
+			if (argClassObj == nullptr || argClassObj->isNull()) {
+				throw NoSuchMethodException(fmt::format("{}.{}: null parameter type", clazz.getFullname(), methodName));
+			}
+			auto argName = argClassObj->getClassType().getFullname();
+			if (is_primitive_type(argName)) {
+				static const std::map<std::string, std::string, std::less<>> descriptors = {{"boolean", "Z"}, {"byte", "B"}, {"char", "C"},  {"short", "S"},
+				                                                                            {"int", "I"},     {"long", "J"}, {"float", "F"}, {"double", "D"}};
+				parameters += descriptors.at(argName);
+			} else {
+				std::replace(argName.begin(), argName.end(), '.', '/');
+				parameters += argName[0] == '[' ? argName : "L" + argName + ";";
+			}
+		}
+
+		auto* method = clazz.getDeclaredMethod(methodName, parameters);
+		if (method == nullptr || method->isConstructor() || method->isStaticInitializer()) {
+			logger.fdebug("Class.getDeclaredMethod: {}.{}({}) not found", clazz.getFullname(), methodName, parameters);
+			return (jobject)Object::makeNull();
+		}
+		logger.fdebug("Class.getDeclaredMethod: {}.{}{}", clazz.getFullname(), methodName, method->getSignature());
+
+		// Create a java.lang.reflect.Method object, artMethod holds the sandvik::Method address
+		auto& methodClass = classloader.getOrLoad("java.lang.reflect.Method");
+		auto methodObj = Object::make(methodClass);
+		auto declaringClass = Object::makeConstClass(classloader, method->getClass());
+		methodObj->setField("declaringClass", declaringClass);
+		methodObj->setField("declaringClassOfOverriddenMethod", declaringClass);
+		methodObj->setField("accessFlags", Object::make(static_cast<uint64_t>(method->getAccessFlags())));
+		methodObj->setField("artMethod", Object::make(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(method))));
+		methodObj->setField("dexMethodIndex", Object::make(static_cast<uint64_t>(method->getIndex())));
+		return (jobject)methodObj;
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getComponentType(JNIEnv* env, jobject obj) {

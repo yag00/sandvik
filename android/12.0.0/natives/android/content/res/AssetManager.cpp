@@ -53,7 +53,7 @@ extern "C" {
 		(void)assets;
 
 		std::string pathStr;
-		if (auto obj = sandvik::native::getNullableString(path)) {
+		if (auto obj = sandvik::native::getNullableString(path); !obj->isNull()) {
 			pathStr = obj->str();
 		}
 

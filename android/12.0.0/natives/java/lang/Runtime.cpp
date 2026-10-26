@@ -19,6 +19,8 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include <algorithm>
+
 #include "exceptions.hpp"
 #include "gc.hpp"
 #include "jni.hpp"

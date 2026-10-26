@@ -254,7 +254,7 @@ extern "C" {
 		(void)thiz;
 
 		auto pathObj = native::getNullableString(path);
-		if (!pathObj) {
+		if (pathObj->isNull()) {
 			throw NullPointerException("path is null");
 		}
 		std::string pathStr = pathObj->str();

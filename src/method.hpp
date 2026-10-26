@@ -110,6 +110,10 @@ namespace sandvik {
 			 * @return Index of the method.
 			 */
 			uint32_t getIndex() const;
+			/** @brief Gets the access flags of the method.
+			 * @return Access flags of the method.
+			 */
+			uint32_t getAccessFlags() const;
 			/** @brief Gets the exception handler for the specified program counter.
 			 * @param pc_ Program counter.
 			 * @param catchAllAddr_ Reference to store the catch-all address.

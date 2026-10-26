@@ -120,6 +120,12 @@ namespace sandvik {
 			 * @return Pointer to the Method object, or nullptr if not found.
 			 */
 			Method* findMethodOrNull(const std::string& name_, const std::string& descriptor_);
+			/** @brief Finds a method declared by this class (superclasses are not searched).
+			 * @param name_ Name of the method.
+			 * @param parameters_ Parameters descriptor, without parentheses (e.g. "ILjava/lang/String;").
+			 * @return Pointer to the Method object, or nullptr if not found.
+			 */
+			Method* getDeclaredMethod(const std::string& name_, const std::string& parameters_) const;
 
 			/** @brief Checks if a class field exists.
 			 * @param name_ Name of the field.

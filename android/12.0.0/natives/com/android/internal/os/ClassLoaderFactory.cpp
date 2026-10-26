@@ -63,22 +63,22 @@ extern "C" {
 		// pas de chemins de recherche natifs spécifiques) : ne pas les caster
 		// sans vérifier isNull() d'abord.
 		std::string searchPath;
-		if (auto obj = sandvik::native::getNullableString(librarySearchPath)) {
+		if (auto obj = sandvik::native::getNullableString(librarySearchPath); !obj->isNull()) {
 			searchPath = obj->str();
 		}
 
 		std::string permittedLibPath;
-		if (auto obj = sandvik::native::getNullableString(libraryPermittedPath)) {
+		if (auto obj = sandvik::native::getNullableString(libraryPermittedPath); !obj->isNull()) {
 			permittedLibPath = obj->str();
 		}
 
 		std::string dexPathStr;
-		if (auto obj = sandvik::native::getNullableString(dexPath)) {
+		if (auto obj = sandvik::native::getNullableString(dexPath); !obj->isNull()) {
 			dexPathStr = obj->str();
 		}
 
 		std::string permittedPathStr;
-		if (auto obj = sandvik::native::getNullableString(permittedPath)) {
+		if (auto obj = sandvik::native::getNullableString(permittedPath); !obj->isNull()) {
 			permittedPathStr = obj->str();
 		}
 
@@ -90,6 +90,6 @@ extern "C" {
 		// retourne null pour signaler le succès, comme le fait AOSP quand la
 		// création du namespace réussit (un message d'erreur String n'est
 		// retourné qu'en cas d'échec).
-		return nullptr;
+		return (jstring)sandvik::Object::makeNull();
 	}
 }
