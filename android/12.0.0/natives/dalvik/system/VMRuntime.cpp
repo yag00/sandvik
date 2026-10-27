@@ -79,6 +79,9 @@ extern "C" {
 		// No-op for Sandvik VM, as it does not use dex caches.
 	}
 
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_registerNativeAllocation__J(JNIEnv*, jobject, jlong) {
+	}
+
 	JNIEXPORT jobject JNICALL Java_dalvik_system_VMRuntime_newUnpaddedArray(JNIEnv* env, jobject thiz, jobject componentType, jint minLen) {
 		(void)thiz;
 

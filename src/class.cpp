@@ -64,6 +64,13 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const dex::Class
       _fullname(class_.pretty_name()),
       _name(class_.name()),
       _dexIdx(dexIdx_),
+      _accessFlags([&class_]() {
+	      uint32_t flags = 0;
+	      for (const auto& flag : class_.access_flags()) {
+		      flags |= static_cast<uint32_t>(flag);
+	      }
+	      return flags;
+      }()),
       _isInterface(class_.has(dex::ACC_INTERFACE)),
       _isAbstract(class_.has(dex::ACC_ABSTRACT)),
       _hasSuperClass(class_.has_parent()),
@@ -150,6 +157,10 @@ void Class::setStaticInitialized() {
 
 uint32_t Class::getDexIdx() const {
 	return _dexIdx;
+}
+
+uint32_t Class::getAccessFlags() const {
+	return _accessFlags;
 }
 
 const std::string& Class::getName() const {
@@ -488,6 +499,9 @@ void Class::monitorCheck() const {
 }
 
 void Class::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	if (_classObject != nullptr) {
+		visitor_(_classObject);
+	}
 	for (const auto& [name, field] : _fields) {
 		if (field->isStatic()) {
 			field->visitReferences(visitor_);

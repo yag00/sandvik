@@ -479,6 +479,26 @@ void ClassLoader::linkClass(Class& class_) {
 		return;
 	}
 
+	if (class_.getFullname() == "android.os.StatsFrameworkInitializer") {
+		class_.getMethod("setStatsServiceManager", "(Landroid/os/StatsServiceManager;)V").hook([](Frame& frame, std::vector<ObjectRef>& args) {
+			(void)frame;
+			if (args.size() != 1) {
+				throw VmException("Invalid number of arguments for StatsFrameworkInitializer.setStatsServiceManager");
+			}
+		});
+		return;
+	}
+
+	if (class_.getFullname() == "android.media.MediaFrameworkInitializer") {
+		class_.getMethod("setMediaServiceManager", "(Landroid/media/MediaServiceManager;)V").hook([](Frame& frame, std::vector<ObjectRef>& args) {
+			(void)frame;
+			if (args.size() != 1) {
+				throw VmException("Invalid number of arguments for MediaFrameworkInitializer.setMediaServiceManager");
+			}
+		});
+		return;
+	}
+
 	if (class_.getFullname() == "java.lang.ref.ReferenceQueue") {
 		auto& addMethod = class_.getMethod("add", "(Ljava/lang/ref/Reference;)V");
 		addMethod.hook([](Frame& frame, std::vector<ObjectRef>& args) {

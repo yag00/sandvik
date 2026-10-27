@@ -23,6 +23,7 @@
 #include <fmt/format.h>
 
 #include <atomic>
+#include <set>
 #include <stdexcept>
 
 #include "array.hpp"
@@ -316,6 +317,21 @@ using namespace sandvik;
 
 static const std::unique_ptr<NullObject> NULL_OBJ = std::make_unique<NullObject>();
 
+namespace {
+	void collectInterfaces(ClassLoader& classloader_, Class& class_, std::set<std::string>& seen_, std::vector<Class*>& interfaces_) {
+		for (const auto& interfaceName : class_.getInterfaces()) {
+			auto& interface = classloader_.getOrLoad(interfaceName);
+			if (seen_.insert(interface.getFullname()).second) {
+				interfaces_.push_back(&interface);
+				collectInterfaces(classloader_, interface, seen_, interfaces_);
+			}
+		}
+		if (class_.hasSuperClass()) {
+			collectInterfaces(classloader_, class_.getSuperClass(), seen_, interfaces_);
+		}
+	}
+}  // namespace
+
 ObjectRef Object::make(Class& class_) {
 	if (class_.getFullname() == "java.lang.String") {
 		auto u = std::make_unique<StringObject>(class_, "");
@@ -346,10 +362,29 @@ ObjectRef Object::makeNull() {
 	return NULL_OBJ.get();
 }
 ObjectRef Object::makeConstClass(ClassLoader& classloader_, Class& classtype_) {
+	if (classtype_._classObject != nullptr) {
+		return classtype_._classObject;
+	}
 	auto& clazz = classloader_.getOrLoad("java.lang.Class");
 	auto u = std::make_unique<ConstClassObject>(clazz, classtype_);
 	auto ptr = u.get();
 	GC::getInstance().track(std::move(u));
+	classtype_._classObject = ptr;
+
+	if (clazz.hasField("superClass") && classtype_.hasSuperClass()) {
+		ptr->setField("superClass", makeConstClass(classloader_, classtype_.getSuperClass()));
+	}
+	if (clazz.hasField("ifTable")) {
+		std::set<std::string> seen;
+		std::vector<Class*> interfaces;
+		collectInterfaces(classloader_, classtype_, seen, interfaces);
+		auto& objectClass = classloader_.getOrLoad("java.lang.Object");
+		auto interfaceTable = Array::make(objectClass, static_cast<uint32_t>(interfaces.size() * 2));
+		for (uint32_t i = 0; i < interfaces.size(); ++i) {
+			interfaceTable->setElement(i * 2, makeConstClass(classloader_, *interfaces[i]));
+		}
+		ptr->setField("ifTable", interfaceTable);
+	}
 	return ptr;
 }
 

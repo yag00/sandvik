@@ -38,6 +38,30 @@
 
 using namespace sandvik;
 
+namespace {
+	std::string parameterDescriptor(const Class& clazz_, jobjectArray args_, const std::string& memberName_) {
+		std::string parameters;
+		auto* argsArray = sandvik::native::getArray(args_);
+		uint32_t nbArgs = (argsArray == nullptr || argsArray->isNull()) ? 0 : argsArray->getArrayLength();
+		for (uint32_t i = 0; i < nbArgs; ++i) {
+			auto argClassObj = argsArray->getElement(i);
+			if (argClassObj == nullptr || argClassObj->isNull()) {
+				throw NoSuchMethodException(fmt::format("{}.{}: null parameter type", clazz_.getFullname(), memberName_));
+			}
+			auto argName = argClassObj->getClassType().getFullname();
+			if (is_primitive_type(argName)) {
+				static const std::map<std::string, std::string, std::less<>> descriptors = {{"boolean", "Z"}, {"byte", "B"}, {"char", "C"},  {"short", "S"},
+				                                                                            {"int", "I"},     {"long", "J"}, {"float", "F"}, {"double", "D"}};
+				parameters += descriptors.at(argName);
+			} else {
+				std::replace(argName.begin(), argName.end(), '.', '/');
+				parameters += argName[0] == '[' ? argName : "L" + argName + ";";
+			}
+		}
+		return parameters;
+	}
+}  // namespace
+
 extern "C" {
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_classForName(JNIEnv* env, jclass, jstring className, jboolean shouldInitialize, jobject classLoader) {
@@ -253,16 +277,22 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 
 		const Class& targetClass = classObj->getClassType();
-		logger.ftrace("Class.getDeclaredConstructor: Getting constructor for class {}", targetClass.getFullname());
+		auto parameters = parameterDescriptor(targetClass, args, "<init>");
+		auto* constructor = targetClass.getDeclaredMethod("<init>", parameters);
+		if (constructor == nullptr || !constructor->isConstructor()) {
+			logger.ftrace("Class.getDeclaredConstructor: {}.<init>({}) not found", targetClass.getFullname(), parameters);
+			return (jobject)Object::makeNull();
+		}
+		logger.ftrace("Class.getDeclaredConstructor: {}.{}{}", targetClass.getFullname(), constructor->getName(), constructor->getSignature());
 
-		// Create a java.lang.reflect.Constructor object
 		auto& ctorClass = classloader.getOrLoad("java/lang/reflect/Constructor");
 		auto ctorObj = sandvik::Object::make(ctorClass);
-
-		// Set fields as needed (e.g., 'declaringClass', 'parameterTypes', etc.)
-		ctorObj->setField("declaringClass", Object::makeConstClass(classloader, const_cast<Class&>(targetClass)));
-		// For simplicity, parameterTypes is empty for default constructor
-		ctorObj->setField("parameterTypes", sandvik::Object::make(classloader.getOrLoad("java/lang/Object")));
+		auto declaringClass = Object::makeConstClass(classloader, constructor->getClass());
+		ctorObj->setField("declaringClass", declaringClass);
+		ctorObj->setField("declaringClassOfOverriddenMethod", declaringClass);
+		ctorObj->setField("accessFlags", Object::make(static_cast<uint64_t>(constructor->getAccessFlags())));
+		ctorObj->setField("artMethod", Object::make(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(constructor))));
+		ctorObj->setField("dexMethodIndex", Object::make(static_cast<uint64_t>(constructor->getIndex())));
 
 		return (jobject)ctorObj;
 	}
@@ -291,7 +321,7 @@ extern "C" {
 
 		const auto* innerClass = classType.getAnnotation("dalvik.annotation.InnerClass");
 		if (!innerClass) {
-			return defaultValue;
+			return static_cast<jint>(classType.getAccessFlags());
 		}
 		const auto* accessFlags = innerClass->element("accessFlags");
 		if (!accessFlags || accessFlags->kind() != dex::EncodedValue::Kind::Int) {
@@ -350,25 +380,7 @@ extern "C" {
 		auto& clazz = classObj->getClassType();
 		auto methodName = sandvik::native::getString(name)->str();
 
-		// Build the parameters descriptor from the Class[] argument
-		std::string parameters;
-		auto* argsArray = sandvik::native::getArray(args);
-		uint32_t nbArgs = (argsArray == nullptr || argsArray->isNull()) ? 0 : argsArray->getArrayLength();
-		for (uint32_t i = 0; i < nbArgs; ++i) {
-			auto argClassObj = argsArray->getElement(i);
-			if (argClassObj == nullptr || argClassObj->isNull()) {
-				throw NoSuchMethodException(fmt::format("{}.{}: null parameter type", clazz.getFullname(), methodName));
-			}
-			auto argName = argClassObj->getClassType().getFullname();
-			if (is_primitive_type(argName)) {
-				static const std::map<std::string, std::string, std::less<>> descriptors = {{"boolean", "Z"}, {"byte", "B"}, {"char", "C"},  {"short", "S"},
-				                                                                            {"int", "I"},     {"long", "J"}, {"float", "F"}, {"double", "D"}};
-				parameters += descriptors.at(argName);
-			} else {
-				std::replace(argName.begin(), argName.end(), '.', '/');
-				parameters += argName[0] == '[' ? argName : "L" + argName + ";";
-			}
-		}
+		auto parameters = parameterDescriptor(clazz, args, methodName);
 
 		auto* method = clazz.getDeclaredMethod(methodName, parameters);
 		if (method == nullptr || method->isConstructor() || method->isStaticInitializer()) {

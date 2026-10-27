@@ -42,4 +42,13 @@ extern "C" {
 		return static_cast<jlong>(ts.tv_sec) * 1000LL + static_cast<jlong>(ts.tv_nsec / 1000000LL);
 	}
 
+	JNIEXPORT jlong JNICALL Java_android_os_SystemClock_uptimeNanos(JNIEnv* env, jclass clazz) {
+		(void)env;
+		(void)clazz;
+
+		timespec ts{};
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		return static_cast<jlong>(ts.tv_sec) * 1000000000LL + static_cast<jlong>(ts.tv_nsec);
+	}
+
 }  // extern "C"

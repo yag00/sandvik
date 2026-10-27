@@ -70,6 +70,10 @@ namespace sandvik {
 			 * @return DEX index.
 			 */
 			uint32_t getDexIdx() const;
+			/** @brief Gets the DEX access flags declared by the class.
+			 * @return Access flags.
+			 */
+			uint32_t getAccessFlags() const;
 			/** @brief Gets the class name.
 			 * @return Class name.
 			 */
@@ -263,6 +267,7 @@ namespace sandvik {
 			std::string _fullname;
 			std::string _name;
 			uint32_t _dexIdx;
+			uint32_t _accessFlags = 0;
 
 			bool _isInterface;
 			bool _isAbstract;
@@ -277,8 +282,10 @@ namespace sandvik {
 			std::vector<std::string> _interfaces;
 			std::vector<dex::Annotation> _annotations;
 			friend class ClassBuilder;
+			friend class Object;
 
 			std::unique_ptr<Monitor> _monitor;
+			ObjectRef _classObject = nullptr;
 	};
 }  // namespace sandvik
 
