@@ -2710,6 +2710,8 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		trace.logCall("invoke-interface", ifclassname, methodname, signature, args, vmethod->isStatic());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
+		} else if (vmethod->isHooked()) {
+			vmethod->execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
@@ -2907,6 +2909,8 @@ void Interpreter::invoke_interface_range(const uint8_t* operand_) {
 		trace.logCall("invoke-interface/range", ifclassname, methodname, signature, args, vmethod->isStatic());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
+		} else if (vmethod->isHooked()) {
+			vmethod->execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
