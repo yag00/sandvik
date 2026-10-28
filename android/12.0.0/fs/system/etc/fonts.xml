@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Minimal system font configuration for Sandvik: Roboto only.
+    Roboto is licensed under the Apache License, Version 2.0.
+-->
+<familyset version="23">
+    <family name="sans-serif">
+        <font weight="400" style="normal">Roboto-Regular.ttf</font>
+    </family>
+    <alias name="serif" to="sans-serif" />
+    <alias name="monospace" to="sans-serif" />
+</familyset>
