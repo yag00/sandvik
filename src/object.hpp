@@ -105,6 +105,13 @@ namespace sandvik {
 			 * @return ObjectRef to the created object.
 			 */
 			static ObjectRef make(ClassLoader& classloader_, const std::string& str_);
+			/**
+			 * @brief Creates a String ObjectRef from UTF-16.
+			 * @param classloader_ Reference to the ClassLoader.
+			 * @param str_ UTF-16 value of the string.
+			 * @return ObjectRef to the created object.
+			 */
+			static ObjectRef make(ClassLoader& classloader_, const std::u16string& str_);
 
 			/**
 			 * @brief Creates a constant class ObjectRef for Class<?> objects.

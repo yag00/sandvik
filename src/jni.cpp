@@ -2060,25 +2060,7 @@ jstring NativeInterface::NewString(JNIEnv *env, const jchar *unicode, jsize len)
 		throw NullPointerException("NewString: unicode is null");
 	}
 	auto jenv = static_cast<NativeInterface *>(env);
-	ClassLoader &classloader = jenv->getClassLoader();
-	std::u16string ustr(reinterpret_cast<const char16_t *>(unicode), len);
-	std::string utf8str;
-	// Convert UTF-16 to UTF-8
-	for (jsize i = 0; i < len; ++i) {
-		char16_t ch = ustr[i];
-		if (ch < 0x80) {
-			utf8str.push_back(static_cast<char>(ch));
-		} else if (ch < 0x800) {
-			utf8str.push_back(static_cast<char>(0xC0 | (ch >> 6)));
-			utf8str.push_back(static_cast<char>(0x80 | (ch & 0x3F)));
-		} else {
-			utf8str.push_back(static_cast<char>(0xE0 | (ch >> 12)));
-			utf8str.push_back(static_cast<char>(0x80 | ((ch >> 6) & 0x3F)));
-			utf8str.push_back(static_cast<char>(0x80 | (ch & 0x3F)));
-		}
-	}
-	auto strObj = Object::make(classloader, utf8str);
-	return (jstring)strObj;
+	return (jstring)Object::make(jenv->getClassLoader(), std::u16string(reinterpret_cast<const char16_t *>(unicode), len));
 }
 
 jsize NativeInterface::GetStringLength(JNIEnv *env, jstring str) {

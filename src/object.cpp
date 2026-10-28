@@ -34,6 +34,7 @@
 #include "gc.hpp"
 #include "monitor.hpp"
 #include "system/logger.hpp"
+#include "utils.hpp"
 
 namespace sandvik {
 	/** @brief Number object representing integer values. */
@@ -248,6 +249,10 @@ namespace sandvik {
 			 * @param value_ String value to initialize the object.
 			 */
 			StringObject(Class& class_, const std::string& value_);
+			/** Constructor for StringObject from UTF-16.
+			 * @param class_ Reference to the String class.
+			 * @param value_ UTF-16 value of the string. */
+			StringObject(Class& class_, std::u16string value_);
 			~StringObject() override = default;
 
 			/**
@@ -287,7 +292,9 @@ namespace sandvik {
 			bool operator==(const Object& other) const override;
 
 		private:
-			std::string _value;
+			// Java strings are UTF-16: _value is the content, _utf8 its UTF-8 form for the native side
+			std::u16string _value;
+			std::string _utf8;
 	};
 	/** @brief Null object representing Java null references. */
 	class NullObject : public Object {
@@ -352,6 +359,13 @@ ObjectRef Object::make(uint64_t number_) {
 	return ptr;
 }
 ObjectRef Object::make(ClassLoader& classloader_, const std::string& str_) {
+	auto& clazz = classloader_.getOrLoad("java.lang.String");
+	auto u = std::make_unique<StringObject>(clazz, str_);
+	auto ptr = u.get();
+	GC::getInstance().track(std::move(u));
+	return ptr;
+}
+ObjectRef Object::make(ClassLoader& classloader_, const std::u16string& str_) {
 	auto& clazz = classloader_.getOrLoad("java.lang.String");
 	auto u = std::make_unique<StringObject>(clazz, str_);
 	auto ptr = u.get();
@@ -708,7 +722,10 @@ std::string NumberObject::toString() const {
 	return fmt::format("{}", (int64_t)_value.load());
 }
 ///////////////////////////////////////////////////////////////////////////////
-StringObject::StringObject(Class& class_, const std::string& value_) : ObjectClass(class_), _value(value_) {
+StringObject::StringObject(Class& class_, const std::string& value_) : ObjectClass(class_), _value(utf8_to_utf16(value_)), _utf8(utf16_to_utf8(_value)) {
+}
+
+StringObject::StringObject(Class& class_, std::u16string value_) : ObjectClass(class_), _value(std::move(value_)), _utf8(utf16_to_utf8(_value)) {
 }
 
 bool StringObject::operator==(const Object& other) const {
@@ -726,16 +743,17 @@ bool StringObject::isString() const {
 	return true;
 }
 std::string StringObject::str() const {
-	return _value;
+	return _utf8;
 }
 std::u16string StringObject::str16() const {
-	return std::u16string(_value.begin(), _value.end());
+	return _value;
 }
 std::string StringObject::toString() const {
-	return "\"" + _value + "\"";
+	return "\"" + _utf8 + "\"";
 }
 void StringObject::setString(const std::string& str_) {
-	_value = str_;
+	_value = utf8_to_utf16(str_);
+	_utf8 = utf16_to_utf8(_value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
