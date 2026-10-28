@@ -51,7 +51,8 @@ extern "C" {
 		}
 
 		auto instance = Object::make(constructor->getClass());
-		auto& thread = jenv->getVm().newThread(fmt::format("{}.{}", constructor->getClass().getFullname(), constructor->getName()));
+		NestedCall call(jenv->getVm(), fmt::format("{}.{}", constructor->getClass().getFullname(), constructor->getName()));
+		auto& thread = call.thread();
 		auto& frame = thread.newFrame(*constructor);
 
 		uint32_t parameterWords = 1;
@@ -91,7 +92,7 @@ extern "C" {
 			}
 		}
 
-		thread.run(true);
+		call.run();
 		return (jobject)instance;
 	}
 

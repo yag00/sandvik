@@ -70,6 +70,10 @@ JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
 	_thisThread->setField("nativePeer", Object::make(0));
 	_thisThread->setField("nativeThread", Object::make(0));
 	_thisThread->setField("nativeTid", Object::make(0));
+	// Field initializers of Thread, not run since its constructor is not called
+	auto& objectClass = _classloader.getOrLoad("java/lang/Object");
+	_thisThread->setField("lock", Object::make(objectClass));
+	_thisThread->setField("blockerLock", Object::make(objectClass));
 }
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
@@ -275,4 +279,42 @@ void JThread::runInCurrentThread() {
 			throw;
 		}
 	}
+}
+
+NestedCall::NestedCall(Vm& vm_, const std::string& name_) {
+	try {
+		_parent = &vm_.currentThread();
+	} catch (const VmException&) {
+		_parent = nullptr;
+	}
+	_thread = _parent != nullptr ? &_parent->newChild(name_) : &vm_.newThread(name_);
+}
+
+NestedCall::~NestedCall() {
+	if (_parent != nullptr) {
+		_parent->popChild();
+	}
+}
+
+CallResult NestedCall::run() {
+	if (_parent != nullptr) {
+		_thread->runInCurrentThread();
+	} else {
+		_thread->run(true);
+	}
+	return CallResult{_thread->getReturnObject()};
+}
+
+int32_t CallResult::getReturnValue() const {
+	if (object == nullptr || !object->isNumberObject()) {
+		throw VmException("Return object is not an NumberObject");
+	}
+	return object->getValue();
+}
+
+int64_t CallResult::getReturnDoubleValue() const {
+	if (object == nullptr || !object->isNumberObject()) {
+		throw VmException("Return object is not a isNumberObject");
+	}
+	return object->getLongValue();
 }

@@ -150,6 +150,43 @@ namespace sandvik {
 
 			std::vector<std::unique_ptr<JThread>> _childrenThreads;
 	};
+
+	/** @brief Return value of a Java method called from native code (same accessors as JThread) */
+	struct CallResult {
+			ObjectRef object = nullptr;
+
+			ObjectRef getReturnObject() const {
+				return object;
+			}
+			int32_t getReturnValue() const;
+			int64_t getReturnDoubleValue() const;
+	};
+
+	/**
+	 * @brief A Java method called from native code (JNI Call*Method/NewObject, reflection).
+	 *
+	 * As in ART, the method runs on the calling thread: it is executed by a child of the current VM thread, so
+	 * Thread.currentThread() and the thread locals (Looper, Binder calling identity...) are the caller ones.
+	 * When the calling OS thread is not a VM thread, the method runs on a new VM thread.
+	 */
+	class NestedCall {
+		public:
+			NestedCall(Vm& vm_, const std::string& name_);
+			~NestedCall();
+			NestedCall(const NestedCall&) = delete;
+			NestedCall& operator=(const NestedCall&) = delete;
+
+			/** @brief Thread to push the method frame on */
+			JThread& thread() {
+				return *_thread;
+			}
+			/** @brief Runs the method until it returns, exceptions propagate to the caller */
+			CallResult run();
+
+		private:
+			JThread* _parent = nullptr;
+			JThread* _thread = nullptr;
+	};
 }  // namespace sandvik
 
 #endif  // __JAVA_THREAD_HPP__

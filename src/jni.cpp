@@ -556,7 +556,8 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 	auto obj = Object::make(cls);
 	// Call the constructor on the new object
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
@@ -607,7 +608,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 		}
 	}
 	va_end(args);
-	thread.run(true);
+	call.run();
 	// return new object
 	return (jobject)obj;
 }
@@ -627,7 +628,8 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 	auto obj = Object::make(cls);
 	// Call the constructor on the new object
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	// @todo: check that the return type of is void (constructor should not return anything)
 	auto regidx = getIncomingRegisterStart(method, true);
@@ -675,7 +677,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 		}
 	}
 	va_end(args);
-	thread.run(true);
+	call.run();
 	// return new object
 	return (jobject)obj;
 }
@@ -695,7 +697,8 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 	auto obj = Object::make(cls);
 	// Call the constructor on the new object
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	auto regidx = getIncomingRegisterStart(method, true);
 	frame.setObjRegister(regidx++, obj);  // this
@@ -736,7 +739,7 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 				throw VmException(fmt::format("NewObjectA: unknown argument type '{}'", arg));
 		}
 	}
-	thread.run(true);
+	call.run();
 	return (jobject)obj;
 }
 
@@ -774,7 +777,7 @@ jmethodID NativeInterface::GetMethodID(JNIEnv *env, jclass clazz, const char *na
 }
 
 template <typename ArgFetcher>
-static JThread &invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
+static CallResult invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
 	if (obj == nullptr) {
 		throw NullPointerException(fmt::format("{} on null object", callerName));
 	}
@@ -798,7 +801,8 @@ static JThread &invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jme
 	}
 
 	Method &method = cls.getMethod(methodKey);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 
 	auto regidx = getIncomingRegisterStart(method, true);
@@ -839,12 +843,11 @@ static JThread &invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jme
 		}
 	}
 
-	thread.run(true);
-	return thread;
+	return call.run();
 }
 
 template <typename ArgFetcher>
-static JThread &invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
+static CallResult invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
 	if (clazz == nullptr) {
 		throw NullPointerException(fmt::format("{}: clazz cannot be null for static invocation", callerName));
 	}
@@ -871,7 +874,8 @@ static JThread &invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID 
 		throw NoSuchMethodException(fmt::format("{}: method {} is not static in class {}", callerName, method.getName(), cls->getName()));
 	}
 
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls->getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls->getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	auto regidx = getIncomingRegisterStart(method, false);
 
@@ -910,8 +914,7 @@ static JThread &invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID 
 		}
 	}
 
-	thread.run(true);
-	return thread;
+	return call.run();
 }
 
 // -----------------------------------------------------------------------------
