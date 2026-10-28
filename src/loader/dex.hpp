@@ -23,11 +23,13 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace sandvik {
 	namespace dex {
 		class File;
+		class Class;
 	}  // namespace dex
 	class ClassLoader;
 	class Class;
@@ -127,6 +129,8 @@ namespace sandvik {
 		private:
 			std::string _path;
 			std::unique_ptr<const dex::File> _dex;
+			// class name (dot separated) -> class_def, built once at load: findClass is called for every class loaded
+			std::unordered_map<std::string, const dex::Class*> _classIndex;
 	};
 }  // namespace sandvik
 #endif  // __DEX_LOADER_HPP__

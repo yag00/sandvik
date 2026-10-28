@@ -74,7 +74,7 @@ Equivalent short forms:
 - `LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --android-version=12.0.0 --main com.android.internal.os.ZygoteInit -- dummy --abi-list=x86_64`
 - `./waf run` — same thing with `--log=ERROR` (args hard-coded in `run()` of `wscript`).
 
-The zygote preloads the framework (~1-2 min), logs `[app] I/Zygote: Accepting command socket connections` and then
+The zygote preloads the framework (~15 s), logs `[app] I/Zygote: Accepting command socket connections` and then
 **waits forever** in `accept` on its command socket: always run it with `timeout -s INT <seconds>` (or stop it with Ctrl-C).
 A leftover zygote keeps the abstract socket bound and the next run fails with `bind() failed: Address already in use`:
 check with `pgrep -ax sandvik` and kill it. Most `[w] ... not implemented` / `TODO: lib*.so is not supported` warnings are known stubs.

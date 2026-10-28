@@ -183,7 +183,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	for (const auto& dex : _dexs) {
 		try {
 			auto classPtr = dex->findClass(*this, dotclassname);
-			if (classPtr->isExternal()) {
+			if (!classPtr || classPtr->isExternal()) {
 				continue;
 			}
 			linkClass(*classPtr);
@@ -204,7 +204,11 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			fullPath += slashclassname + ".dex";
 			if (std::filesystem::exists(fullPath)) {
 				auto dex = std::make_unique<Dex>(fullPath);
-				_classes[dotclassname] = dex->findClass(*this, dotclassname);
+				auto classPtr = dex->findClass(*this, dotclassname);
+				if (!classPtr) {
+					continue;
+				}
+				_classes[dotclassname] = std::move(classPtr);
 				_dexs.push_back(std::move(dex));
 				linkClass(*(_classes[dotclassname]));
 				return *(_classes[dotclassname]);
