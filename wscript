@@ -45,6 +45,7 @@ def configure(conf):
     version = conf.cmd_and_log(f"{conf.env['JAVAC'][0]} --version").strip().split(' ')[1]
     conf.msg('Checking for javac version', version)
     conf.load('d8', tooldir='wtools')
+    conf.check_framework_res()
 
     conf.git_submodule_update()
 
