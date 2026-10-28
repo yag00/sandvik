@@ -2316,7 +2316,7 @@ jlong *NativeInterface::GetLongArrayElements(JNIEnv *env, jlongArray array, jboo
 	jsize len = arr.getArrayLength();
 	jlong *elems = new jlong[len];
 	for (jsize i = 0; i < len; ++i) {
-		elems[i] = (jlong)arr.getElement(i)->getValue();
+		elems[i] = (jlong)arr.getElement(i)->getLongValue();
 	}
 	if (isCopy) *isCopy = JNI_TRUE;
 	return elems;
@@ -2328,7 +2328,7 @@ jfloat *NativeInterface::GetFloatArrayElements(JNIEnv *env, jfloatArray array, j
 	jsize len = arr.getArrayLength();
 	jfloat *elems = new jfloat[len];
 	for (jsize i = 0; i < len; ++i) {
-		elems[i] = (jfloat)arr.getElement(i)->getValue();
+		elems[i] = std::bit_cast<jfloat>(static_cast<uint32_t>(arr.getElement(i)->getValue()));
 	}
 	if (isCopy) *isCopy = JNI_TRUE;
 	return elems;
@@ -2340,7 +2340,7 @@ jdouble *NativeInterface::GetDoubleArrayElements(JNIEnv *env, jdoubleArray array
 	jsize len = arr.getArrayLength();
 	jdouble *elems = new jdouble[len];
 	for (jsize i = 0; i < len; ++i) {
-		elems[i] = (jdouble)arr.getElement(i)->getValue();
+		elems[i] = std::bit_cast<jdouble>(arr.getElement(i)->getLongValue());
 	}
 	if (isCopy) *isCopy = JNI_TRUE;
 	return elems;
@@ -2474,7 +2474,7 @@ void NativeInterface::GetLongArrayRegion(JNIEnv *env, jlongArray array, jsize st
 		throw NullPointerException("GetLongArrayRegion: buf is null");
 	}
 	for (jsize i = 0; i < len; ++i) {
-		buf[i] = (jlong)arr.getElement(start + i)->getValue();
+		buf[i] = (jlong)arr.getElement(start + i)->getLongValue();
 	}
 }
 
@@ -2488,7 +2488,7 @@ void NativeInterface::GetFloatArrayRegion(JNIEnv *env, jfloatArray array, jsize 
 		throw NullPointerException("GetFloatArrayRegion: buf is null");
 	}
 	for (jsize i = 0; i < len; ++i) {
-		buf[i] = (jfloat)arr.getElement(start + i)->getValue();
+		buf[i] = std::bit_cast<jfloat>(static_cast<uint32_t>(arr.getElement(start + i)->getValue()));
 	}
 }
 
@@ -2502,7 +2502,7 @@ void NativeInterface::GetDoubleArrayRegion(JNIEnv *env, jdoubleArray array, jsiz
 		throw NullPointerException("GetDoubleArrayRegion: buf is null");
 	}
 	for (jsize i = 0; i < len; ++i) {
-		buf[i] = (jdouble)arr.getElement(start + i)->getValue();
+		buf[i] = std::bit_cast<jdouble>(arr.getElement(start + i)->getLongValue());
 	}
 }
 
