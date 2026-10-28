@@ -139,6 +139,19 @@ Class& JThread::getStackClass(uint32_t depth_) const {
 	}
 }
 
+std::vector<const Frame*> JThread::getStackFrames() const {
+	std::vector<const Frame*> frames;
+	// the last child is the innermost nested call
+	for (auto it = _childrenThreads.rbegin(); it != _childrenThreads.rend(); ++it) {
+		const auto childFrames = (*it)->getStackFrames();
+		frames.insert(frames.end(), childFrames.begin(), childFrames.end());
+	}
+	for (auto it = _stack.rbegin(); it != _stack.rend(); ++it) {
+		frames.push_back(it->get());
+	}
+	return frames;
+}
+
 Frame& JThread::newFrame(Method& method_) {
 	_stack.push_back(std::make_unique<Frame>(method_));
 	return *(_stack.back().get());

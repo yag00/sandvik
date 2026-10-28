@@ -19,39 +19,69 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
-#include "array.hpp"
+#include <cstdint>
+#include <vector>
+
 #include "class.hpp"
 #include "classloader.hpp"
-#include "exceptions.hpp"
-#include "field.hpp"
+#include "frame.hpp"
 #include "jni.hpp"
+#include "jthread.hpp"
+#include "method.hpp"
 #include "native_utils.hpp"
-#include "object.hpp"
-#include "system/logger.hpp"
+#include "vm.hpp"
 
-/** @todo implementation **/
+using namespace sandvik;
 
 extern "C" {
 
-	JNIEXPORT jobject JNICALL Java_java_lang_Throwable_nativeFillInStackTrace(JNIEnv* env, jobject obj) {
-		auto throwable = sandvik::native::getObject(obj);
-		logger.ftrace("[Throwable.nativeFillInStackTrace] throwable={}", static_cast<void*>(throwable));
-		// Return the same object for now
-		return obj;
+	// The stack state is a long[] of (Method*, dex pc) pairs, innermost first: StackTraceElements are only built when
+	// the trace is read (as ART does), most exceptions are caught without it
+	JNIEXPORT jobject JNICALL Java_java_lang_Throwable_nativeFillInStackTrace(JNIEnv* env, jclass) {
+		auto jenv = native::getNativeInterface(env);
+		const auto frames = jenv->getVm().currentThread().getStackFrames();
+		const auto& throwableClass = jenv->getClassLoader().getOrLoad("java.lang.Throwable");
+		std::vector<jlong> state;
+		state.reserve(frames.size() * 2);
+		bool constructing = true;
+		for (const auto* frame : frames) {
+			const auto& method = frame->getMethod();
+			// skip fillInStackTrace() and the constructors of the throwable
+			if (constructing) {
+				if (method.getName() == "fillInStackTrace" || (method.getName() == "<init>" && throwableClass.isInstanceOf(method.getClass()))) {
+					continue;
+				}
+				constructing = false;
+			}
+			state.push_back(static_cast<jlong>(reinterpret_cast<uintptr_t>(&method)));
+			state.push_back(frame->pc());
+		}
+		jlongArray result = env->NewLongArray(static_cast<jsize>(state.size()));
+		env->SetLongArrayRegion(result, 0, static_cast<jsize>(state.size()), state.data());
+		return result;
 	}
 
-	JNIEXPORT jobjectArray JNICALL Java_java_lang_Throwable_nativeGetStackTrace(JNIEnv* env, jclass clazz, jobject stackState) {
-		logger.fwarning("{} not fully implemented!", __FUNCTION__);
-		// return an empty StackTraceElement array
-		// In a real implementation, decode stackState and build the array
-		// Find StackTraceElement class
+	JNIEXPORT jobjectArray JNICALL Java_java_lang_Throwable_nativeGetStackTrace(JNIEnv* env, jclass, jobject stackState) {
 		jclass steClass = env->FindClass("java/lang/StackTraceElement");
-		if (!steClass) {
-			logger.ferror("Cannot find StackTraceElement class");
-			return nullptr;
+		if (stackState == nullptr) {
+			return env->NewObjectArray(0, steClass, nullptr);
 		}
-		// Create empty array
-		jobjectArray result = env->NewObjectArray(0, steClass, nullptr);
+		auto stateArray = static_cast<jlongArray>(stackState);
+		const jsize size = env->GetArrayLength(stateArray);
+		std::vector<jlong> state(static_cast<size_t>(size));
+		env->GetLongArrayRegion(stateArray, 0, size, state.data());
+
+		// StackTraceElement(String declaringClass, String methodName, String fileName, int lineNumber)
+		jmethodID constructor = env->GetMethodID(steClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
+		jobjectArray result = env->NewObjectArray(size / 2, steClass, nullptr);
+		for (jsize i = 0; i + 1 < size; i += 2) {
+			const auto* method = reinterpret_cast<const Method*>(static_cast<uintptr_t>(state[i]));
+			jstring className = env->NewStringUTF(method->getClass().getFullname().c_str());
+			jstring methodName = env->NewStringUTF(method->getName().c_str());
+			// no debug info (line numbers, source file) is read from the dex: -1 unknown, -2 native method
+			const jint lineNumber = method->isNative() ? -2 : -1;
+			env->SetObjectArrayElement(result, i / 2, env->NewObject(steClass, constructor, className, methodName, nullptr, lineNumber));
+		}
 		return result;
 	}
 
