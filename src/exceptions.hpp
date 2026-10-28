@@ -25,6 +25,9 @@
 #include <string>
 
 namespace sandvik {
+	class ClassLoader;
+	class Object;
+
 	/**
 	 * @class VmException
 	 * @brief Exception class representing a VM exception.
@@ -73,6 +76,11 @@ namespace sandvik {
 			 * @return A string containing the exception message.
 			 */
 			std::string getMessage() const;
+			/** Sets the fields specific to this exception type on the thrown Java object (detailMessage is set by the caller).
+			 * @param exception_ Java exception object
+			 * @param classloader_ class loader used to create field values
+			 */
+			virtual void setFields(Object& exception_, ClassLoader& classloader_) const;
 
 		private:
 			std::string _type;
@@ -300,6 +308,21 @@ namespace sandvik {
 			explicit IOException(const std::string& message = "") : JavaException("java.io.IOException", message) {
 			}
 			~IOException() noexcept override = default;
+	};
+	/** @brief android.system.ErrnoException, thrown by the libcore.io.Os natives on a failed system call */
+	class ErrnoException : public JavaException {
+		public:
+			/** constructor
+			 * @param functionName_ name of the failed system call
+			 * @param errno_ errno value
+			 * @param detail_ optional detail for the logs (path, arguments...) */
+			ErrnoException(const std::string& functionName_, int errno_, const std::string& detail_ = "");
+			~ErrnoException() noexcept override = default;
+			void setFields(Object& exception_, ClassLoader& classloader_) const override;
+
+		private:
+			std::string _functionName;
+			int _errno;
 	};
 }  // namespace sandvik
 

@@ -302,6 +302,7 @@ void Interpreter::execute() {
 		              method.getSignature());
 		auto exc = Object::make(_rt.getClassLoader().getOrLoad(exctype));
 		exc->setField("detailMessage", Object::make(_rt.getClassLoader(), e.getMessage()));
+		e.setFields(*exc, _rt.getClassLoader());
 		handleException(exc);
 	}
 }

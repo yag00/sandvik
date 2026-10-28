@@ -20,6 +20,10 @@
 
 #include <fmt/format.h>
 
+#include <cstring>
+
+#include "object.hpp"
+
 using namespace sandvik;
 
 VmException::VmException(const std::string& message_) : _message(message_) {
@@ -40,4 +44,21 @@ std::string JavaException::getExceptionType() const {
 }
 std::string JavaException::getMessage() const {
 	return _message;
+}
+
+void JavaException::setFields(Object& exception_, ClassLoader& classloader_) const {
+	(void)exception_;
+	(void)classloader_;
+}
+
+ErrnoException::ErrnoException(const std::string& functionName_, int errno_, const std::string& detail_)
+    : JavaException("android.system.ErrnoException", detail_.empty() ? fmt::format("{} failed: {}", functionName_, strerror(errno_))
+                                                                     : fmt::format("{} failed: {} ({})", functionName_, strerror(errno_), detail_)),
+      _functionName(functionName_),
+      _errno(errno_) {
+}
+
+void ErrnoException::setFields(Object& exception_, ClassLoader& classloader_) const {
+	exception_.setField("functionName", Object::make(classloader_, _functionName));
+	exception_.setField("errno", Object::make(static_cast<uint64_t>(static_cast<uint32_t>(_errno))));
 }

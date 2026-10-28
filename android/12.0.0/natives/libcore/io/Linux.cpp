@@ -28,6 +28,9 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <sys/xattr.h>
+
+#include <vector>
 
 #include "array.hpp"
 #include "class.hpp"
@@ -99,7 +102,7 @@ extern "C" {
 
 		int fd = fdObject->getField("descriptor")->getValue();
 		if (fd < 0) {
-			throw IOException("Bad file descriptor");
+			throw ErrnoException("write", EBADF);
 		}
 		if (offset < 0 || count < 0) {
 			throw IllegalArgumentException("offset or byteCount < 0");
@@ -116,7 +119,7 @@ extern "C" {
 		delete[] data;
 
 		if (written < 0) {
-			throw IOException(fmt::format("Write operation failed: {}", strerror(errno)));
+			throw ErrnoException("write", errno);
 		}
 
 		return static_cast<jint>(written);
@@ -128,7 +131,7 @@ extern "C" {
 
 		int fd = fdObject->getField("descriptor")->getValue();
 		if (fd < 0) {
-			throw IOException("Bad file descriptor");
+			throw ErrnoException("read", EBADF);
 		}
 		if (offset < 0 || count < 0) {
 			throw IllegalArgumentException("offset or byteCount < 0");
@@ -140,7 +143,7 @@ extern "C" {
 		std::vector<uint8_t> data(count);
 		ssize_t nread = ::read(fd, data.data(), count);
 		if (nread < 0) {
-			throw IOException(fmt::format("Read operation failed: {}", strerror(errno)));
+			throw ErrnoException("read", errno);
 		}
 		for (ssize_t i = 0; i < nread; ++i) {
 			buffer->setElement(offset + static_cast<int>(i), Object::make(static_cast<int32_t>(data[i])));
@@ -167,7 +170,7 @@ extern "C" {
 		int openErrno = errno;
 		env->ReleaseStringUTFChars(path, pathCStr);
 		if (fd == -1) {
-			throw IOException(fmt::format("open failed on '{}' (flags={:#x}, mode={:#o}): {}", realPath, flags, mode, strerror(openErrno)));
+			throw ErrnoException("open", openErrno, fmt::format("'{}' flags={:#x} mode={:#o}", realPath, flags, mode));
 		}
 
 		jclass fileDescriptorClass = env->FindClass("java/io/FileDescriptor");
@@ -188,7 +191,7 @@ extern "C" {
 
 		void* result = ::mmap(reinterpret_cast<void*>(address), static_cast<size_t>(length), prot, flags, fd, static_cast<off_t>(offset));
 		if (result == MAP_FAILED) {
-			throw IOException(fmt::format("mmap failed: {}", strerror(errno)));
+			throw ErrnoException("mmap", errno);
 		}
 		return reinterpret_cast<jlong>(result);
 	}
@@ -196,7 +199,7 @@ extern "C" {
 	JNIEXPORT jint JNICALL Java_libcore_io_Linux_munmap(JNIEnv* env, jclass clazz, jlong address, jlong length) {
 		int result = ::munmap(reinterpret_cast<void*>(address), static_cast<size_t>(length));
 		if (result == -1) {
-			throw IOException(fmt::format("munmap failed: {}", strerror(errno)));
+			throw ErrnoException("munmap", errno);
 		}
 		return result;
 	}
@@ -220,7 +223,7 @@ extern "C" {
 		struct stat st;
 		logger.ftrace("Linux.fstat(fd={})", fd);
 		if (::fstat(fd, &st) == -1) {
-			throw IOException(fmt::format("fstat failed: {}", strerror(errno)));
+			throw ErrnoException("fstat", errno);
 		}
 
 		jclass structStatClass = env->FindClass("android/system/StructStat");
@@ -236,10 +239,12 @@ extern "C" {
 		std::string realPath = VFS::resolve(pathCStr);
 		struct stat st;
 		logger.ftrace("Linux.stat('{}')", realPath);
-		if (::stat(realPath.c_str(), &st) == -1) {
-			throw IOException(fmt::format("stat failed on '{}': {}", realPath, strerror(errno)));
-		}
+		const int result = ::stat(realPath.c_str(), &st);
+		const int statErrno = errno;
 		env->ReleaseStringUTFChars(path, pathCStr);
+		if (result == -1) {
+			throw ErrnoException("stat", statErrno, realPath);
+		}
 
 		jclass structStatClass = env->FindClass("android/system/StructStat");
 		jmethodID ctor = env->GetMethodID(structStatClass, "<init>", "(JJIJIIJJJJJJJ)V");
@@ -257,14 +262,14 @@ extern "C" {
 		if (pathObj->isNull()) {
 			throw NullPointerException("path is null");
 		}
-		std::string pathStr = pathObj->str();
+		std::string pathStr = VFS::resolve(pathObj->str());
 
 		errno = 0;
 		int result = ::access(pathStr.c_str(), mode);
 
 		logger.ftrace("Linux.access: path='{}' mode={}", pathStr, mode);
 		if (result != 0) {
-			throw IOException(fmt::format("access failed on path='{}' mode={}: {}", pathStr, mode, strerror(errno)));
+			throw ErrnoException("access", errno, pathStr);
 		}
 		return JNI_TRUE;
 	}
@@ -281,7 +286,7 @@ extern "C" {
 		errno = 0;
 		int result = ::listen(fd, backlog);
 		if (result != 0) {
-			throw IOException(fmt::format("listen failed: fd={} backlog={} ({})", fd, backlog, strerror(errno)));
+			throw ErrnoException("listen", errno, fmt::format("fd={} backlog={}", fd, backlog));
 		}
 	}
 
@@ -320,7 +325,7 @@ extern "C" {
 		errno = 0;
 		int result = ::poll(pfds.data(), n, timeoutMs);
 		if (result < 0) {
-			throw IOException(fmt::format("poll failed: {}", strerror(errno)));
+			throw ErrnoException("poll", errno);
 		}
 
 		for (uint32_t i = 0; i < n; ++i) {
@@ -337,7 +342,7 @@ extern "C" {
 		auto fdObject = sandvik::native::getObject(fdObj);
 		int fd = fdObject->getField("descriptor")->getValue();
 		if (fd >= 0 && ::close(fd) == -1) {
-			throw IOException(fmt::format("close failed: {}", strerror(errno)));
+			throw ErrnoException("close", errno);
 		}
 	}
 
@@ -352,4 +357,61 @@ extern "C" {
 	// fdsan owner-tag tracking is a debug aid (use-after-close/double-close detection); no-op here.
 	JNIEXPORT void JNICALL Java_libcore_io_Linux_android_fdsan_exchange_owner_tag(JNIEnv*, jobject, jobject, jlong, jlong) {
 	}
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_mkdir(JNIEnv* env, jobject, jstring path, jint mode) {
+		const auto realPath = VFS::resolve(native::getString(path)->str());
+		if (::mkdir(realPath.c_str(), static_cast<mode_t>(mode)) != 0) {
+			throw ErrnoException("mkdir", errno, realPath);
+		}
+	}
+
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_chmod(JNIEnv* env, jobject, jstring path, jint mode) {
+		const auto realPath = VFS::resolve(native::getString(path)->str());
+		if (::chmod(realPath.c_str(), static_cast<mode_t>(mode)) != 0) {
+			throw ErrnoException("chmod", errno, realPath);
+		}
+	}
+
+	// Android uids/gids do not exist on the host: ownership changes are ignored
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_chown(JNIEnv* env, jobject, jstring path, jint uid, jint gid) {
+		logger.fdebug("Linux.chown ignored: '{}' {}:{}", native::getString(path)->str(), uid, gid);
+	}
+
+	JNIEXPORT void JNICALL Java_libcore_io_Linux_setxattr(JNIEnv* env, jobject, jstring path, jstring name, jbyteArray value, jint flags) {
+		const auto realPath = VFS::resolve(native::getString(path)->str());
+		const auto attrName = native::getString(name)->str();
+		std::vector<jbyte> bytes(env->GetArrayLength(value));
+		env->GetByteArrayRegion(value, 0, static_cast<jsize>(bytes.size()), bytes.data());
+		if (::setxattr(realPath.c_str(), attrName.c_str(), bytes.data(), bytes.size(), flags) != 0) {
+			throw ErrnoException("setxattr", errno, realPath);
+		}
+	}
+
+	JNIEXPORT jbyteArray JNICALL Java_libcore_io_Linux_getxattr(JNIEnv* env, jobject, jstring path, jstring name) {
+		const auto realPath = VFS::resolve(native::getString(path)->str());
+		const auto attrName = native::getString(name)->str();
+		const ssize_t size = ::getxattr(realPath.c_str(), attrName.c_str(), nullptr, 0);
+		if (size < 0) {
+			throw ErrnoException("getxattr", errno, realPath);
+		}
+		std::vector<jbyte> bytes(static_cast<size_t>(size));
+		if (size > 0 && ::getxattr(realPath.c_str(), attrName.c_str(), bytes.data(), bytes.size()) < 0) {
+			throw ErrnoException("getxattr", errno, realPath);
+		}
+		jbyteArray result = env->NewByteArray(static_cast<jsize>(bytes.size()));
+		env->SetByteArrayRegion(result, 0, static_cast<jsize>(bytes.size()), bytes.data());
+		return result;
+	}
+
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_getpid(JNIEnv*, jobject) {
+		return static_cast<jint>(::getpid());
+	}
+
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_getppid(JNIEnv*, jobject) {
+		return static_cast<jint>(::getppid());
+	}
+
+	JNIEXPORT jint JNICALL Java_libcore_io_Linux_gettid(JNIEnv*, jobject) {
+		return static_cast<jint>(::gettid());
+	}
+
 }  // extern "C"
