@@ -43,6 +43,10 @@ extern "C" {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 		std::string classPath = classloader.getClassPath();
+		if (classPath.empty()) {
+			// No user class path (--apk): "." as the JVM default, the system class loader would reference an empty path
+			classPath = ".";
+		}
 		return (jstring)sandvik::Object::make(classloader, classPath);
 	}
 	JNIEXPORT jstring JNICALL Java_dalvik_system_VMRuntime_vmVersion(JNIEnv* env, jclass) {

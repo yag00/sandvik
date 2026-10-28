@@ -161,13 +161,9 @@ JNIEXPORT void JNICALL Java_java_lang_System_arraycopyBooleanUnchecked(JNIEnv* e
 		env->SetObjectArrayElement(result, 1, zlib_str);
 		jstring ssl_str = env->NewStringUTF("android.openssl.version=OpenSSL 3.0.2 15 Mar 2022");
 		env->SetObjectArrayElement(result, 2, ssl_str);
-		const char* library_path = getenv("LD_LIBRARY_PATH");
-		if (library_path == NULL) {
-			library_path = "";
-		}
-		std::string java_path = "java.library.path=";
-		java_path += library_path;
-		jstring java_path_str = env->NewStringUTF(java_path.c_str());
+		// The host LD_LIBRARY_PATH locates the Sandvik libraries, it is not an Android path: as on a device without
+		// LD_LIBRARY_PATH, the default search paths of the bionic linker (64-bit)
+		jstring java_path_str = env->NewStringUTF("java.library.path=/system/lib64:/odm/lib64:/vendor/lib64");
 		env->SetObjectArrayElement(result, 3, java_path_str);
 		return result;
 	}
