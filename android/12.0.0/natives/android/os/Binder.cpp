@@ -16,7 +16,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include <jni/jni.h>
+
+namespace {
+	// Per-thread IPCThreadState values, there is no incoming transaction in Sandvik
+	thread_local jint sStrictModePolicy = 0;
+	constexpr jint UNSET_WORKSOURCE = -1;
+	thread_local jint sWorkSourceUid = UNSET_WORKSOURCE;
+}  // namespace
 
 extern "C" {
 
@@ -36,6 +45,64 @@ extern "C" {
 	}
 
 	JNIEXPORT void JNICALL Java_android_os_Binder_flushPendingCommands(JNIEnv*, jclass) {
+	}
+
+	// Outside a transaction the caller is the current process
+	JNIEXPORT jint JNICALL Java_android_os_Binder_getCallingPid(JNIEnv*, jclass) {
+		return static_cast<jint>(getpid());
+	}
+
+	JNIEXPORT jint JNICALL Java_android_os_Binder_getCallingUid(JNIEnv*, jclass) {
+		return static_cast<jint>(getuid());
+	}
+
+	JNIEXPORT jboolean JNICALL Java_android_os_Binder_isHandlingTransaction(JNIEnv*, jclass) {
+		return JNI_FALSE;
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Binder_setThreadStrictModePolicy(JNIEnv*, jclass, jint policy) {
+		sStrictModePolicy = policy;
+	}
+
+	JNIEXPORT jint JNICALL Java_android_os_Binder_getThreadStrictModePolicy(JNIEnv*, jclass) {
+		return sStrictModePolicy;
+	}
+
+	// Work source calls return a token restoring the previous work source uid
+	JNIEXPORT jlong JNICALL Java_android_os_Binder_setCallingWorkSourceUid(JNIEnv*, jclass, jint uid) {
+		const jlong token = sWorkSourceUid;
+		sWorkSourceUid = uid;
+		return token;
+	}
+
+	JNIEXPORT jint JNICALL Java_android_os_Binder_getCallingWorkSourceUid(JNIEnv*, jclass) {
+		return sWorkSourceUid;
+	}
+
+	JNIEXPORT jlong JNICALL Java_android_os_Binder_clearCallingWorkSource(JNIEnv*, jclass) {
+		const jlong token = sWorkSourceUid;
+		sWorkSourceUid = UNSET_WORKSOURCE;
+		return token;
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Binder_restoreCallingWorkSource(JNIEnv*, jclass, jlong token) {
+		sWorkSourceUid = static_cast<jint>(token);
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Binder_markVintfStability(JNIEnv*, jobject) {
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Binder_forceDowngradeToSystemStability(JNIEnv*, jobject) {
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Binder_blockUntilThreadAvailable(JNIEnv*, jclass) {
+	}
+
+	JNIEXPORT jobject JNICALL Java_android_os_Binder_getExtension(JNIEnv*, jobject) {
+		return nullptr;
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Binder_setExtension(JNIEnv*, jobject, jobject) {
 	}
 
 }  // extern "C"

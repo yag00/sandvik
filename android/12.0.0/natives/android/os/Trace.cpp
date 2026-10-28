@@ -37,4 +37,20 @@ extern "C" {
 		(void)tag;
 	}
 
+	// No atrace in Sandvik: tracing state and events are ignored
+	JNIEXPORT void JNICALL Java_android_os_Trace_nativeSetAppTracingAllowed(JNIEnv*, jclass, jboolean) {
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Trace_nativeSetTracingEnabled(JNIEnv*, jclass, jboolean) {
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Trace_nativeTraceCounter(JNIEnv*, jclass, jlong, jstring, jlong) {
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Trace_nativeAsyncTraceBegin(JNIEnv*, jclass, jlong, jstring, jint) {
+	}
+
+	JNIEXPORT void JNICALL Java_android_os_Trace_nativeAsyncTraceEnd(JNIEnv*, jclass, jlong, jstring, jint) {
+	}
+
 }  // extern "C"
