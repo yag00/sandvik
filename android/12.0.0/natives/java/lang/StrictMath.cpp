@@ -16,141 +16,92 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <fmt/format.h>
 #include <jni/jni.h>
 
-#include "array.hpp"
-#include "class.hpp"
-#include "classloader.hpp"
-#include "exceptions.hpp"
-#include "field.hpp"
-#include "jni.hpp"
-#include "native_utils.hpp"
-#include "object.hpp"
-#include "system/logger.hpp"
+#include <cmath>
 
-/** @todo implementation **/
+// java.lang.StrictMath natives map to the C library (rint uses the default round-to-nearest-even mode)
 
 extern "C" {
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_sin(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_acos(JNIEnv*, jclass, jdouble a) {
+		return std::acos(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_cos(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_asin(JNIEnv*, jclass, jdouble a) {
+		return std::asin(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_tan(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_atan(JNIEnv*, jclass, jdouble a) {
+		return std::atan(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_asin(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_atan2(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::atan2(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_acos(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_cbrt(JNIEnv*, jclass, jdouble a) {
+		return std::cbrt(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_atan(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_cos(JNIEnv*, jclass, jdouble a) {
+		return std::cos(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_exp(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_cosh(JNIEnv*, jclass, jdouble a) {
+		return std::cosh(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_log(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_exp(JNIEnv*, jclass, jdouble a) {
+		return std::exp(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_log10(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_expm1(JNIEnv*, jclass, jdouble a) {
+		return std::expm1(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_sqrt(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_hypot(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::hypot(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_cbrt(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_IEEEremainder(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::remainder(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_IEEEremainder(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_log(JNIEnv*, jclass, jdouble a) {
+		return std::log(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_atan2(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_log10(JNIEnv*, jclass, jdouble a) {
+		return std::log10(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_pow(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_log1p(JNIEnv*, jclass, jdouble a) {
+		return std::log1p(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_sinh(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_pow(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::pow(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_cosh(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_sin(JNIEnv*, jclass, jdouble a) {
+		return std::sin(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_tanh(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_sinh(JNIEnv*, jclass, jdouble a) {
+		return std::sinh(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_hypot(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_sqrt(JNIEnv*, jclass, jdouble a) {
+		return std::sqrt(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_expm1(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_tan(JNIEnv*, jclass, jdouble a) {
+		return std::tan(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_StrictMath_log1p(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_StrictMath_tanh(JNIEnv*, jclass, jdouble a) {
+		return std::tanh(a);
+	}
 
 }  // extern "C"

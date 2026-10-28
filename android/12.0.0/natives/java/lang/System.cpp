@@ -131,7 +131,13 @@ JNIEXPORT void JNICALL Java_java_lang_System_arraycopyBooleanUnchecked(JNIEnv* e
 			throw sandvik::IndexOutOfBoundsException("Invalid arraycopy range");
 		}
 
-		// Copy elements
+		// Copy elements, backwards when the ranges overlap in the same array (memmove semantics)
+		if (srcArray == destArray && srcPos < destPos) {
+			for (jint i = length - 1; i >= 0; i--) {
+				destArray->setElement(destPos + i, srcArray->getElement(srcPos + i));
+			}
+			return;
+		}
 		for (jint i = 0; i < length; i++) {
 			sandvik::ObjectRef element = srcArray->getElement(srcPos + i);
 			destArray->setElement(destPos + i, element);

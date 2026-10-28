@@ -16,159 +16,104 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <fmt/format.h>
 #include <jni/jni.h>
 
-#include "array.hpp"
-#include "class.hpp"
-#include "classloader.hpp"
-#include "exceptions.hpp"
-#include "field.hpp"
-#include "jni.hpp"
-#include "native_utils.hpp"
-#include "object.hpp"
-#include "system/logger.hpp"
+#include <cmath>
 
-/** @todo implementation **/
+// java.lang.Math natives map to the C library (rint uses the default round-to-nearest-even mode)
 
 extern "C" {
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_sin(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_acos(JNIEnv*, jclass, jdouble a) {
+		return std::acos(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_cos(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_asin(JNIEnv*, jclass, jdouble a) {
+		return std::asin(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_tan(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_atan(JNIEnv*, jclass, jdouble a) {
+		return std::atan(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_asin(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_atan2(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::atan2(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_acos(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_cbrt(JNIEnv*, jclass, jdouble a) {
+		return std::cbrt(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_atan(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_ceil(JNIEnv*, jclass, jdouble a) {
+		return std::ceil(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_exp(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_cos(JNIEnv*, jclass, jdouble a) {
+		return std::cos(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_log(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_cosh(JNIEnv*, jclass, jdouble a) {
+		return std::cosh(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_log10(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_exp(JNIEnv*, jclass, jdouble a) {
+		return std::exp(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_sqrt(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_expm1(JNIEnv*, jclass, jdouble a) {
+		return std::expm1(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_cbrt(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_floor(JNIEnv*, jclass, jdouble a) {
+		return std::floor(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_IEEEremainder(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_hypot(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::hypot(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_ceil(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_IEEEremainder(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::remainder(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_floor(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_log(JNIEnv*, jclass, jdouble a) {
+		return std::log(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_rint(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_log10(JNIEnv*, jclass, jdouble a) {
+		return std::log10(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_atan2(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_log1p(JNIEnv*, jclass, jdouble a) {
+		return std::log1p(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_pow(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_pow(JNIEnv*, jclass, jdouble a, jdouble b) {
+		return std::pow(a, b);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_sinh(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_rint(JNIEnv*, jclass, jdouble a) {
+		return std::nearbyint(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_cosh(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_sin(JNIEnv*, jclass, jdouble a) {
+		return std::sin(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_tanh(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_sinh(JNIEnv*, jclass, jdouble a) {
+		return std::sinh(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_hypot(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_sqrt(JNIEnv*, jclass, jdouble a) {
+		return std::sqrt(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_expm1(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_tan(JNIEnv*, jclass, jdouble a) {
+		return std::tan(a);
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Math_log1p(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jdouble JNICALL Java_java_lang_Math_tanh(JNIEnv*, jclass, jdouble a) {
+		return std::tanh(a);
+	}
 
 }  // extern "C"
