@@ -26,6 +26,9 @@ namespace sandvik {
 	namespace JNIHelper {
 		/** @brief Mangles a method signature into a JNI-compatible format. */
 		std::string mangleMethodSignature(const std::string& sig);
+		/** @brief Mangles a class (dot or slash separated) or method name as in a standard JNI symbol:
+		 * '_' -> "_1", '$' and other non alphanumeric characters -> "_0xxxx" (UTF-16 code unit). */
+		std::string mangleName(const std::string& name);
 	}  // namespace JNIHelper
 }  // namespace sandvik
 

@@ -375,6 +375,17 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	logger.ftrace("call native jni function {}", symbolName);
 	void* symbol = _rt.vm().findNativeSymbol(symbolName);
 	if (!symbol) {
+		// Standard JNI name mangling ('_' -> "_1", '$' -> "_00024"...), the unescaped name above is kept for existing natives
+		auto jniName = "Java_" + JNIHelper::mangleName(method_.getClass().getFullname()) + "_" + JNIHelper::mangleName(method_.getName());
+		if (method_.isOverload()) {
+			jniName += "__" + JNIHelper::mangleMethodSignature(method_.getSignature());
+		}
+		if (jniName != symbolName) {
+			symbol = _rt.vm().findNativeSymbol(jniName);
+			symbolName = jniName;
+		}
+	}
+	if (!symbol) {
 		throw VmException("Native method {} is not available!", symbolName);
 	}
 

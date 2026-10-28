@@ -17,6 +17,10 @@
  */
 #include "jnihelper.hpp"
 
+#include <fmt/format.h>
+
+#include <cctype>
+#include <cstdint>
 #include <string>
 
 using namespace sandvik;
@@ -52,6 +56,48 @@ std::string JNIHelper::mangleMethodSignature(const std::string& sig) {
 				default:
 					result.push_back(c);
 					break;
+			}
+		}
+	}
+	return result;
+}
+
+std::string JNIHelper::mangleName(const std::string& name) {
+	std::string result;
+	for (size_t i = 0; i < name.size(); ++i) {
+		const auto c = static_cast<unsigned char>(name[i]);
+		if (c == '.' || c == '/') {
+			result += '_';
+		} else if (c == '_') {
+			result += "_1";
+		} else if (c == ';') {
+			result += "_2";
+		} else if (c == '[') {
+			result += "_3";
+		} else if (c < 0x80 && std::isalnum(c)) {
+			result.push_back((char)c);
+		} else {
+			// decode one UTF-8 sequence, then escape it as UTF-16 code unit(s)
+			uint32_t codepoint = c;
+			int extra = 0;
+			if (c >= 0xf0) {
+				codepoint = c & 0x07;
+				extra = 3;
+			} else if (c >= 0xe0) {
+				codepoint = c & 0x0f;
+				extra = 2;
+			} else if (c >= 0xc0) {
+				codepoint = c & 0x1f;
+				extra = 1;
+			}
+			for (; extra > 0 && i + 1 < name.size(); --extra) {
+				codepoint = (codepoint << 6) | (static_cast<unsigned char>(name[++i]) & 0x3f);
+			}
+			if (codepoint >= 0x10000) {
+				codepoint -= 0x10000;
+				result += fmt::format("_0{:04x}_0{:04x}", 0xd800 + (codepoint >> 10), 0xdc00 + (codepoint & 0x3ff));
+			} else {
+				result += fmt::format("_0{:04x}", codepoint);
 			}
 		}
 	}
