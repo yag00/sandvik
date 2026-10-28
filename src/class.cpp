@@ -285,6 +285,25 @@ bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) 
 	}
 	return false;
 }
+bool Class::isFinalizable() const {
+	auto finalizable = _finalizable.load();
+	if (finalizable < 0) {
+		finalizable = 0;
+		for (const Class* current = this; current->getFullname() != "java.lang.Object";) {
+			// as ART: Enum declares an empty final finalize() so that enums have no finalizer
+			if (current->getFullname() != "java.lang.Enum" && current->_methods.contains("finalize()V")) {
+				finalizable = 1;
+				break;
+			}
+			if (!current->hasSuperClass()) {
+				break;
+			}
+			current = &current->getSuperClass();
+		}
+		_finalizable = finalizable;
+	}
+	return finalizable == 1;
+}
 bool Class::hasMethod(uint32_t idx_) const {
 	for (const auto& [key, method] : _methods) {
 		if (method->getIndex() == idx_) {

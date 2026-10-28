@@ -19,6 +19,7 @@
 #ifndef __CLASS_HPP__
 #define __CLASS_HPP__
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
@@ -98,6 +99,11 @@ namespace sandvik {
 			 * @return true if the method exists, false otherwise.
 			 */
 			bool hasMethod(const std::string& name_, const std::string& descriptor_) const;
+			/** @brief Checks if the instances need finalization: a class of the hierarchy, other than java.lang.Object and
+			 * java.lang.Enum (empty finalize()), declares finalize(). Computed once.
+			 * @return true if the instances have a finalizer
+			 */
+			bool isFinalizable() const;
 			/** @brief Checks if a class method exists.
 			 * @param idx_ Index of the method.
 			 * @return true if the method exists, false otherwise.
@@ -282,6 +288,7 @@ namespace sandvik {
 
 			bool _isArray = false;
 			std::string _componentType;
+			mutable std::atomic<int8_t> _finalizable = -1;  // -1 not computed yet, else 0/1
 
 			std::map<std::string, std::unique_ptr<Method>, std::less<>> _methods;
 			std::map<std::string, std::unique_ptr<Field>, std::less<>> _fields;

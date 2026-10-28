@@ -586,14 +586,9 @@ bool Interpreter::tryRedirectToStringFactory(const Method& method, const std::ve
 }
 
 void Interpreter::registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const {
-	// java.lang.Object.finalize() is a no-op; only classes that actually
-	// override it need to be tracked by java.lang.ref.FinalizerReference,
-	// mirroring what ART's native allocator does automatically on real
-	// Android. We only register when THIS class (not an inherited one)
-	// declares finalize() -- walking the hierarchy would double-register
-	// objects whose finalize() comes from a finalizable superclass, since
-	// the superclass's own instances already get registered when built.
-	if (cls_.getFullname() == "java.lang.Object") {
+	// java.lang.Object.finalize() is a no-op: as ART, only the instances of a class overriding it (itself or a
+	// superclass) are tracked by java.lang.ref.FinalizerReference. Called once per object, at allocation.
+	if (!cls_.isFinalizable()) {
 		return;
 	}
 	static const std::unordered_set<std::string> excluded = {
@@ -601,9 +596,6 @@ void Interpreter::registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const {
 	    "java.lang.ref.WeakReference",      "java.lang.ref.SoftReference", "java.lang.ref.PhantomReference",
 	};
 	if (excluded.count(cls_.getFullname())) {
-		return;
-	}
-	if (!cls_.hasMethod("finalize", "()V")) {
 		return;
 	}
 	auto& classloader = _rt.getClassLoader();
