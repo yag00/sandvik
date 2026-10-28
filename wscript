@@ -157,7 +157,7 @@ def build(bld):
         target=APPNAME,
         includes=['src'],
         use=['FMT', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
-        lib=['icuuc'],
+        lib=['icuuc', 'icui18n'],
         linkflags=["-Wl,-z,defs"],
         # linkflags=["-Wl,-z,defs,-licuuc"],
         install_path='${PREFIX}/lib',
