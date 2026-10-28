@@ -21,14 +21,17 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include "annotation_factory.hpp"
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "jni.hpp"
+#include "jthread.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vm.hpp"
 
 /** @todo implementation **/
 
@@ -38,16 +41,68 @@ extern "C" {
 		auto fieldObj = sandvik::native::getObject(obj);
 		auto nameObj = fieldObj->getField("name");
 		const std::string& fieldName = nameObj->str();
-		auto receiverObj = sandvik::native::getObject(receiver);
+		auto declaringClassObj = fieldObj->getField("declaringClass");
+		auto& clazz = const_cast<sandvik::Class&>(declaringClassObj->getClassType());
+		auto& field = clazz.getField(fieldName);
+		auto& classloader = sandvik::native::getNativeInterface(env)->getClassLoader();
+		const auto type = field.getType();
+		const bool primitive = type.size() == 1;
+		if (field.isStatic()) {
+			// the receiver is ignored for a static field, whose class is initialized on first access
+			sandvik::native::getNativeInterface(env)->getVm().currentThread().ensureInitialized(field.getClass());
+			if (!primitive) {
+				return (jobject)field.getObjectValue();
+			}
+			const uint64_t value = (type == "J" || type == "D") ? field.getLongValue() : field.getIntValue();
+			return (jobject)sandvik::native::boxPrimitive(classloader, type[0], value);
+		}
+		auto receiverObj = sandvik::native::getReferenceObjectOrNull(receiver);
 		if (receiverObj == nullptr || receiverObj->isNull()) {
-			// static field access: resolve via declaringClass
-			auto declaringClassObj = fieldObj->getField("declaringClass");
-			auto& clazz = const_cast<sandvik::Class&>(declaringClassObj->getClassType());
-			auto& field = clazz.getField(fieldName);
-			return (jobject)field.getObjectValue();
+			throw sandvik::NullPointerException(fmt::format("Field.get: null receiver for instance field {}", fieldName));
 		}
 		auto fieldValue = receiverObj->getField(fieldName);
+		if (primitive) {
+			return (jobject)sandvik::native::boxPrimitive(classloader, type[0], static_cast<uint64_t>(fieldValue->getLongValue()));
+		}
 		return (jobject)fieldValue;
+	}
+
+	// Primitive fields receive boxed values (Integer, Long...): the field is set from their "value" field
+	JNIEXPORT void JNICALL Java_java_lang_reflect_Field_set(JNIEnv* env, jobject obj, jobject receiver, jobject value) {
+		auto fieldObj = sandvik::native::getObject(obj);
+		const std::string& fieldName = fieldObj->getField("name")->str();
+		auto declaringClassObj = fieldObj->getField("declaringClass");
+		auto& clazz = const_cast<sandvik::Class&>(declaringClassObj->getClassType());
+		auto& field = clazz.getField(fieldName);
+		const auto type = field.getType();
+		const bool primitive = type.size() == 1;
+
+		auto valueObj = sandvik::native::getReferenceObjectOrNull(value);
+		if (valueObj == nullptr) {
+			if (primitive) {
+				throw sandvik::IllegalArgumentException(fmt::format("Field.set: null value for primitive field {}", fieldName));
+			}
+			valueObj = sandvik::Object::makeNull();
+		} else if (primitive) {
+			valueObj = valueObj->getField("value");
+		}
+
+		auto receiverObj = sandvik::native::getReferenceObjectOrNull(receiver);
+		if (field.isStatic()) {
+			sandvik::native::getNativeInterface(env)->getVm().currentThread().ensureInitialized(field.getClass());
+			if (!primitive) {
+				field.setObjectValue(valueObj);
+			} else if (type == "J" || type == "D") {
+				field.setLongValue(valueObj->getLongValue());
+			} else {
+				field.setIntValue(static_cast<uint32_t>(valueObj->getValue()));
+			}
+			return;
+		}
+		if (receiverObj == nullptr || receiverObj->isNull()) {
+			throw sandvik::NullPointerException(fmt::format("Field.set: null receiver for instance field {}", fieldName));
+		}
+		receiverObj->setField(fieldName, valueObj);
 	}
 
 #if 0
@@ -95,6 +150,21 @@ JNIEXPORT void JNICALL Java_java_lang_reflect_Field_getNameInternal(JNIEnv* env,
 		auto& field = clazz.getField(nameObj->str());
 		auto& annotationClass = annotationTypeObj->getClassType();
 		return field.hasAnnotation(annotationClass.getFullname()) ? JNI_TRUE : JNI_FALSE;
+	}
+
+	JNIEXPORT jobject JNICALL Java_java_lang_reflect_Field_getAnnotationNative(JNIEnv* env, jobject obj, jobject annotationType) {
+		auto fieldObj = sandvik::native::getObject(obj);
+		auto annotationTypeObj = sandvik::native::getReferenceObjectOrNull(annotationType);
+		if (annotationTypeObj == nullptr || annotationTypeObj->isNull()) {
+			return nullptr;
+		}
+		auto& clazz = const_cast<sandvik::Class&>(fieldObj->getField("declaringClass")->getClassType());
+		auto& field = clazz.getField(fieldObj->getField("name")->str());
+		const auto* annotation = field.getAnnotation(annotationTypeObj->getClassType().getFullname());
+		if (annotation == nullptr) {
+			return nullptr;
+		}
+		return (jobject)sandvik::makeAnnotationInstance(sandvik::native::getNativeInterface(env)->getVm().currentThread(), *annotation);
 	}
 
 #if 0

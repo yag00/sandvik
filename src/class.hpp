@@ -130,6 +130,10 @@ namespace sandvik {
 			 * @return Pointer to the Method object, or nullptr if not found.
 			 */
 			Method* getDeclaredMethod(const std::string& name_, const std::string& parameters_) const;
+			/** @brief Methods declared by this class (not inherited)
+			 * @return pointers to the methods
+			 */
+			std::vector<Method*> getDeclaredMethods() const;
 
 			/** @brief Checks if a class field exists.
 			 * @param name_ Name of the field.

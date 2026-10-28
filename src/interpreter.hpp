@@ -48,6 +48,9 @@ namespace sandvik {
 
 			/** @brief executes current thread opcode. */
 			void execute();
+			/** @brief Runs the static initializer of a class if it has not run yet (class initialization on first use)
+			 * @param class_ class to initialize */
+			void ensureInitialized(Class& class_) const;
 
 		private:
 			/** Opcode method declarations */

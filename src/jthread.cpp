@@ -256,6 +256,10 @@ void JThread::visitReferences(const std::function<void(Object*)>& visitor_) cons
 	}
 }
 
+void JThread::ensureInitialized(Class& class_) const {
+	_interpreter->ensureInitialized(class_);
+}
+
 JThread& JThread::newChild(const std::string& name_) {
 	auto child = std::make_unique<JThread>(_vm, _classloader, name_);
 	_childrenThreads.push_back(std::move(child));

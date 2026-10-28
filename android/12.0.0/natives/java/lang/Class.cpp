@@ -23,18 +23,21 @@
 #include <algorithm>
 #include <map>
 
+#include "annotation_factory.hpp"
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
+#include "jthread.hpp"
 #include "loader/dex/Annotation.hpp"
 #include "method.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
 
@@ -59,6 +62,38 @@ namespace {
 			}
 		}
 		return parameters;
+	}
+}  // namespace
+
+namespace {
+	/** @brief java.lang.reflect.Field for a field of clazz_ */
+	ObjectRef makeReflectField(ClassLoader& classloader_, const Class& clazz_, const sandvik::Field& field_) {
+		auto fieldObj = Object::make(classloader_.getOrLoad("java/lang/reflect/Field"));
+		fieldObj->setField("declaringClass", Object::makeConstClass(classloader_, const_cast<Class&>(clazz_)));
+		fieldObj->setField("name", Object::make(classloader_, field_.getName()));
+		fieldObj->setField("type", Object::makeConstClass(classloader_, classloader_.getOrLoad(field_.getType())));
+		fieldObj->setField("accessFlags", Object::make((uint64_t)field_.getAccessFlags()));
+		fieldObj->setField("offset", Object::make((uint64_t)field_.getIndex()));
+		return fieldObj;
+	}
+
+	/** @brief Field[] of the fields declared by the class (not inherited) */
+	jobjectArray makeDeclaredFields(JNIEnv* env_, jobject classObj_, bool publicOnly_) {
+		constexpr uint32_t ACC_PUBLIC = 0x0001;
+		auto& classloader = sandvik::native::getNativeInterface(env_)->getClassLoader();
+		auto& clazz = sandvik::native::getObject(classObj_)->getClassType();
+		std::vector<ObjectRef> fields;
+		for (const auto& name : clazz.getFieldList()) {
+			auto& field = clazz.getOwnField(name);
+			if (!publicOnly_ || (field.getAccessFlags() & ACC_PUBLIC) != 0) {
+				fields.push_back(makeReflectField(classloader, clazz, field));
+			}
+		}
+		auto array = Array::make(classloader.getOrLoad("java/lang/reflect/Field"), static_cast<uint32_t>(fields.size()));
+		for (size_t i = 0; i < fields.size(); ++i) {
+			array->setElement(static_cast<uint32_t>(i), fields[i]);
+		}
+		return (jobjectArray)array;
 	}
 }  // namespace
 
@@ -217,11 +252,11 @@ extern "C" {
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredFields(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getDeclaredFields not implemented!");
+		return makeDeclaredFields(env, obj, false);
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredFieldsUnchecked(JNIEnv* env, jobject obj, jboolean publicOnly) {
-		throw VmException("Java_java_lang_Class_getDeclaredFieldsUnchecked not implemented!");
+		return makeDeclaredFields(env, obj, publicOnly == JNI_TRUE);
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredMethodsUnchecked(JNIEnv* env, jobject obj, jboolean publicOnly) {
@@ -234,27 +269,15 @@ extern "C" {
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredField(JNIEnv* env, jobject obj, jstring name) {
 		auto jenv = sandvik::native::getNativeInterface(env);
-		auto& classloader = jenv->getClassLoader();
 		auto classObj = sandvik::native::getObject(obj);
 		auto fieldName = sandvik::native::getString(name);
 		// Get the field from the internal class representation
 		auto& clazz = classObj->getClassType();
-		auto& field = clazz.getField(fieldName->str());
-		// Create a java.lang.reflect.Field object
-		auto& fieldClass = classloader.getOrLoad("java/lang/reflect/Field");
-		auto fieldObj = sandvik::Object::make(fieldClass);
-		// Set the necessary fields
-		fieldObj->setField("declaringClass", Object::makeConstClass(classloader, const_cast<Class&>(clazz)));
-		fieldObj->setField("name", fieldName);
-		auto& fieldTypeClass = classloader.getOrLoad(field.getType());
-		fieldObj->setField("type", Object::makeConstClass(classloader, fieldTypeClass));
-		fieldObj->setField("accessFlags", Object::make((uint64_t)field.getAccessFlags()));
-		fieldObj->setField("offset", Object::make((uint64_t)field.getIndex()));
-		return (jobject)fieldObj;
+		return (jobject)makeReflectField(jenv->getClassLoader(), clazz, clazz.getField(fieldName->str()));
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getPublicDeclaredFields(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getPublicDeclaredFields not implemented!");
+		return makeDeclaredFields(env, obj, true);
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getPrimitiveClass(JNIEnv* env, jclass, jstring name) {
@@ -331,7 +354,16 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredAnnotation(JNIEnv* env, jobject obj, jobject annotationClass) {
-		throw VmException("Java_java_lang_Class_getDeclaredAnnotation not implemented!");
+		auto& clazz = sandvik::native::getObject(obj)->getClassType();
+		auto annotationTypeObj = sandvik::native::getReferenceObjectOrNull(annotationClass);
+		if (annotationTypeObj == nullptr || annotationTypeObj->isNull()) {
+			return nullptr;
+		}
+		const auto* annotation = clazz.getAnnotation(annotationTypeObj->getClassType().getFullname());
+		if (annotation == nullptr) {
+			return nullptr;
+		}
+		return (jobject)makeAnnotationInstance(sandvik::native::getNativeInterface(env)->getVm().currentThread(), *annotation);
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredAnnotations(JNIEnv* env, jobject obj) {

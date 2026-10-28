@@ -33,6 +33,7 @@ namespace sandvik {
 	class Method;
 	class Interpreter;
 	class ClassLoader;
+	class Class;
 	/** @brief Java thread representation */
 	class JThread : public Thread {
 		public:
@@ -120,6 +121,9 @@ namespace sandvik {
 			 */
 			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
+			/** @brief Initializes a class (static initializer) if needed, for natives accessing static members
+			 * @param class_ class to initialize */
+			void ensureInitialized(Class& class_) const;
 			/** @brief Creates a new child thread (used to execute in thread method like clinit method).
 			 * @param name_ Name of the child thread
 			 * @return Reference to the created child thread

@@ -306,6 +306,12 @@ void Interpreter::execute() {
 	}
 }
 
+void Interpreter::ensureInitialized(Class& class_) const {
+	if (!class_.isStaticInitialized()) {
+		executeClinit(class_);
+	}
+}
+
 void Interpreter::executeClinit(Class& class_) const {
 	// constant static fields get their initial value first, <clinit> may read them
 	class_.applyStaticInitialValues();

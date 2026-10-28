@@ -359,6 +359,15 @@ Method* Class::getDeclaredMethod(const std::string& name_, const std::string& pa
 	return nullptr;
 }
 
+std::vector<Method*> Class::getDeclaredMethods() const {
+	std::vector<Method*> methods;
+	methods.reserve(_methods.size());
+	for (const auto& [key, method] : _methods) {
+		methods.push_back(method.get());
+	}
+	return methods;
+}
+
 Method& Class::getMethod(uint32_t idx_) {
 	for (const auto& [name, method] : _methods) {
 		if (method->getIndex() == idx_) {

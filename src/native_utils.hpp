@@ -19,6 +19,7 @@
 #ifndef __NATIVE_UTILS_HPP__
 #define __NATIVE_UTILS_HPP__
 
+#include <cstdint>
 #include <string>
 
 #include "jni/jni.h"
@@ -27,6 +28,7 @@ namespace sandvik {
 	class Object;
 	class Array;
 	class NativeInterface;
+	class ClassLoader;
 	/** @brief Native function utilities */
 	namespace native {
 		/** @brief Retrieves a native Object from a Java jobject. */
@@ -41,6 +43,10 @@ namespace sandvik {
 		Object* getNullableString(jstring jstr);
 		/** @brief Retrieves a native Array from a Java jobject. */
 		Array* getArray(jobject jarray);
+		/** @brief Boxes a primitive value into its java.lang wrapper (Integer, Long...)
+		 * @param type_ primitive type descriptor (Z, B, C, S, I, J, F, D)
+		 * @param value_ raw value (bits for F and D) */
+		Object* boxPrimitive(ClassLoader& classloader_, char type_, uint64_t value_);
 		/** @brief Retrieves the native interface from the Java environment. */
 		NativeInterface* getNativeInterface(JNIEnv* env);
 	};  // namespace native
