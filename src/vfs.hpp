@@ -56,6 +56,9 @@ namespace sandvik {
 			/**
 			 * @brief Resolves a virtual Android file path to the corresponding host file path.
 			 *
+			 * /data/... is mapped to the host cache (writable, per user), other absolute paths that do not exist on the
+			 * host are mapped to the Android root.
+			 *
 			 * @param virtualPath The virtual Android file path (e.g., "/misc/zoneinfo/...").
 			 * @return The corresponding host file path (e.g., "/home/user/emulator/android_root/misc/zoneinfo/...").
 			 */

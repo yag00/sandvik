@@ -34,6 +34,11 @@ std::string VFS::resolve(const std::string& virtualPath) {
 		return virtualPath;
 	}
 
+	// /data is the writable user data partition: it lives in the host cache, never in the Android root of the repository
+	if (virtualPath == "/data" || virtualPath.rfind("/data/", 0) == 0) {
+		return hostCacheRoot + virtualPath;
+	}
+
 	if (virtualPath[0] == '/') {
 		// It the file does not exist in the host filesystem, resolve to virtual path in the Android Root directory.
 		if (!std::filesystem::exists(virtualPath)) {
