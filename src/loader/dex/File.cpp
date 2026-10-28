@@ -501,9 +501,9 @@ std::unique_ptr<Class> File::parseClassDef(const Reader& r_, uint32_t classDefOf
 	// source_file_idx (+16): unused, no debug-info support.
 	uint32_t annotationsOff = r_.u4(classDefOffset_ + 20);
 	uint32_t classDataOff = r_.u4(classDefOffset_ + 24);
-	// static_values_off (+28): unused - static fields are already default-initialized elsewhere
-	// (see Field's value storage), and encoded initial values are an optimization sandvik doesn't
-	// need to replicate (a <clinit>, when present, assigns the real values anyway).
+	// static_values_off (+28): initial values of the first static fields, in class_data order. The compiler
+	// drops the <clinit> assignments of the constant static fields: they only exist here.
+	uint32_t staticValuesOff = r_.u4(classDefOffset_ + 28);
 
 	std::string descriptor = typeDescriptor(classIdx);
 	std::string superDescriptor;
@@ -537,6 +537,14 @@ std::unique_ptr<Class> File::parseClassDef(const Reader& r_, uint32_t classDefOf
 			fieldIdx += r_.readULEB128(cursor);
 			uint32_t fieldAccessFlags = r_.readULEB128(cursor);
 			fields.push_back(buildField(fieldIdx, fieldAccessFlags));
+		}
+		if (staticValuesOff != 0) {
+			// encoded_array_item: size, then one encoded_value per static field (trailing ones may be omitted)
+			size_t valuesCursor = staticValuesOff;
+			uint32_t valuesSize = r_.readULEB128(valuesCursor);
+			for (uint32_t i = 0; i < valuesSize && i < staticFieldsSize; ++i) {
+				fields[i]->setInitialValue(parseEncodedValue(r_, valuesCursor));
+			}
 		}
 		fieldIdx = 0;
 		for (uint32_t i = 0; i < instanceFieldsSize; ++i) {

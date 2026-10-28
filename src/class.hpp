@@ -161,6 +161,8 @@ namespace sandvik {
 			 * @return Vector of field names.
 			 */
 			std::vector<std::string> getFieldList() const;
+			/** @brief Applies the String initial values of the static fields (class initialization) */
+			void applyStaticInitialValues();
 			/** @brief Gets the offset of a field by name.
 			 * @param name_ Name of the field.
 			 * @return Offset of the field.

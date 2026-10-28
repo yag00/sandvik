@@ -20,6 +20,8 @@
 
 #include <fmt/format.h>
 
+#include <bit>
+
 #include "class.hpp"
 #include "exceptions.hpp"
 #include "loader/dex/Class.hpp"
@@ -44,6 +46,37 @@ Field::Field(Class& class_, const dex::Field& field_)
 	_accessFlags = 0;
 	for (const auto& flag : field_.access_flags()) {
 		_accessFlags |= static_cast<uint32_t>(flag);
+	}
+	if (_isStatic && field_.initialValue()) {
+		const auto& value = *field_.initialValue();
+		switch (value.kind()) {
+			case dex::EncodedValue::Kind::Int:
+				_value = static_cast<uint64_t>(value.asInt());
+				break;
+			case dex::EncodedValue::Kind::Float:
+				if (_type == "F") {
+					_value = std::bit_cast<uint32_t>(static_cast<float>(value.asFloat()));
+				} else {
+					_value = std::bit_cast<uint64_t>(value.asFloat());
+				}
+				break;
+			case dex::EncodedValue::Kind::Bool:
+				_value = value.asBool() ? 1 : 0;
+				break;
+			case dex::EncodedValue::Kind::String:
+				_initialString = value.asString();
+				break;
+			default:
+				// null, or values that are not constants (type, enum...): assigned by <clinit>
+				break;
+		}
+	}
+}
+
+void Field::applyInitialValue(ClassLoader& classloader_) {
+	if (_initialString) {
+		_obj = Object::make(classloader_, *_initialString);
+		_initialString.reset();
 	}
 }
 

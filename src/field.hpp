@@ -20,6 +20,7 @@
 #define __FIELD_HPP__
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -98,6 +99,9 @@ namespace sandvik {
 			 * @param value Shared pointer to the Object value.
 			 */
 			void setObjectValue(ObjectRef value);
+			/** @brief Sets the String initial value (static_values) of a static field, done when its class is initialized
+			 * @param classloader_ class loader used to create the String */
+			void applyInitialValue(ClassLoader& classloader_);
 
 			/** @brief Gets the Class that owns this field.
 			 * @return Reference to the Class.
@@ -154,6 +158,7 @@ namespace sandvik {
 			uint64_t _value = 0;
 			std::string _strValue = "";
 			ObjectRef _obj;
+			std::optional<std::string> _initialString;  // String initial value, set when the class is initialized
 			std::vector<dex::Annotation> _annotations;
 	};
 }  // namespace sandvik

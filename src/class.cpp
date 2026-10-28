@@ -416,6 +416,14 @@ Field& Class::getOwnField(const std::string& name_) const {
 	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
 }
 
+void Class::applyStaticInitialValues() {
+	for (auto& [name, field] : _fields) {
+		if (field->isStatic()) {
+			field->applyInitialValue(getClassLoader());
+		}
+	}
+}
+
 std::vector<std::string> Class::getFieldList() const {
 	std::vector<std::string> fieldList;
 	for (const auto& [name, field] : _fields) {

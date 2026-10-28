@@ -307,6 +307,8 @@ void Interpreter::execute() {
 }
 
 void Interpreter::executeClinit(Class& class_) const {
+	// constant static fields get their initial value first, <clinit> may read them
+	class_.applyStaticInitialValues();
 	auto hasInitializeMethod = class_.hasMethod("initializeSystemClass", "()V");
 	auto hasClinitMethod = class_.hasMethod("<clinit>", "()V");
 	if (!hasInitializeMethod && !hasClinitMethod) {

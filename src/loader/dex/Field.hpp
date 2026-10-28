@@ -20,6 +20,7 @@
 #define __SANDVIK_DEX_FIELD_HPP__
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -78,6 +79,14 @@ namespace sandvik {
 				const std::vector<Annotation>& annotations() const {
 					return _annotations;
 				}
+				/** @brief Initial value of a static field (class_def static_values), if the DEX defines one. */
+				const std::optional<EncodedValue>& initialValue() const {
+					return _initialValue;
+				}
+				/** @brief Sets the initial value of a static field. */
+				void setInitialValue(EncodedValue value_) {
+					_initialValue = std::move(value_);
+				}
 				/** @brief Attaches this field's annotations, decoded from its class's
 				 * annotations_directory_item. Called at most once, right after construction, by
 				 * File::parseAnnotationsDirectory().
@@ -92,6 +101,7 @@ namespace sandvik {
 				uint32_t _accessFlags;
 				size_t _index;
 				std::vector<Annotation> _annotations;
+				std::optional<EncodedValue> _initialValue;
 		};
 	}  // namespace dex
 }  // namespace sandvik
