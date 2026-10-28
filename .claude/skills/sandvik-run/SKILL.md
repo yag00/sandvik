@@ -54,6 +54,11 @@ ext/android/build-tools/36.0.0/d8 --output /tmp/out /tmp/out/*.class   # -> /tmp
 LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --android-version=12.0.0 --dex /tmp/out/classes.dex --main Foo -- arg1
 ```
 
+## APK
+
+`--apk tests/java/helloapk/hello.apk` runs `android.app.SandvikLauncher`, which plays `system_server` in-process and launches the manifest launcher activity through `ActivityThread` (prints `Hello World!` from `onCreate`). Rebuild the test APK with `tests/java/helloapk/build.sh`, the launcher/services jar with `android/12.0.0/java/build.sh`.
+Mechanics and debugging: `doc/app-runtime.md`.
+
 ## Zygote
 
 Launches `com.android.internal.os.ZygoteInit` on the Android 12 runtime. Sandvik creates a stub
