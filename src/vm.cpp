@@ -18,6 +18,8 @@
 
 #include "vm.hpp"
 
+#include <filesystem>
+
 #include "jni/jni.h"
 
 #include "array.hpp"
@@ -31,6 +33,7 @@
 #include "interpreter.hpp"
 #include "jni.hpp"
 #include "jthread.hpp"
+#include "loader/apk.hpp"
 #include "method.hpp"
 #include "monitor.hpp"
 #include "object.hpp"
@@ -138,8 +141,13 @@ NativeInterface* Vm::getJNIEnv() const {
 }
 
 void Vm::run() {
-	auto& clazz = _classloader->getMainActivityClass();
-	run(clazz, {});
+	const auto* apk = _classloader->getMainApk();
+	if (!apk) {
+		throw VmException("Main activity class not found");
+	}
+	// No system_server: SandvikLauncher binds the application and launches the activity in-process
+	const auto apkPath = std::filesystem::absolute(apk->getPath()).string();
+	run("android.app.SandvikLauncher", {apkPath, apk->getPackageName(), apk->getMainActivity()});
 }
 void Vm::run(const std::string& mainClass_, const std::vector<std::string>& args_) {
 	auto& clazz = _classloader->getOrLoad(mainClass_);
@@ -160,22 +168,13 @@ void Vm::run(Class& clazz_, const std::vector<std::string>& args_) {
 	mainGroup->setField("name", Object::make(*_classloader, "main"));
 	mainThread.getThreadObject()->setField("group", mainGroup);
 
-	uint32_t nbRegisters = 0;
-	if (clazz_.hasMethod("onCreate", "(Landroid/os/Bundle;)V")) {
-		// Create a new frame for the main method
-		auto& method = clazz_.getMethod("onCreate", "(Landroid/os/Bundle;)V");
-		mainThread.newFrame(method);
-		nbRegisters = method.getNbRegisters() - 1;
-	} else {
-		if (clazz_.hasMethod("main", "([Ljava/lang/String;)V")) {
-			// Create a new frame for the main method
-			auto& method = clazz_.getMethod("main", "([Ljava/lang/String;)V");
-			mainThread.newFrame(method);
-			nbRegisters = method.getNbRegisters() - 1;
-		} else {
-			throw VmException("onCreate or main method not found in class {}", clazz_.getFullname());
-		}
+	if (!clazz_.hasMethod("main", "([Ljava/lang/String;)V")) {
+		throw VmException("main method not found in class {}", clazz_.getFullname());
 	}
+	// Create a new frame for the main method
+	auto& method = clazz_.getMethod("main", "([Ljava/lang/String;)V");
+	mainThread.newFrame(method);
+	const uint32_t nbRegisters = method.getNbRegisters() - 1;
 
 	// Set the arguments for the main method
 	const auto& stringClass = _classloader->getOrLoad("java.lang.String");

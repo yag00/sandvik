@@ -131,14 +131,24 @@ std::string ClassLoader::getMainActivity() const {
 	return "";
 }
 
-Class& ClassLoader::getMainActivityClass() {
+const Apk* ClassLoader::getMainApk() const {
 	for (const auto& apk : _apks) {
-		auto className = apk->getMainActivity();
-		if (!className.empty()) {
-			return getOrLoad(className);
+		if (!apk->getMainActivity().empty()) {
+			return apk.get();
 		}
 	}
-	throw VmException("Main activity class not found");
+	return nullptr;
+}
+
+bool ClassLoader::isApkLoaded(const std::string& path_) const {
+	std::error_code ec;
+	const auto canonical = std::filesystem::weakly_canonical(path_, ec);
+	for (const auto& apk : _apks) {
+		if (std::filesystem::weakly_canonical(apk->getPath(), ec) == canonical) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void ClassLoader::addClass(std::unique_ptr<Class> class_) {
@@ -475,26 +485,6 @@ void ClassLoader::linkClass(Class& class_) {
 				callIndex = 0;
 			}
 			frame.setReturnValue(static_cast<int32_t>(table[callIndex++].value));
-		});
-		return;
-	}
-
-	if (class_.getFullname() == "android.os.StatsFrameworkInitializer") {
-		class_.getMethod("setStatsServiceManager", "(Landroid/os/StatsServiceManager;)V").hook([](Frame& frame, std::vector<ObjectRef>& args) {
-			(void)frame;
-			if (args.size() != 1) {
-				throw VmException("Invalid number of arguments for StatsFrameworkInitializer.setStatsServiceManager");
-			}
-		});
-		return;
-	}
-
-	if (class_.getFullname() == "android.media.MediaFrameworkInitializer") {
-		class_.getMethod("setMediaServiceManager", "(Landroid/media/MediaServiceManager;)V").hook([](Frame& frame, std::vector<ObjectRef>& args) {
-			(void)frame;
-			if (args.size() != 1) {
-				throw VmException("Invalid number of arguments for MediaFrameworkInitializer.setMediaServiceManager");
-			}
 		});
 		return;
 	}

@@ -60,12 +60,16 @@ namespace sandvik {
 			 * @return Name of the main activity
 			 */
 			std::string getMainActivity() const;
+			/** @brief Gets the package name declared in the APK manifest.
+			 * @return Package name
+			 */
+			const std::string& getPackageName() const;
 
 		protected:
 			/** @brief Finds the main activity defined in the APK file.
 			 * @return Name of the main activity
 			 */
-			std::string findMainActivity() const;
+			std::string findMainActivity();
 
 		private:
 			std::string _path;
@@ -73,6 +77,7 @@ namespace sandvik {
 			std::unique_ptr<ZipReader> _zipReader;
 			std::string _manifest;
 			std::string _mainActivity;
+			std::string _packageName;
 	};
 }  // namespace sandvik
 #endif  // __APK_LOADER_HPP__
