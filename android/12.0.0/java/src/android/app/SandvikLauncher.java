@@ -83,6 +83,7 @@ public final class SandvikLauncher {
 		SandvikActivityManager activityManager = new SandvikActivityManager();
 		activityManager.publishProvider(SandvikSettingsProvider.AUTHORITY, "com.android.providers.settings", new SandvikSettingsProvider());
 		serviceManager.addService(Context.ACTIVITY_SERVICE, activityManager, false, 0);
+		serviceManager.addService(Context.GAME_SERVICE, new SandvikGameManagerService(), false, 0);
 		// installd creates the data directories when the package is installed
 		new java.io.File(appInfo.dataDir).mkdirs();
 		new java.io.File(appInfo.deviceProtectedDataDir).mkdirs();
