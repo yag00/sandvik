@@ -600,7 +600,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			case '[':  // array
 			{
 				auto argobj = va_arg(args, jobject);
-				frame.setObjRegister(regidx++, native::getObject(argobj));
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
 				break;
 			}
 			default:
@@ -669,7 +669,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 			case '[':  // array
 			{
 				auto argobj = va_arg(args, jobject);
-				frame.setObjRegister(regidx++, native::getObject(argobj));
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
 				break;
 			}
 			default:
@@ -733,8 +733,10 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 			}
 			case 'L':  // object
 			case '[':  // array
-				frame.setObjRegister(regidx++, native::getObject(args[argIndex++].l));
-				break;
+			{
+				jobject argobj = args[argIndex++].l;
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
+			} break;
 			default:
 				throw VmException(fmt::format("NewObjectA: unknown argument type '{}'", arg));
 		}
@@ -836,8 +838,10 @@ static CallResult invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, j
 			}
 			case 'L':  // object
 			case '[':  // array
-				frame.setObjRegister(regidx++, native::getObject(fetchArg.getObject()));
-				break;
+			{
+				jobject argobj = fetchArg.getObject();
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
+			} break;
 			default:
 				throw VmException(fmt::format("{}: unknown argument type '{}'", callerName, arg));
 		}
@@ -907,8 +911,10 @@ static CallResult invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodI
 			}
 			case 'L':  // object
 			case '[':  // array
-				frame.setObjRegister(regidx++, native::getObject(fetchArg.getObject()));
-				break;
+			{
+				jobject argobj = fetchArg.getObject();
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
+			} break;
 			default:
 				throw VmException(fmt::format("{}: unknown argument type '{}'", callerName, arg));
 		}
