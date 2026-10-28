@@ -1426,7 +1426,7 @@ void NativeInterface::SetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID,
 		throw NoSuchFieldException(fmt::format("SetObjectField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
 	}
 	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
-	jobj->setField(field.getName(), native::getObject(val));
+	jobj->setField(field.getName(), val == nullptr ? Object::makeNull() : native::getObject(val));
 }
 
 void NativeInterface::SetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID, jboolean val) {
@@ -1925,7 +1925,7 @@ void NativeInterface::SetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID f
 	if (!field.isStatic()) {
 		throw ClassCastException("SetStaticObjectField: field is not static");
 	}
-	field.setObjectValue(native::getObject(value));
+	field.setObjectValue(value == nullptr ? Object::makeNull() : native::getObject(value));
 }
 
 void NativeInterface::SetStaticBooleanField(JNIEnv *env, jclass clazz, jfieldID fieldID, jboolean value) {
@@ -2183,7 +2183,7 @@ void NativeInterface::SetObjectArrayElement(JNIEnv *env, jobjectArray array, jsi
 	if (index < 0 || (uint32_t)index >= arr.getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("SetObjectArrayElement: index out of bounds");
 	}
-	arr.setElement(index, native::getObject(val));
+	arr.setElement(index, val == nullptr ? Object::makeNull() : native::getObject(val));
 }
 
 jbooleanArray NativeInterface::NewBooleanArray(JNIEnv *env, jsize len) {
@@ -2716,13 +2716,27 @@ jboolean NativeInterface::ExceptionCheck(JNIEnv *env) {
 }
 
 jobject NativeInterface::NewDirectByteBuffer(JNIEnv *env, void *address, jlong capacity) {
-	throw VmException("NewDirectByteBuffer not implemented");
+	// Same as ART: wrap the memory with the DirectByteBuffer(long addr, int cap) constructor
+	jclass bufferClass = env->FindClass("java/nio/DirectByteBuffer");
+	jmethodID constructor = env->GetMethodID(bufferClass, "<init>", "(JI)V");
+	jvalue args[2];
+	args[0].j = static_cast<jlong>(reinterpret_cast<uintptr_t>(address));
+	args[1].i = static_cast<jint>(capacity);
+	return env->NewObjectA(bufferClass, constructor, args);
 }
 void *NativeInterface::GetDirectBufferAddress(JNIEnv *env, jobject buf) {
-	throw VmException("GetDirectBufferAddress not implemented");
+	if (buf == nullptr) {
+		return nullptr;
+	}
+	// java.nio.Buffer.address: 0 for a heap buffer
+	auto address = native::getObject(buf)->getField("address")->getLongValue();
+	return reinterpret_cast<void *>(static_cast<uintptr_t>(address));
 }
 jlong NativeInterface::GetDirectBufferCapacity(JNIEnv *env, jobject buf) {
-	throw VmException("GetDirectBufferCapacity not implemented");
+	if (buf == nullptr || GetDirectBufferAddress(env, buf) == nullptr) {
+		return -1;
+	}
+	return static_cast<jlong>(static_cast<jint>(native::getObject(buf)->getField("capacity")->getValue()));
 }
 
 jobjectRefType NativeInterface::GetObjectRefType(JNIEnv *env, jobject obj) {
