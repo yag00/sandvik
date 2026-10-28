@@ -196,7 +196,7 @@ With `--log=NONE` only `Hello, World!` is printed.
 The runtime JARs can also be given explicitly:
 
 ```bash
-LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --log=NONE --jar android/12.0.0/bin/core-oj.dex.jar --jar android/12.0.0/bin/core-libart.dex.jar --jar android/12.0.0/bin/icu-stubs.dex.jar --dex tests/java/hello/classes.dex --main HelloWorld
+LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --log=NONE --jar android/12.0.0/bin/core-oj.jar --jar android/12.0.0/bin/core-libart.jar --jar android/12.0.0/bin/icu-stubs.dex.jar --dex tests/java/hello/classes.dex --main HelloWorld
 ```
 
 Let's print instructions and calls :

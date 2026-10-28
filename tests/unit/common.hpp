@@ -22,8 +22,8 @@
 
 inline void initializeVmRuntime(sandvik::Vm& vm) {
 	// Load the runtime libraries
-	vm.loadRtByFile("../android/12.0.0/bin/core-oj.dex.jar");
-	vm.loadRtByFile("../android/12.0.0/bin/core-libart.dex.jar");
+	vm.loadRtByFile("../android/12.0.0/bin/core-oj.jar");
+	vm.loadRtByFile("../android/12.0.0/bin/core-libart.jar");
 	vm.loadRtByFile("../android/12.0.0/bin/icu-stubs.dex.jar");
 }
 

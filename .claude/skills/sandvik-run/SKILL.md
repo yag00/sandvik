@@ -37,7 +37,7 @@ Logs go to **stderr**; stdout only carries the Java program output (`2>/dev/null
 Markers: `[!]` error, `[w]` warning, `[+]`/`[*]` info, `[d]` debug, `[t]` trace, `[v]` verbose (indented under `[i]`),
 `[app]` app logs in logcat style (`[app] W/Zygote: ...`), `[i]` instruction trace, `[c]` call trace. Colors only on a tty (`NO_COLOR=1` disables them).
 
-Runtime layout: `android/12.0.0/bin/*.dex.jar` (AOSP core-oj, core-libart, icu, conscrypt, bouncycastle...), `android/12.0.0/fs/` (fake `/system`, `/etc`...), `android/12.0.0/natives/` (C++ JNI natives compiled into libsandvik).
+Runtime layout: `android/12.0.0/bin/*.jar` loaded in `order.txt` order (AOSP core-oj and core-libart as installed on a device, with their Java resources; icu, conscrypt, bouncycastle... dex jars), `android/12.0.0/fs/` (fake `/system`, `/etc`...), `android/12.0.0/natives/` (C++ JNI natives compiled into libsandvik).
 
 ## Hello World
 

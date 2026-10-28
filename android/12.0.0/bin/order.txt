@@ -1,7 +1,7 @@
 android-util-stubs.dex.jar
 icu-stubs.dex.jar
-core-oj.dex.jar
-core-libart.dex.jar
+core-oj.jar
+core-libart.jar
 core-icu4j.dex.jar
 core-icu4j-2.dex.jar
 sandvik-framework.dex.jar
