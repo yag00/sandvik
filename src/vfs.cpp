@@ -18,6 +18,8 @@
 
 #include "vfs.hpp"
 
+#include <filesystem>
+
 #include "system/logger.hpp"
 
 using namespace sandvik;
@@ -29,14 +31,14 @@ void VFS::setAndroidRoot(const std::string& path) {
 std::string VFS::resolve(const std::string& virtualPath) {
 	if (virtualPath.empty()) return virtualPath;
 
-	// If the virtual path is already an absolute path in the host cache, return it as is.
-	if (virtualPath.rfind(hostCacheRoot, 0) == 0) {
+	// If the virtual path is already a host path in the Android root, return it as is.
+	if (virtualPath.rfind(androidRoot, 0) == 0) {
 		return virtualPath;
 	}
 
-	// /data is the writable user data partition: it lives in the host cache, never in the Android root of the repository
+	// /data is the writable user data partition of the device, not the /data of the host
 	if (virtualPath == "/data" || virtualPath.rfind("/data/", 0) == 0) {
-		return hostCacheRoot + virtualPath;
+		return androidRoot + virtualPath;
 	}
 
 	if (virtualPath[0] == '/') {

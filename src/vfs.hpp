@@ -19,9 +19,6 @@
 #ifndef __VFS_HPP__
 #define __VFS_HPP__
 
-#include <unistd.h>
-
-#include <filesystem>
 #include <string>
 
 namespace sandvik {
@@ -32,20 +29,7 @@ namespace sandvik {
 		private:
 			static inline std::string androidRoot = "./android_root";
 
-			// Namespaced by uid to avoid the race condition of a fixed, predictable
-			// path in the publicly writable temp directory.
-			static inline std::string hostCacheRoot = (std::filesystem::temp_directory_path() / ("sandvik-" + std::to_string(getuid()))).string();
-
 		public:
-			/**
-			 * @brief Gets the host cache root directory for the virtual file system.
-			 *
-			 * @return The path to the host cache root directory.
-			 */
-			static std::string getHostCacheRoot() {
-				return hostCacheRoot;
-			}
-
 			/**
 			 * @brief Sets the Android root directory for the virtual file system.
 			 *
@@ -56,8 +40,8 @@ namespace sandvik {
 			/**
 			 * @brief Resolves a virtual Android file path to the corresponding host file path.
 			 *
-			 * /data/... is mapped to the host cache (writable, per user), other absolute paths that do not exist on the
-			 * host are mapped to the Android root.
+			 * /data/... (the writable user data partition) is always mapped to the Android root, even when the host has a
+			 * /data directory; other absolute paths that do not exist on the host are mapped to the Android root.
 			 *
 			 * @param virtualPath The virtual Android file path (e.g., "/misc/zoneinfo/...").
 			 * @return The corresponding host file path (e.g., "/home/user/emulator/android_root/misc/zoneinfo/...").
