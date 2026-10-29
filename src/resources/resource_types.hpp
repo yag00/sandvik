@@ -261,8 +261,8 @@ namespace sandvik::resources {
 			/** @brief Reads a structure whose stored header may be shorter than T (older formats): missing fields are zero */
 			template <typename T>
 			T readPartial(size_t offset_, size_t storedSize_) const {
-				T value;
-				std::memset(&value, 0, sizeof(T));
+				// value-initialization zeroes the fields (T may have default member initializers, so no memset)
+				T value{};
 				const size_t size = storedSize_ < sizeof(T) ? storedSize_ : sizeof(T);
 				std::memcpy(&value, sub(offset_, size).data(), size);
 				return value;
