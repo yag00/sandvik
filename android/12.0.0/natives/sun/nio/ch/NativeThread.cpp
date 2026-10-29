@@ -33,22 +33,15 @@
 
 extern "C" {
 
-#if 0
-JNIEXPORT void JNICALL Java_sun_nio_ch_NativeThread_current(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	// No native thread signalling to unblock I/O: 0 means "no thread to signal", as on platforms without signals
+	JNIEXPORT jlong JNICALL Java_sun_nio_ch_NativeThread_current(JNIEnv*, jclass) {
+		return 0;
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_sun_nio_ch_NativeThread_signal(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT void JNICALL Java_sun_nio_ch_NativeThread_signal(JNIEnv*, jclass, jlong) {
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_sun_nio_ch_NativeThread_init(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT void JNICALL Java_sun_nio_ch_NativeThread_init(JNIEnv*, jclass) {
+	}
 
 }  // extern "C"

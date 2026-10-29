@@ -42,7 +42,7 @@ Java tests redirect stdout to `wbuild/test_<Class>.out`, so the console output s
 | `test_dex.cpp`                                                                         | Sandvik's own DEX parser (`src/loader/dex*`), incl. annotations (`tests/java/annotations`)                                    |
 | `test_object.cpp`, `test_gc.cpp`, `test_thread.cpp`, `test_stream.cpp`, `test_zip.cpp` | VM internals                                                                                                                  |
 
-`tests/unit/common.hpp` → `initializeVmRuntime(vm)` loads `core-oj`, `core-libart`, `icu-stubs` dex jars.
+`tests/unit/common.hpp` → `initializeVmRuntime(vm)` loads the `core-oj`, `core-libart` and `icu-stubs` jars.
 
 ## Adding a Java behaviour test (most common)
 

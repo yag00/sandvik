@@ -34,9 +34,8 @@ extern "C" {
 		if (offset < 0 || count < 0 || offset + count > len) {
 			throw IndexOutOfBoundsException("Invalid range in StringFactory.newStringFromChars");
 		}
-		std::vector<jchar> buf(count);
-		env->GetCharArrayRegion(value, offset, count, buf.data());
-		std::string str(buf.begin(), buf.end());
+		std::u16string str(static_cast<size_t>(count), u'\0');
+		env->GetCharArrayRegion(value, offset, count, reinterpret_cast<jchar*>(str.data()));
 		auto jenv = native::getNativeInterface(env);
 		auto& classloader = jenv->getClassLoader();
 		return (jstring)sandvik::Object::make(classloader, str);

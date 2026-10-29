@@ -42,20 +42,8 @@ JNIEXPORT void JNICALL Java_java_io_FileDescriptor_initIDs(JNIEnv* env, jobject 
 }
 #endif
 
-	JNIEXPORT jboolean JNICALL Java_java_io_FileDescriptor_isSocket(JNIEnv* env, jobject obj) {
-		if (obj == nullptr) {
-			return JNI_FALSE;
-		}
-
-		jclass clazz = env->GetObjectClass(obj);
-		jfieldID fid = env->GetFieldID(clazz, "descriptor", "I");
-
-		if (fid == nullptr) {
-			return JNI_FALSE;
-		}
-
-		jint fd = env->GetIntField(obj, fid);
-
+	// private static native boolean isSocket(int descriptor)
+	JNIEXPORT jboolean JNICALL Java_java_io_FileDescriptor_isSocket(JNIEnv*, jclass, jint fd) {
 		if (fd < 0) {
 			return JNI_FALSE;
 		}

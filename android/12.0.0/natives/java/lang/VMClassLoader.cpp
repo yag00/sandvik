@@ -44,7 +44,8 @@ namespace {
 			return it->second;
 		}
 
-		const std::string root = VFS::getHostCacheRoot();
+		// resources of the class path extracted in the data partition of the device
+		const std::string root = VFS::resolve("/data/cache/resources");
 		std::error_code ec;
 		std::filesystem::create_directories(root, ec);
 		if (ec) {

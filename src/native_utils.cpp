@@ -20,7 +20,11 @@
 
 #include <fmt/format.h>
 
+#include <map>
+#include <string>
+
 #include "array.hpp"
+#include "classloader.hpp"
 #include "exceptions.hpp"
 #include "jni.hpp"
 #include "object.hpp"
@@ -92,4 +96,16 @@ NativeInterface* native::getNativeInterface(JNIEnv* env) {
 		throw VmException("Internal error: JNIEnv is not a NativeInterface");
 	}
 	return jenv;
+}
+Object* native::boxPrimitive(ClassLoader& classloader_, char type_, uint64_t value_) {
+	static const std::map<char, std::string, std::less<>> wrappers = {{'Z', "java.lang.Boolean"}, {'B', "java.lang.Byte"},    {'C', "java.lang.Character"},
+	                                                                  {'S', "java.lang.Short"},   {'I', "java.lang.Integer"}, {'J', "java.lang.Long"},
+	                                                                  {'F', "java.lang.Float"},   {'D', "java.lang.Double"}};
+	auto it = wrappers.find(type_);
+	if (it == wrappers.end()) {
+		throw VmException("boxPrimitive: unknown primitive type '{}'", type_);
+	}
+	auto boxed = Object::make(classloader_.getOrLoad(it->second));
+	boxed->setField("value", Object::make(value_));
+	return boxed;
 }

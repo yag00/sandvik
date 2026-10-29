@@ -18,6 +18,11 @@ public class TestReflection {
             // Method call
             String out = (String) cls.getMethod("hello", String.class).invoke(obj, "VM");
             if (!out.equals("Hello VM")) { System.out.println("fail: reflection invoke"); success = false; }
+
+            if (!java.lang.reflect.Modifier.isPublic(TestReflection.class.getModifiers())) {
+                System.out.println("fail: public class modifiers");
+                success = false;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             success = false;

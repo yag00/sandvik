@@ -33,6 +33,7 @@ namespace sandvik {
 	class Method;
 	class Interpreter;
 	class ClassLoader;
+	class Class;
 	/** @brief Java thread representation */
 	class JThread : public Thread {
 		public:
@@ -85,6 +86,10 @@ namespace sandvik {
 			 * @return Reference to the class at the specified depth
 			 */
 			Class& getStackClass(uint32_t depth_) const;
+			/** @brief Gets the Java call stack, nested calls (child threads) included.
+			 * @return frames, innermost first
+			 */
+			std::vector<const Frame*> getStackFrames() const;
 
 			/** @brief Gets the thread object.
 			 * @return Shared pointer to the thread object
@@ -120,6 +125,9 @@ namespace sandvik {
 			 */
 			void visitReferences(const std::function<void(Object*)>& visitor_) const;
 
+			/** @brief Initializes a class (static initializer) if needed, for natives accessing static members
+			 * @param class_ class to initialize */
+			void ensureInitialized(Class& class_) const;
 			/** @brief Creates a new child thread (used to execute in thread method like clinit method).
 			 * @param name_ Name of the child thread
 			 * @return Reference to the created child thread
@@ -149,6 +157,43 @@ namespace sandvik {
 			bool _terminationPublished = false;
 
 			std::vector<std::unique_ptr<JThread>> _childrenThreads;
+	};
+
+	/** @brief Return value of a Java method called from native code (same accessors as JThread) */
+	struct CallResult {
+			ObjectRef object = nullptr;
+
+			ObjectRef getReturnObject() const {
+				return object;
+			}
+			int32_t getReturnValue() const;
+			int64_t getReturnDoubleValue() const;
+	};
+
+	/**
+	 * @brief A Java method called from native code (JNI Call*Method/NewObject, reflection).
+	 *
+	 * As in ART, the method runs on the calling thread: it is executed by a child of the current VM thread, so
+	 * Thread.currentThread() and the thread locals (Looper, Binder calling identity...) are the caller ones.
+	 * When the calling OS thread is not a VM thread, the method runs on a new VM thread.
+	 */
+	class NestedCall {
+		public:
+			NestedCall(Vm& vm_, const std::string& name_);
+			~NestedCall();
+			NestedCall(const NestedCall&) = delete;
+			NestedCall& operator=(const NestedCall&) = delete;
+
+			/** @brief Thread to push the method frame on */
+			JThread& thread() {
+				return *_thread;
+			}
+			/** @brief Runs the method until it returns, exceptions propagate to the caller */
+			CallResult run();
+
+		private:
+			JThread* _parent = nullptr;
+			JThread* _thread = nullptr;
 	};
 }  // namespace sandvik
 

@@ -82,23 +82,14 @@ JNIEXPORT void JNICALL Java_java_lang_Thread_start0(JNIEnv* env, jobject obj) {
 }
 #endif
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Thread_interrupted(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	// Thread interruption is not supported (no interrupt0): threads are never interrupted
+	JNIEXPORT jboolean JNICALL Java_java_lang_Thread_interrupted(JNIEnv*, jclass) {
+		return JNI_FALSE;
+	}
 
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Thread_isInterrupted(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
-
-#if 0
-JNIEXPORT void JNICALL Java_java_lang_Thread_isInterrupted(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
+	JNIEXPORT jboolean JNICALL Java_java_lang_Thread_isInterrupted(JNIEnv*, jobject) {
+		return JNI_FALSE;
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_java_lang_Thread_countStackFrames(JNIEnv* env, jobject obj) {

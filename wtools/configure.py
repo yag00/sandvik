@@ -8,6 +8,7 @@ import subprocess
 from waflib import Logs
 from waflib.Configure import conf
 import re
+import zipfile
 
 def execute(cmd, cwd, env_vars=None):
 	print(cmd)
@@ -236,3 +237,34 @@ def check_dependencies_tools(conf):
 		conf.fatal('CMake >= 3.24 is required (found {}.{}.{})'.format(major, minor, patch))
 	conf.msg('Checking for cmake version >= 3.24', '{}.{}.{}'.format(major, minor, patch))
 	Logs.pprint('BLUE', 'Checking for local dependencies tools and libraries')
+
+@conf
+def check_framework_res(conf):
+	"""Installs android/12.0.0/fs/system/framework/framework-res.apk, the framework resources.
+
+	The internal resource ids (com.android.internal.R) change from one build to another: framework-res.apk must
+	come from the same AOSP build as javalib.jar. android/12.0.0/bin/framework-res.apk (AOSP
+	out/target/product/<target>/system/framework/framework-res.apk) is used when present. Otherwise the resources
+	of the SDK android.jar (API 31) are used: the public resources (android.R) match, the internal ones do not."""
+	framework_res = os.path.abspath('android/12.0.0/fs/system/framework/framework-res.apk')
+	os.makedirs(os.path.dirname(framework_res), exist_ok=True)
+	aosp_res = os.path.abspath('android/12.0.0/bin/framework-res.apk')
+	if os.path.isfile(aosp_res):
+		if not os.path.isfile(framework_res) or os.path.getmtime(framework_res) < os.path.getmtime(aosp_res):
+			shutil.copy2(aosp_res, framework_res)
+		conf.msg('Checking for framework-res.apk', 'AOSP build (android/12.0.0/bin/framework-res.apk)')
+		return
+
+	android_home = os.path.abspath('ext/android')
+	android_jar = os.path.join(android_home, 'platforms', 'android-31', 'android.jar')
+	if not os.path.isfile(android_jar):
+		conf.msg('Installing Android SDK platform', 'android-31')
+		conf.cmd_and_log(f'{android_home}/cmdline-tools/bin/sdkmanager --sdk_root={android_home} "platforms;android-31"')
+	if not os.path.isfile(framework_res) or os.path.getmtime(framework_res) < os.path.getmtime(android_jar):
+		with zipfile.ZipFile(android_jar) as src, zipfile.ZipFile(framework_res, 'w') as dst:
+			for entry in src.infolist():
+				if entry.filename in ('AndroidManifest.xml', 'resources.arsc') or entry.filename.startswith('res/'):
+					# resources.arsc is stored uncompressed, as in a real APK
+					compression = zipfile.ZIP_STORED if entry.filename == 'resources.arsc' else zipfile.ZIP_DEFLATED
+					dst.writestr(entry.filename, src.read(entry), compress_type=compression)
+	conf.msg('Checking for framework-res.apk', 'SDK android-31 (internal resource ids do not match javalib.jar)', color='YELLOW')

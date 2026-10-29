@@ -131,14 +131,24 @@ std::string ClassLoader::getMainActivity() const {
 	return "";
 }
 
-Class& ClassLoader::getMainActivityClass() {
+const Apk* ClassLoader::getMainApk() const {
 	for (const auto& apk : _apks) {
-		auto className = apk->getMainActivity();
-		if (!className.empty()) {
-			return getOrLoad(className);
+		if (!apk->getMainActivity().empty()) {
+			return apk.get();
 		}
 	}
-	throw VmException("Main activity class not found");
+	return nullptr;
+}
+
+bool ClassLoader::isApkLoaded(const std::string& path_) const {
+	std::error_code ec;
+	const auto canonical = std::filesystem::weakly_canonical(path_, ec);
+	for (const auto& apk : _apks) {
+		if (std::filesystem::weakly_canonical(apk->getPath(), ec) == canonical) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void ClassLoader::addClass(std::unique_ptr<Class> class_) {
@@ -173,7 +183,7 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 	for (const auto& dex : _dexs) {
 		try {
 			auto classPtr = dex->findClass(*this, dotclassname);
-			if (classPtr->isExternal()) {
+			if (!classPtr || classPtr->isExternal()) {
 				continue;
 			}
 			linkClass(*classPtr);
@@ -194,7 +204,11 @@ Class& ClassLoader::getOrLoad(const std::string& classname_) {
 			fullPath += slashclassname + ".dex";
 			if (std::filesystem::exists(fullPath)) {
 				auto dex = std::make_unique<Dex>(fullPath);
-				_classes[dotclassname] = dex->findClass(*this, dotclassname);
+				auto classPtr = dex->findClass(*this, dotclassname);
+				if (!classPtr) {
+					continue;
+				}
+				_classes[dotclassname] = std::move(classPtr);
 				_dexs.push_back(std::move(dex));
 				linkClass(*(_classes[dotclassname]));
 				return *(_classes[dotclassname]);

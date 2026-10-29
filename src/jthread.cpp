@@ -70,6 +70,10 @@ JThread::JThread(Vm& vm_, ClassLoader& classloader_, const std::string& name_)
 	_thisThread->setField("nativePeer", Object::make(0));
 	_thisThread->setField("nativeThread", Object::make(0));
 	_thisThread->setField("nativeTid", Object::make(0));
+	// Field initializers of Thread, not run since its constructor is not called
+	auto& objectClass = _classloader.getOrLoad("java/lang/Object");
+	_thisThread->setField("lock", Object::make(objectClass));
+	_thisThread->setField("blockerLock", Object::make(objectClass));
 }
 
 JThread::JThread(Vm& vm_, ClassLoader& classloader_, ObjectRef thread_)
@@ -133,6 +137,19 @@ Class& JThread::getStackClass(uint32_t depth_) const {
 		}
 		return _stack[_stack.size() - 1 - depth_]->getMethod().getClass();
 	}
+}
+
+std::vector<const Frame*> JThread::getStackFrames() const {
+	std::vector<const Frame*> frames;
+	// the last child is the innermost nested call
+	for (auto it = _childrenThreads.rbegin(); it != _childrenThreads.rend(); ++it) {
+		const auto childFrames = (*it)->getStackFrames();
+		frames.insert(frames.end(), childFrames.begin(), childFrames.end());
+	}
+	for (auto it = _stack.rbegin(); it != _stack.rend(); ++it) {
+		frames.push_back(it->get());
+	}
+	return frames;
 }
 
 Frame& JThread::newFrame(Method& method_) {
@@ -252,6 +269,10 @@ void JThread::visitReferences(const std::function<void(Object*)>& visitor_) cons
 	}
 }
 
+void JThread::ensureInitialized(Class& class_) const {
+	_interpreter->ensureInitialized(class_);
+}
+
 JThread& JThread::newChild(const std::string& name_) {
 	auto child = std::make_unique<JThread>(_vm, _classloader, name_);
 	_childrenThreads.push_back(std::move(child));
@@ -275,4 +296,42 @@ void JThread::runInCurrentThread() {
 			throw;
 		}
 	}
+}
+
+NestedCall::NestedCall(Vm& vm_, const std::string& name_) {
+	try {
+		_parent = &vm_.currentThread();
+	} catch (const VmException&) {
+		_parent = nullptr;
+	}
+	_thread = _parent != nullptr ? &_parent->newChild(name_) : &vm_.newThread(name_);
+}
+
+NestedCall::~NestedCall() {
+	if (_parent != nullptr) {
+		_parent->popChild();
+	}
+}
+
+CallResult NestedCall::run() {
+	if (_parent != nullptr) {
+		_thread->runInCurrentThread();
+	} else {
+		_thread->run(true);
+	}
+	return CallResult{_thread->getReturnObject()};
+}
+
+int32_t CallResult::getReturnValue() const {
+	if (object == nullptr || !object->isNumberObject()) {
+		throw VmException("Return object is not an NumberObject");
+	}
+	return object->getValue();
+}
+
+int64_t CallResult::getReturnDoubleValue() const {
+	if (object == nullptr || !object->isNumberObject()) {
+		throw VmException("Return object is not a isNumberObject");
+	}
+	return object->getLongValue();
 }

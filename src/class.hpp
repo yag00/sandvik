@@ -19,6 +19,7 @@
 #ifndef __CLASS_HPP__
 #define __CLASS_HPP__
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
@@ -70,6 +71,10 @@ namespace sandvik {
 			 * @return DEX index.
 			 */
 			uint32_t getDexIdx() const;
+			/** @brief Gets the DEX access flags declared by the class.
+			 * @return Access flags.
+			 */
+			uint32_t getAccessFlags() const;
 			/** @brief Gets the class name.
 			 * @return Class name.
 			 */
@@ -94,6 +99,11 @@ namespace sandvik {
 			 * @return true if the method exists, false otherwise.
 			 */
 			bool hasMethod(const std::string& name_, const std::string& descriptor_) const;
+			/** @brief Checks if the instances need finalization: a class of the hierarchy, other than java.lang.Object and
+			 * java.lang.Enum (empty finalize()), declares finalize(). Computed once.
+			 * @return true if the instances have a finalizer
+			 */
+			bool isFinalizable() const;
 			/** @brief Checks if a class method exists.
 			 * @param idx_ Index of the method.
 			 * @return true if the method exists, false otherwise.
@@ -126,6 +136,10 @@ namespace sandvik {
 			 * @return Pointer to the Method object, or nullptr if not found.
 			 */
 			Method* getDeclaredMethod(const std::string& name_, const std::string& parameters_) const;
+			/** @brief Methods declared by this class (not inherited)
+			 * @return pointers to the methods
+			 */
+			std::vector<Method*> getDeclaredMethods() const;
 
 			/** @brief Checks if a class field exists.
 			 * @param name_ Name of the field.
@@ -157,6 +171,8 @@ namespace sandvik {
 			 * @return Vector of field names.
 			 */
 			std::vector<std::string> getFieldList() const;
+			/** @brief Applies the String initial values of the static fields (class initialization) */
+			void applyStaticInitialValues();
 			/** @brief Gets the offset of a field by name.
 			 * @param name_ Name of the field.
 			 * @return Offset of the field.
@@ -263,6 +279,7 @@ namespace sandvik {
 			std::string _fullname;
 			std::string _name;
 			uint32_t _dexIdx;
+			uint32_t _accessFlags = 0;
 
 			bool _isInterface;
 			bool _isAbstract;
@@ -271,14 +288,17 @@ namespace sandvik {
 
 			bool _isArray = false;
 			std::string _componentType;
+			mutable std::atomic<int8_t> _finalizable = -1;  // -1 not computed yet, else 0/1
 
 			std::map<std::string, std::unique_ptr<Method>, std::less<>> _methods;
 			std::map<std::string, std::unique_ptr<Field>, std::less<>> _fields;
 			std::vector<std::string> _interfaces;
 			std::vector<dex::Annotation> _annotations;
 			friend class ClassBuilder;
+			friend class Object;
 
 			std::unique_ptr<Monitor> _monitor;
+			ObjectRef _classObject = nullptr;
 	};
 }  // namespace sandvik
 

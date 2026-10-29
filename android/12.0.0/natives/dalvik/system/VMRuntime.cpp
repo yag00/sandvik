@@ -43,6 +43,10 @@ extern "C" {
 		auto jenv = sandvik::native::getNativeInterface(env);
 		sandvik::ClassLoader& classloader = jenv->getClassLoader();
 		std::string classPath = classloader.getClassPath();
+		if (classPath.empty()) {
+			// No user class path (--apk): "." as the JVM default, the system class loader would reference an empty path
+			classPath = ".";
+		}
 		return (jstring)sandvik::Object::make(classloader, classPath);
 	}
 	JNIEXPORT jstring JNICALL Java_dalvik_system_VMRuntime_vmVersion(JNIEnv* env, jclass) {
@@ -79,6 +83,20 @@ extern "C" {
 		// No-op for Sandvik VM, as it does not use dex caches.
 	}
 
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_registerNativeAllocation__J(JNIEnv*, jobject, jlong) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_registerNativeFree__J(JNIEnv*, jobject, jlong) {
+	}
+
+	JNIEXPORT jint JNICALL Java_dalvik_system_VMRuntime_getNotifyNativeInterval(JNIEnv*, jclass) {
+		// Same as ART kNotifyNativeInterval: allocations between two native allocation notifications
+		return 384;
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_notifyNativeAllocationsInternal(JNIEnv*, jobject) {
+	}
+
 	JNIEXPORT jobject JNICALL Java_dalvik_system_VMRuntime_newUnpaddedArray(JNIEnv* env, jobject thiz, jobject componentType, jint minLen) {
 		(void)thiz;
 
@@ -98,4 +116,80 @@ extern "C" {
 
 		return (jobject)array;
 	}
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_updateProcessState(JNIEnv*, jobject, jint) {
+		// No-op: no process scheduler to tune
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_registerSensitiveThread(JNIEnv*, jclass) {
+	}
+
+	// Application process setup (ActivityThread.handleBindApplication): nothing to configure in Sandvik
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_setProcessPackageName(JNIEnv*, jclass, jstring) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_setProcessDataDirectory(JNIEnv*, jclass, jstring) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_registerAppInfo(JNIEnv*, jclass, jstring, jstring, jstring, jobjectArray, jint) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_setTargetSdkVersionNative(JNIEnv*, jobject, jint) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_setDisabledCompatChangesNative(JNIEnv*, jobject, jlongArray) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_setHiddenApiExemptions(JNIEnv*, jobject, jobjectArray) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_setHiddenApiAccessLogSamplingRate(JNIEnv*, jobject, jint) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_setDedupeHiddenApiWarnings(JNIEnv*, jclass, jboolean) {
+	}
+
+	JNIEXPORT jboolean JNICALL Java_dalvik_system_VMRuntime_isJavaDebuggable(JNIEnv*, jobject) {
+		return JNI_FALSE;
+	}
+
+	JNIEXPORT jboolean JNICALL Java_dalvik_system_VMRuntime_isNativeDebuggable(JNIEnv*, jobject) {
+		return JNI_FALSE;
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_clampGrowthLimit(JNIEnv*, jobject) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_clearGrowthLimit(JNIEnv*, jobject) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_notifyStartupCompleted(JNIEnv*, jobject) {
+	}
+
+	JNIEXPORT void JNICALL Java_dalvik_system_VMRuntime_bootCompleted(JNIEnv*, jclass) {
+	}
+
+	JNIEXPORT jstring JNICALL Java_dalvik_system_VMRuntime_getCurrentInstructionSet(JNIEnv* env, jclass) {
+		return env->NewStringUTF("x86_64");
+	}
+
+	JNIEXPORT jstring JNICALL Java_dalvik_system_VMRuntime_vmInstructionSet(JNIEnv* env, jobject) {
+		return env->NewStringUTF("x86_64");
+	}
+
+	// Sandvik objects never move: a non movable array is a plain array
+	JNIEXPORT jobject JNICALL Java_dalvik_system_VMRuntime_newNonMovableArray(JNIEnv* env, jobject thiz, jobject componentType, jint length) {
+		return Java_dalvik_system_VMRuntime_newUnpaddedArray(env, thiz, componentType, length);
+	}
+
+	// Sandvik array elements are not stored as a contiguous primitive buffer: the "address" is an opaque handle on the
+	// array itself, only usable by natives that write it back through JNI (TypedArray data for AssetManager natives)
+	JNIEXPORT jlong JNICALL Java_dalvik_system_VMRuntime_addressOf(JNIEnv*, jobject, jobject array) {
+		auto obj = sandvik::native::getReferenceObjectOrNull(array);
+		if (obj == nullptr || !obj->isArray()) {
+			throw sandvik::IllegalArgumentException("addressOf: not an array");
+		}
+		return static_cast<jlong>(reinterpret_cast<uintptr_t>(array));
+	}
+
 }  // extern "C"

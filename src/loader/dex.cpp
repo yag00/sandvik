@@ -87,6 +87,12 @@ void Dex::load(std::vector<uint8_t>& buffer) {
 	} catch (const std::exception& e) {
 		throw DexLoaderException(std::string("DEX parse error: ") + e.what());
 	}
+	_classIndex.clear();
+	_classIndex.reserve(_dex->classes().size());
+	for (const auto& cls : _dex->classes()) {
+		// the first definition wins, as the previous linear search did
+		_classIndex.emplace(cls.pretty_name(), &cls);
+	}
 }
 
 bool Dex::is_loaded() const noexcept {
@@ -110,12 +116,12 @@ std::unique_ptr<::sandvik::Class> Dex::findClass(ClassLoader& classloader_, cons
 		throw DexLoaderException("No DEX file loaded");
 	}
 
-	for (const auto& cls : _dex->classes()) {
-		if (cls.pretty_name() == name) {
-			return std::make_unique<::sandvik::Class>(classloader_, classloader_.getDexIndex(*this), cls);
-		}
+	// a class missing from this DEX is the common case (the class loader tries each DEX in turn): no exception
+	auto it = _classIndex.find(name);
+	if (it == _classIndex.end()) {
+		return nullptr;
 	}
-	throw DexLoaderException(fmt::format("Class '{}' not found in DEX file", name));
+	return std::make_unique<::sandvik::Class>(classloader_, classloader_.getDexIndex(*this), *it->second);
 }
 
 void Dex::resolveMethod(uint16_t idx, std::string& class_, std::string& method_, std::string& sig_) const {

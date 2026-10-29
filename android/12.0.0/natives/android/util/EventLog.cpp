@@ -27,4 +27,8 @@ extern "C" {
 		logger.ftrace("EventLog.writeEvent called with tag {} and value {}", tag, value);
 		return 0;
 	}
+
+	JNIEXPORT jint JNICALL Java_android_util_EventLog_writeEvent__I_3Ljava_lang_Object_2(JNIEnv*, jclass, jint, jobjectArray) {
+		return 0;
+	}
 }  // extern "C"

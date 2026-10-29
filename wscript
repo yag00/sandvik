@@ -45,6 +45,7 @@ def configure(conf):
     version = conf.cmd_and_log(f"{conf.env['JAVAC'][0]} --version").strip().split(' ')[1]
     conf.msg('Checking for javac version', version)
     conf.load('d8', tooldir='wtools')
+    conf.check_framework_res()
 
     conf.git_submodule_update()
 
@@ -157,7 +158,7 @@ def build(bld):
         target=APPNAME,
         includes=['src'],
         use=['FMT', 'FFI', 'AXML', 'XXHASH', 'PTHREAD'],
-        lib=['icuuc'],
+        lib=['icuuc', 'icui18n'],
         linkflags=["-Wl,-z,defs"],
         # linkflags=["-Wl,-z,defs,-licuuc"],
         install_path='${PREFIX}/lib',

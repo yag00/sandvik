@@ -18,6 +18,10 @@
 
 #include <fmt/format.h>
 #include <jni/jni.h>
+#include <sys/stat.h>
+
+#include <cerrno>
+#include <cstring>
 
 #include "array.hpp"
 #include "class.hpp"
@@ -31,7 +35,18 @@
 
 /** @todo implementation **/
 
+using namespace sandvik;
+
 extern "C" {
+
+	JNIEXPORT jlong JNICALL Java_sun_nio_ch_FileDispatcherImpl_size0(JNIEnv*, jclass, jobject fileDescriptor) {
+		const int fd = (int)sandvik::native::getObject(fileDescriptor)->getField("descriptor")->getValue();
+		struct stat st;
+		if (fstat(fd, &st) != 0) {
+			throw IOException(fmt::format("fstat failed: {}", strerror(errno)));
+		}
+		return st.st_size;
+	}
 
 #if 0
 JNIEXPORT void JNICALL Java_sun_nio_ch_FileDispatcherImpl_init(JNIEnv* env, jobject obj) {

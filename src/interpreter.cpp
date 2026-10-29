@@ -302,11 +302,20 @@ void Interpreter::execute() {
 		              method.getSignature());
 		auto exc = Object::make(_rt.getClassLoader().getOrLoad(exctype));
 		exc->setField("detailMessage", Object::make(_rt.getClassLoader(), e.getMessage()));
+		e.setFields(*exc, _rt.getClassLoader());
 		handleException(exc);
 	}
 }
 
+void Interpreter::ensureInitialized(Class& class_) const {
+	if (!class_.isStaticInitialized()) {
+		executeClinit(class_);
+	}
+}
+
 void Interpreter::executeClinit(Class& class_) const {
+	// constant static fields get their initial value first, <clinit> may read them
+	class_.applyStaticInitialValues();
 	auto hasInitializeMethod = class_.hasMethod("initializeSystemClass", "()V");
 	auto hasClinitMethod = class_.hasMethod("<clinit>", "()V");
 	if (!hasInitializeMethod && !hasClinitMethod) {
@@ -372,6 +381,17 @@ void Interpreter::executeNativeMethod(const Method& method_, const std::vector<O
 	}
 	logger.ftrace("call native jni function {}", symbolName);
 	void* symbol = _rt.vm().findNativeSymbol(symbolName);
+	if (!symbol) {
+		// Standard JNI name mangling ('_' -> "_1", '$' -> "_00024"...), the unescaped name above is kept for existing natives
+		auto jniName = "Java_" + JNIHelper::mangleName(method_.getClass().getFullname()) + "_" + JNIHelper::mangleName(method_.getName());
+		if (method_.isOverload()) {
+			jniName += "__" + JNIHelper::mangleMethodSignature(method_.getSignature());
+		}
+		if (jniName != symbolName) {
+			symbol = _rt.vm().findNativeSymbol(jniName);
+			symbolName = jniName;
+		}
+	}
 	if (!symbol) {
 		throw VmException("Native method {} is not available!", symbolName);
 	}
@@ -566,14 +586,9 @@ bool Interpreter::tryRedirectToStringFactory(const Method& method, const std::ve
 }
 
 void Interpreter::registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const {
-	// java.lang.Object.finalize() is a no-op; only classes that actually
-	// override it need to be tracked by java.lang.ref.FinalizerReference,
-	// mirroring what ART's native allocator does automatically on real
-	// Android. We only register when THIS class (not an inherited one)
-	// declares finalize() -- walking the hierarchy would double-register
-	// objects whose finalize() comes from a finalizable superclass, since
-	// the superclass's own instances already get registered when built.
-	if (cls_.getFullname() == "java.lang.Object") {
+	// java.lang.Object.finalize() is a no-op: as ART, only the instances of a class overriding it (itself or a
+	// superclass) are tracked by java.lang.ref.FinalizerReference. Called once per object, at allocation.
+	if (!cls_.isFinalizable()) {
 		return;
 	}
 	static const std::unordered_set<std::string> excluded = {
@@ -581,9 +596,6 @@ void Interpreter::registerFinalizerIfNeeded(Class& cls_, ObjectRef obj_) const {
 	    "java.lang.ref.WeakReference",      "java.lang.ref.SoftReference", "java.lang.ref.PhantomReference",
 	};
 	if (excluded.count(cls_.getFullname())) {
-		return;
-	}
-	if (!cls_.hasMethod("finalize", "()V")) {
 		return;
 	}
 	auto& classloader = _rt.getClassLoader();
@@ -2697,6 +2709,8 @@ void Interpreter::invoke_interface(const uint8_t* operand_) {
 		trace.logCall("invoke-interface", ifclassname, methodname, signature, args, vmethod->isStatic());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
+		} else if (vmethod->isHooked()) {
+			vmethod->execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.
@@ -2894,6 +2908,8 @@ void Interpreter::invoke_interface_range(const uint8_t* operand_) {
 		trace.logCall("invoke-interface/range", ifclassname, methodname, signature, args, vmethod->isStatic());
 		if (vmethod->isNative()) {
 			executeNativeMethod(*vmethod, args);
+		} else if (vmethod->isHooked()) {
+			vmethod->execute(frame, args);
 		} else {
 			auto& newframe = _rt.newFrame(*vmethod);
 			// When a method is invoked, the parameters to the method are placed into the last n registers.

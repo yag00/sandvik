@@ -37,7 +37,7 @@ Logs go to **stderr**; stdout only carries the Java program output (`2>/dev/null
 Markers: `[!]` error, `[w]` warning, `[+]`/`[*]` info, `[d]` debug, `[t]` trace, `[v]` verbose (indented under `[i]`),
 `[app]` app logs in logcat style (`[app] W/Zygote: ...`), `[i]` instruction trace, `[c]` call trace. Colors only on a tty (`NO_COLOR=1` disables them).
 
-Runtime layout: `android/12.0.0/bin/*.dex.jar` (AOSP core-oj, core-libart, icu, conscrypt, bouncycastle...), `android/12.0.0/fs/` (fake `/system`, `/etc`...), `android/12.0.0/natives/` (C++ JNI natives compiled into libsandvik).
+Runtime layout: `android/12.0.0/bin/*.jar` loaded in `order.txt` order (AOSP core-oj and core-libart as installed on a device, with their Java resources; icu, conscrypt, bouncycastle... dex jars), `android/12.0.0/fs/` (fake `/system`, `/etc`...), `android/12.0.0/natives/` (C++ JNI natives compiled into libsandvik).
 
 ## Hello World
 
@@ -54,6 +54,11 @@ ext/android/build-tools/36.0.0/d8 --output /tmp/out /tmp/out/*.class   # -> /tmp
 LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --android-version=12.0.0 --dex /tmp/out/classes.dex --main Foo -- arg1
 ```
 
+## APK
+
+`--apk tests/java/helloapk/hello.apk` runs `android.app.SandvikLauncher`, which plays `system_server` in-process and launches the manifest launcher activity through `ActivityThread` (prints `Hello World!` from `onCreate`). Rebuild the test APK with `tests/java/helloapk/build.sh`, the launcher/services jar with `android/12.0.0/java/build.sh`.
+Mechanics and debugging: `doc/app-runtime.md`.
+
 ## Zygote
 
 Launches `com.android.internal.os.ZygoteInit` on the Android 12 runtime. Sandvik creates a stub
@@ -69,7 +74,7 @@ Equivalent short forms:
 - `LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --android-version=12.0.0 --main com.android.internal.os.ZygoteInit -- dummy --abi-list=x86_64`
 - `./waf run` — same thing with `--log=ERROR` (args hard-coded in `run()` of `wscript`).
 
-The zygote preloads the framework (~1-2 min), logs `[app] I/Zygote: Accepting command socket connections` and then
+The zygote preloads the framework (~15 s), logs `[app] I/Zygote: Accepting command socket connections` and then
 **waits forever** in `accept` on its command socket: always run it with `timeout -s INT <seconds>` (or stop it with Ctrl-C).
 A leftover zygote keeps the abstract socket bound and the next run fails with `bind() failed: Address already in use`:
 check with `pgrep -ax sandvik` and kill it. Most `[w] ... not implemented` / `TODO: lib*.so is not supported` warnings are known stubs.

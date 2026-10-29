@@ -53,6 +53,17 @@ namespace sandvik {
 	 * @return Type descriptor as a string (e.g. "I").
 	 */
 	std::string get_primitive_descriptor(const std::string& type_name);
+	/** @brief Decodes UTF-8 to UTF-16 (Java strings). Also accepts the DEX Modified UTF-8 (CESU-8 surrogates,
+	 * 0xC0 0x80 for NUL); an invalid byte is decoded as the Latin-1 character of the same value.
+	 * @param str UTF-8 text.
+	 * @return UTF-16 text.
+	 */
+	std::u16string utf8_to_utf16(const std::string& str);
+	/** @brief Encodes UTF-16 to UTF-8 (surrogate pairs become 4 bytes sequences, unpaired surrogates 3 bytes ones).
+	 * @param str UTF-16 text.
+	 * @return UTF-8 text.
+	 */
+	std::string utf16_to_utf8(const std::u16string& str);
 }  // namespace sandvik
 
 #endif  // __CLASS_HPP__

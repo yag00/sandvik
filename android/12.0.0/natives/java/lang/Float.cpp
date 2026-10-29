@@ -33,4 +33,8 @@ extern "C" {
 	JNIEXPORT jint JNICALL Java_java_lang_Float_floatToRawIntBits(JNIEnv* env, jclass clazz, jfloat value) {
 		return static_cast<jint>(*reinterpret_cast<int32_t*>(&value));
 	}
+	JNIEXPORT jfloat JNICALL Java_java_lang_Float_intBitsToFloat(JNIEnv* env, jclass clazz, jint bits) {
+		int32_t raw = static_cast<int32_t>(bits);
+		return *reinterpret_cast<float*>(&raw);
+	}
 }  // extern "C"

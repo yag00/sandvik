@@ -17,9 +17,15 @@
  */
 
 #include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <fmt/format.h>
 #include <jni/jni.h>
+#include <sys/stat.h>
+
+#include <cerrno>
+#include <cstring>
 
 #include "array.hpp"
 #include "class.hpp"
@@ -30,6 +36,7 @@
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
+#include "vfs.hpp"
 
 /** @todo implementation **/
 
@@ -46,7 +53,7 @@ extern "C" {
 		if (!pathObj->isString()) {
 			throw VmException("UnixFileSystem.list0: File.path is not a string");
 		}
-		std::string path = pathObj->str();
+		std::string path = VFS::resolve(pathObj->str());
 
 		DIR* dir = opendir(path.c_str());
 		if (dir == nullptr) {
@@ -72,8 +79,30 @@ extern "C" {
 		return (jobjectArray)array;
 	}
 
-	JNIEXPORT jint JNICALL Java_java_io_UnixFileSystem_getBooleanAttributes0(JNIEnv* env, jobject obj, jobject file) {
-		return 0;
+	// private native int getBooleanAttributes0(String abspath)
+	JNIEXPORT jint JNICALL Java_java_io_UnixFileSystem_getBooleanAttributes0(JNIEnv* env, jobject obj, jstring abspath) {
+		// java.io.FileSystem BA_* flags
+		constexpr jint BA_EXISTS = 0x01;
+		constexpr jint BA_REGULAR = 0x02;
+		constexpr jint BA_DIRECTORY = 0x04;
+		constexpr jint BA_HIDDEN = 0x08;
+
+		const std::string& path = sandvik::native::getString(abspath)->str();
+		struct stat st;
+		if (stat(VFS::resolve(path).c_str(), &st) != 0) {
+			return 0;
+		}
+		jint attributes = BA_EXISTS;
+		if (S_ISREG(st.st_mode)) {
+			attributes |= BA_REGULAR;
+		} else if (S_ISDIR(st.st_mode)) {
+			attributes |= BA_DIRECTORY;
+		}
+		const auto slash = path.find_last_of('/');
+		if (path[slash == std::string::npos ? 0 : slash + 1] == '.') {
+			attributes |= BA_HIDDEN;
+		}
+		return attributes;
 	}
 
 	JNIEXPORT jstring JNICALL Java_java_io_UnixFileSystem_canonicalize0(JNIEnv* env, jobject obj, jstring path) {
@@ -89,12 +118,6 @@ extern "C" {
 	}
 
 #if 0
-JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_getLastModifiedTime0(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
-
-#if 0
 JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_setPermission0(JNIEnv* env, jobject obj) {
     logger.fwarning("{} not implemented!", __FUNCTION__);
 }
@@ -102,12 +125,6 @@ JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_setPermission0(JNIEnv* env, j
 
 #if 0
 JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_delete0(JNIEnv* env, jobject obj) {
-    logger.fwarning("{} not implemented!", __FUNCTION__);
-}
-#endif
-
-#if 0
-JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_createDirectory0(JNIEnv* env, jobject obj) {
     logger.fwarning("{} not implemented!", __FUNCTION__);
 }
 #endif
@@ -141,5 +158,34 @@ JNIEXPORT void JNICALL Java_java_io_UnixFileSystem_initIDs(JNIEnv* env, jobject 
     logger.fwarning("{} not implemented!", __FUNCTION__);
 }
 #endif
+
+	JNIEXPORT jboolean JNICALL Java_java_io_UnixFileSystem_createDirectory0(JNIEnv* env, jobject obj, jobject fileObj) {
+		const auto path = VFS::resolve(sandvik::native::getObject(fileObj)->getField("path")->str());
+		return ::mkdir(path.c_str(), 0777) == 0 ? JNI_TRUE : JNI_FALSE;
+	}
+
+	// Throws IOException on failure, false if the file already exists
+	JNIEXPORT jboolean JNICALL Java_java_io_UnixFileSystem_createFileExclusively0(JNIEnv* env, jobject obj, jstring pathStr) {
+		const auto path = VFS::resolve(sandvik::native::getString(pathStr)->str());
+		const int fd = ::open(path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0666);
+		if (fd < 0) {
+			if (errno == EEXIST) {
+				return JNI_FALSE;
+			}
+			throw IOException(fmt::format("{}: {}", path, strerror(errno)));
+		}
+		::close(fd);
+		return JNI_TRUE;
+	}
+
+	// Milliseconds since the epoch, 0 if the file does not exist
+	JNIEXPORT jlong JNICALL Java_java_io_UnixFileSystem_getLastModifiedTime0(JNIEnv* env, jobject obj, jobject fileObj) {
+		const auto path = VFS::resolve(sandvik::native::getObject(fileObj)->getField("path")->str());
+		struct stat st;
+		if (stat(path.c_str(), &st) != 0) {
+			return 0;
+		}
+		return static_cast<jlong>(st.st_mtim.tv_sec) * 1000 + st.st_mtim.tv_nsec / 1000000;
+	}
 
 }  // extern "C"

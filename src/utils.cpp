@@ -103,3 +103,61 @@ std::string sandvik::get_primitive_descriptor(const std::string& type_name) {
 	                                                                      {"long", "J"},    {"float", "F"}, {"double", "D"}, {"void", "V"}};
 	return descriptors[type_name];
 }
+
+std::u16string sandvik::utf8_to_utf16(const std::string& str) {
+	std::u16string result;
+	result.reserve(str.size());
+	const size_t size = str.size();
+	for (size_t i = 0; i < size;) {
+		const auto c = static_cast<unsigned char>(str[i]);
+		auto continuation = [&str, size](size_t pos_) { return pos_ < size && (static_cast<unsigned char>(str[pos_]) & 0xc0) == 0x80; };
+		auto bits = [&str](size_t pos_) { return static_cast<uint32_t>(static_cast<unsigned char>(str[pos_]) & 0x3f); };
+		if (c < 0x80) {
+			result.push_back(c);
+			i += 1;
+		} else if ((c & 0xe0) == 0xc0 && continuation(i + 1)) {
+			result.push_back(static_cast<char16_t>(((c & 0x1f) << 6) | bits(i + 1)));
+			i += 2;
+		} else if ((c & 0xf0) == 0xe0 && continuation(i + 1) && continuation(i + 2)) {
+			// also the CESU-8 halves of a surrogate pair
+			result.push_back(static_cast<char16_t>(((c & 0x0f) << 12) | (bits(i + 1) << 6) | bits(i + 2)));
+			i += 3;
+		} else if ((c & 0xf8) == 0xf0 && continuation(i + 1) && continuation(i + 2) && continuation(i + 3)) {
+			const uint32_t cp = (((c & 0x07) << 18) | (bits(i + 1) << 12) | (bits(i + 2) << 6) | bits(i + 3)) - 0x10000;
+			result.push_back(static_cast<char16_t>(0xd800 + (cp >> 10)));
+			result.push_back(static_cast<char16_t>(0xdc00 + (cp & 0x3ff)));
+			i += 4;
+		} else {
+			result.push_back(c);
+			i += 1;
+		}
+	}
+	return result;
+}
+
+std::string sandvik::utf16_to_utf8(const std::u16string& str) {
+	std::string result;
+	result.reserve(str.size());
+	for (size_t i = 0; i < str.size(); ++i) {
+		uint32_t cp = str[i];
+		if (cp >= 0xd800 && cp <= 0xdbff && i + 1 < str.size() && str[i + 1] >= 0xdc00 && str[i + 1] <= 0xdfff) {
+			cp = 0x10000 + ((cp - 0xd800) << 10) + (str[++i] - 0xdc00);
+		}
+		if (cp < 0x80) {
+			result.push_back(static_cast<char>(cp));
+		} else if (cp < 0x800) {
+			result.push_back(static_cast<char>(0xc0 | (cp >> 6)));
+			result.push_back(static_cast<char>(0x80 | (cp & 0x3f)));
+		} else if (cp < 0x10000) {
+			result.push_back(static_cast<char>(0xe0 | (cp >> 12)));
+			result.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3f)));
+			result.push_back(static_cast<char>(0x80 | (cp & 0x3f)));
+		} else {
+			result.push_back(static_cast<char>(0xf0 | (cp >> 18)));
+			result.push_back(static_cast<char>(0x80 | ((cp >> 12) & 0x3f)));
+			result.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3f)));
+			result.push_back(static_cast<char>(0x80 | (cp & 0x3f)));
+		}
+	}
+	return result;
+}

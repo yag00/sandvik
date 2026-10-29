@@ -39,20 +39,6 @@
 using namespace sandvik;
 
 namespace {
-	// Boxes a primitive return value into its java.lang wrapper class.
-	ObjectRef boxPrimitive(ClassLoader& classloader_, char type_, uint64_t value_) {
-		static const std::map<char, std::string, std::less<>> wrappers = {{'Z', "java.lang.Boolean"}, {'B', "java.lang.Byte"},    {'C', "java.lang.Character"},
-		                                                                  {'S', "java.lang.Short"},   {'I', "java.lang.Integer"}, {'J', "java.lang.Long"},
-		                                                                  {'F', "java.lang.Float"},   {'D', "java.lang.Double"}};
-		auto it = wrappers.find(type_);
-		if (it == wrappers.end()) {
-			throw VmException("Method.invoke: unknown primitive return type '{}'", type_);
-		}
-		auto boxed = Object::make(classloader_.getOrLoad(it->second));
-		boxed->setField("value", Object::make(value_));
-		return boxed;
-	}
-
 	// Unboxes a java.lang wrapper object, as stored in its "value" field.
 	ObjectRef unboxPrimitive(const ObjectRef& boxed_, const std::string& type_) {
 		if (boxed_ == nullptr || boxed_->isNull()) {
@@ -101,7 +87,8 @@ JNIEXPORT void JNICALL Java_java_lang_reflect_Method_getDefaultValue(JNIEnv* env
 		}
 		logger.ftrace("Method.invoke {}.{}{}", method->getClass().getFullname(), method->getName(), method->getSignature());
 
-		auto& thread = jenv->getVm().newThread(fmt::format("{}.{}", method->getClass().getFullname(), method->getName()));
+		NestedCall call(jenv->getVm(), fmt::format("{}.{}", method->getClass().getFullname(), method->getName()));
+		auto& thread = call.thread();
 		auto& frame = thread.newFrame(*method);
 
 		// Incoming arguments are placed in the last registers of the frame
@@ -137,7 +124,7 @@ JNIEXPORT void JNICALL Java_java_lang_reflect_Method_getDefaultValue(JNIEnv* env
 			}
 		}
 
-		thread.run(true);
+		const auto result = call.run();
 
 		const auto signature = method->getSignature();
 		const char returnType = signature[signature.find(')') + 1];
@@ -146,12 +133,12 @@ JNIEXPORT void JNICALL Java_java_lang_reflect_Method_getDefaultValue(JNIEnv* env
 				return (jobject)Object::makeNull();
 			case 'L':
 			case '[':
-				return (jobject)thread.getReturnObject();
+				return (jobject)result.getReturnObject();
 			case 'J':
 			case 'D':
-				return (jobject)boxPrimitive(classloader, returnType, static_cast<uint64_t>(thread.getReturnDoubleValue()));
+				return (jobject)sandvik::native::boxPrimitive(classloader, returnType, static_cast<uint64_t>(result.getReturnDoubleValue()));
 			default:
-				return (jobject)boxPrimitive(classloader, returnType, static_cast<uint64_t>(static_cast<int64_t>(thread.getReturnValue())));
+				return (jobject)sandvik::native::boxPrimitive(classloader, returnType, static_cast<uint64_t>(static_cast<int64_t>(result.getReturnValue())));
 		}
 	}
 

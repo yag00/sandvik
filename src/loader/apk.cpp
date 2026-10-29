@@ -88,6 +88,9 @@ std::string Apk::getPath() const {
 std::string Apk::getMainActivity() const {
 	return _mainActivity;
 }
+const std::string& Apk::getPackageName() const {
+	return _packageName;
+}
 
 std::vector<std::string> Apk::getClassNames() const {
 	std::vector<std::string> classNames;
@@ -99,7 +102,7 @@ std::vector<std::string> Apk::getClassNames() const {
 	return classNames;
 }
 
-std::string Apk::findMainActivity() const {
+std::string Apk::findMainActivity() {
 	// Parse the AXML
 	try {
 		axml::AXMLFile axmlFile((void*)_manifest.data(), _manifest.size());
@@ -117,6 +120,7 @@ std::string Apk::findMainActivity() const {
 						for (size_t i = 0; i < parser.getElementAttributeCount(); i++) {
 							if (parser.getElementAttributeName(i) == "package") {
 								packageName = parser.getElementAttributeRawValue(i);
+								_packageName = packageName;
 								break;
 							}
 						}

@@ -23,20 +23,79 @@
 #include <algorithm>
 #include <map>
 
+#include "annotation_factory.hpp"
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
 #include "exceptions.hpp"
 #include "field.hpp"
 #include "jni.hpp"
+#include "jthread.hpp"
 #include "loader/dex/Annotation.hpp"
 #include "method.hpp"
 #include "native_utils.hpp"
 #include "object.hpp"
 #include "system/logger.hpp"
 #include "utils.hpp"
+#include "vm.hpp"
 
 using namespace sandvik;
+
+namespace {
+	std::string parameterDescriptor(const Class& clazz_, jobjectArray args_, const std::string& memberName_) {
+		std::string parameters;
+		auto* argsArray = sandvik::native::getArray(args_);
+		uint32_t nbArgs = (argsArray == nullptr || argsArray->isNull()) ? 0 : argsArray->getArrayLength();
+		for (uint32_t i = 0; i < nbArgs; ++i) {
+			auto argClassObj = argsArray->getElement(i);
+			if (argClassObj == nullptr || argClassObj->isNull()) {
+				throw NoSuchMethodException(fmt::format("{}.{}: null parameter type", clazz_.getFullname(), memberName_));
+			}
+			auto argName = argClassObj->getClassType().getFullname();
+			if (is_primitive_type(argName)) {
+				static const std::map<std::string, std::string, std::less<>> descriptors = {{"boolean", "Z"}, {"byte", "B"}, {"char", "C"},  {"short", "S"},
+				                                                                            {"int", "I"},     {"long", "J"}, {"float", "F"}, {"double", "D"}};
+				parameters += descriptors.at(argName);
+			} else {
+				std::replace(argName.begin(), argName.end(), '.', '/');
+				parameters += argName[0] == '[' ? argName : "L" + argName + ";";
+			}
+		}
+		return parameters;
+	}
+}  // namespace
+
+namespace {
+	/** @brief java.lang.reflect.Field for a field of clazz_ */
+	ObjectRef makeReflectField(ClassLoader& classloader_, const Class& clazz_, const sandvik::Field& field_) {
+		auto fieldObj = Object::make(classloader_.getOrLoad("java/lang/reflect/Field"));
+		fieldObj->setField("declaringClass", Object::makeConstClass(classloader_, const_cast<Class&>(clazz_)));
+		fieldObj->setField("name", Object::make(classloader_, field_.getName()));
+		fieldObj->setField("type", Object::makeConstClass(classloader_, classloader_.getOrLoad(field_.getType())));
+		fieldObj->setField("accessFlags", Object::make((uint64_t)field_.getAccessFlags()));
+		fieldObj->setField("offset", Object::make((uint64_t)field_.getIndex()));
+		return fieldObj;
+	}
+
+	/** @brief Field[] of the fields declared by the class (not inherited) */
+	jobjectArray makeDeclaredFields(JNIEnv* env_, jobject classObj_, bool publicOnly_) {
+		constexpr uint32_t ACC_PUBLIC = 0x0001;
+		auto& classloader = sandvik::native::getNativeInterface(env_)->getClassLoader();
+		auto& clazz = sandvik::native::getObject(classObj_)->getClassType();
+		std::vector<ObjectRef> fields;
+		for (const auto& name : clazz.getFieldList()) {
+			auto& field = clazz.getOwnField(name);
+			if (!publicOnly_ || (field.getAccessFlags() & ACC_PUBLIC) != 0) {
+				fields.push_back(makeReflectField(classloader, clazz, field));
+			}
+		}
+		auto array = Array::make(classloader.getOrLoad("java/lang/reflect/Field"), static_cast<uint32_t>(fields.size()));
+		for (size_t i = 0; i < fields.size(); ++i) {
+			array->setElement(static_cast<uint32_t>(i), fields[i]);
+		}
+		return (jobjectArray)array;
+	}
+}  // namespace
 
 extern "C" {
 
@@ -193,11 +252,11 @@ extern "C" {
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredFields(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getDeclaredFields not implemented!");
+		return makeDeclaredFields(env, obj, false);
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredFieldsUnchecked(JNIEnv* env, jobject obj, jboolean publicOnly) {
-		throw VmException("Java_java_lang_Class_getDeclaredFieldsUnchecked not implemented!");
+		return makeDeclaredFields(env, obj, publicOnly == JNI_TRUE);
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredMethodsUnchecked(JNIEnv* env, jobject obj, jboolean publicOnly) {
@@ -210,27 +269,15 @@ extern "C" {
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredField(JNIEnv* env, jobject obj, jstring name) {
 		auto jenv = sandvik::native::getNativeInterface(env);
-		auto& classloader = jenv->getClassLoader();
 		auto classObj = sandvik::native::getObject(obj);
 		auto fieldName = sandvik::native::getString(name);
 		// Get the field from the internal class representation
 		auto& clazz = classObj->getClassType();
-		auto& field = clazz.getField(fieldName->str());
-		// Create a java.lang.reflect.Field object
-		auto& fieldClass = classloader.getOrLoad("java/lang/reflect/Field");
-		auto fieldObj = sandvik::Object::make(fieldClass);
-		// Set the necessary fields
-		fieldObj->setField("declaringClass", Object::makeConstClass(classloader, const_cast<Class&>(clazz)));
-		fieldObj->setField("name", fieldName);
-		auto& fieldTypeClass = classloader.getOrLoad(field.getType());
-		fieldObj->setField("type", Object::makeConstClass(classloader, fieldTypeClass));
-		fieldObj->setField("accessFlags", Object::make((uint64_t)field.getAccessFlags()));
-		fieldObj->setField("offset", Object::make((uint64_t)field.getIndex()));
-		return (jobject)fieldObj;
+		return (jobject)makeReflectField(jenv->getClassLoader(), clazz, clazz.getField(fieldName->str()));
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getPublicDeclaredFields(JNIEnv* env, jobject obj) {
-		throw VmException("Java_java_lang_Class_getPublicDeclaredFields not implemented!");
+		return makeDeclaredFields(env, obj, true);
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getPrimitiveClass(JNIEnv* env, jclass, jstring name) {
@@ -253,16 +300,22 @@ extern "C" {
 		auto& classloader = jenv->getClassLoader();
 
 		const Class& targetClass = classObj->getClassType();
-		logger.ftrace("Class.getDeclaredConstructor: Getting constructor for class {}", targetClass.getFullname());
+		auto parameters = parameterDescriptor(targetClass, args, "<init>");
+		auto* constructor = targetClass.getDeclaredMethod("<init>", parameters);
+		if (constructor == nullptr || !constructor->isConstructor()) {
+			logger.ftrace("Class.getDeclaredConstructor: {}.<init>({}) not found", targetClass.getFullname(), parameters);
+			return (jobject)Object::makeNull();
+		}
+		logger.ftrace("Class.getDeclaredConstructor: {}.{}{}", targetClass.getFullname(), constructor->getName(), constructor->getSignature());
 
-		// Create a java.lang.reflect.Constructor object
 		auto& ctorClass = classloader.getOrLoad("java/lang/reflect/Constructor");
 		auto ctorObj = sandvik::Object::make(ctorClass);
-
-		// Set fields as needed (e.g., 'declaringClass', 'parameterTypes', etc.)
-		ctorObj->setField("declaringClass", Object::makeConstClass(classloader, const_cast<Class&>(targetClass)));
-		// For simplicity, parameterTypes is empty for default constructor
-		ctorObj->setField("parameterTypes", sandvik::Object::make(classloader.getOrLoad("java/lang/Object")));
+		auto declaringClass = Object::makeConstClass(classloader, constructor->getClass());
+		ctorObj->setField("declaringClass", declaringClass);
+		ctorObj->setField("declaringClassOfOverriddenMethod", declaringClass);
+		ctorObj->setField("accessFlags", Object::make(static_cast<uint64_t>(constructor->getAccessFlags())));
+		ctorObj->setField("artMethod", Object::make(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(constructor))));
+		ctorObj->setField("dexMethodIndex", Object::make(static_cast<uint64_t>(constructor->getIndex())));
 
 		return (jobject)ctorObj;
 	}
@@ -291,7 +344,7 @@ extern "C" {
 
 		const auto* innerClass = classType.getAnnotation("dalvik.annotation.InnerClass");
 		if (!innerClass) {
-			return defaultValue;
+			return static_cast<jint>(classType.getAccessFlags());
 		}
 		const auto* accessFlags = innerClass->element("accessFlags");
 		if (!accessFlags || accessFlags->kind() != dex::EncodedValue::Kind::Int) {
@@ -301,7 +354,16 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_Class_getDeclaredAnnotation(JNIEnv* env, jobject obj, jobject annotationClass) {
-		throw VmException("Java_java_lang_Class_getDeclaredAnnotation not implemented!");
+		auto& clazz = sandvik::native::getObject(obj)->getClassType();
+		auto annotationTypeObj = sandvik::native::getReferenceObjectOrNull(annotationClass);
+		if (annotationTypeObj == nullptr || annotationTypeObj->isNull()) {
+			return nullptr;
+		}
+		const auto* annotation = clazz.getAnnotation(annotationTypeObj->getClassType().getFullname());
+		if (annotation == nullptr) {
+			return nullptr;
+		}
+		return (jobject)makeAnnotationInstance(sandvik::native::getNativeInterface(env)->getVm().currentThread(), *annotation);
 	}
 
 	JNIEXPORT jobjectArray JNICALL Java_java_lang_Class_getDeclaredAnnotations(JNIEnv* env, jobject obj) {
@@ -350,25 +412,7 @@ extern "C" {
 		auto& clazz = classObj->getClassType();
 		auto methodName = sandvik::native::getString(name)->str();
 
-		// Build the parameters descriptor from the Class[] argument
-		std::string parameters;
-		auto* argsArray = sandvik::native::getArray(args);
-		uint32_t nbArgs = (argsArray == nullptr || argsArray->isNull()) ? 0 : argsArray->getArrayLength();
-		for (uint32_t i = 0; i < nbArgs; ++i) {
-			auto argClassObj = argsArray->getElement(i);
-			if (argClassObj == nullptr || argClassObj->isNull()) {
-				throw NoSuchMethodException(fmt::format("{}.{}: null parameter type", clazz.getFullname(), methodName));
-			}
-			auto argName = argClassObj->getClassType().getFullname();
-			if (is_primitive_type(argName)) {
-				static const std::map<std::string, std::string, std::less<>> descriptors = {{"boolean", "Z"}, {"byte", "B"}, {"char", "C"},  {"short", "S"},
-				                                                                            {"int", "I"},     {"long", "J"}, {"float", "F"}, {"double", "D"}};
-				parameters += descriptors.at(argName);
-			} else {
-				std::replace(argName.begin(), argName.end(), '.', '/');
-				parameters += argName[0] == '[' ? argName : "L" + argName + ";";
-			}
-		}
+		auto parameters = parameterDescriptor(clazz, args, methodName);
 
 		auto* method = clazz.getDeclaredMethod(methodName, parameters);
 		if (method == nullptr || method->isConstructor() || method->isStaticInitializer()) {

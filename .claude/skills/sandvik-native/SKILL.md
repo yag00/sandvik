@@ -1,6 +1,7 @@
 ---
 name: sandvik-native
 description: Implement or fix a JNI native method of the Android runtime in Sandvik (android/12.0.0/natives). Use when the VM fails with "Native method Java_... is not available!", when a native returns a wrong value, or when asked to add/stub a native for a Java class.
+model: sonnet
 ---
 
 # Adding a native method
@@ -49,6 +50,6 @@ extern "C" {
 
 ```bash
 ./waf build                         # also reformats the new file with clang-format
-LD_LIBRARY_PATH=wbuild ./wbuild/sandvik -c ... 2>&1 | grep 'Class.method'        # the call trace shows the native being called
-./waf build --tests                 # make sure nothing else regressed
+LD_LIBRARY_PATH=wbuild ./wbuild/sandvik -c ... 2>&1 | grep -m5 -e 'Class.method' -e 'not available'   # stop after the first hits
+# Run ./waf build --tests only if you changed shared code in src/; a new or stubbed native in natives/ doesn't need it.
 ```

@@ -19,6 +19,8 @@
 #include <fmt/format.h>
 #include <jni/jni.h>
 
+#include <algorithm>
+
 #include "array.hpp"
 #include "class.hpp"
 #include "classloader.hpp"
@@ -33,48 +35,37 @@
 /** @todo implementation **/
 
 extern "C" {
-	JNIEXPORT jchar JNICALL Java_java_lang_String_charAt(JNIEnv* env, jobject obj, jint index) {
-		auto this_ptr = sandvik::native::getString(obj);
-		const auto& str = this_ptr->str();
+	// Java strings are UTF-16: indexes and lengths are in UTF-16 code units (str16)
 
-		size_t idx = static_cast<size_t>(index);
-		if (idx >= str.size()) {
-			throw sandvik::IndexOutOfBoundsException("Index out of bounds in String.charAt");
+	JNIEXPORT jchar JNICALL Java_java_lang_String_charAt(JNIEnv* env, jobject obj, jint index) {
+		const auto str = sandvik::native::getString(obj)->str16();
+		if (index < 0 || static_cast<size_t>(index) >= str.size()) {
+			throw sandvik::StringIndexOutOfBoundsException(fmt::format("index={} length={}", index, str.size()));
 		}
-		return static_cast<jchar>(str[idx]);
+		return static_cast<jchar>(str[static_cast<size_t>(index)]);
 	}
 
 	JNIEXPORT void JNICALL Java_java_lang_String_getCharsNoCheck(JNIEnv* env, jobject obj, jint start, jint end, jcharArray buffer, jint index) {
-		auto this_ptr = sandvik::native::getString(obj);
-		const auto& str = this_ptr->str();
-		auto copyLen = end - start;
-
+		const auto str = sandvik::native::getString(obj)->str16();
+		const auto copyLen = end - start;
 		if (copyLen > 0) {
 			if (start < 0 || end > static_cast<jint>(str.size()) || start > end) {
 				throw sandvik::IndexOutOfBoundsException("Invalid range in String.getCharsNoCheck");
 			}
-			std::vector<jchar> buf(copyLen);
-			for (jsize i = 0; i < copyLen; ++i) {
-				buf[i] = static_cast<jchar>(str[static_cast<size_t>(start + i)]);
-			}
-			env->SetCharArrayRegion(buffer, index, copyLen, buf.data());
+			env->SetCharArrayRegion(buffer, index, copyLen, reinterpret_cast<const jchar*>(str.data() + start));
 		}
 	}
 
 	JNIEXPORT jint JNICALL Java_java_lang_String_compareTo(JNIEnv* env, jobject obj, jobject anotherString) {
-		auto this_ptr = sandvik::native::getString(obj);
-		auto other_ptr = sandvik::native::getString(anotherString);
-
-		const auto& str1 = this_ptr->str();
-		const auto& str2 = other_ptr->str();
-
-		size_t minLen = std::min(str1.size(), str2.size());
+		const auto str1 = sandvik::native::getString(obj)->str16();
+		const auto str2 = sandvik::native::getString(anotherString)->str16();
+		const size_t minLen = std::min(str1.size(), str2.size());
 		for (size_t i = 0; i < minLen; ++i) {
 			if (str1[i] != str2[i]) {
-				return static_cast<jint>(static_cast<int>(str1[i]) - static_cast<int>(str2[i]));
+				return static_cast<jint>(str1[i]) - static_cast<jint>(str2[i]);
 			}
 		}
-		return static_cast<jint>(static_cast<int>(str1.size()) - static_cast<int>(str2.size()));
+		return static_cast<jint>(str1.size()) - static_cast<jint>(str2.size());
 	}
 
 	JNIEXPORT jint JNICALL Java_java_lang_String_compareTo__Ljava_lang_String_2(JNIEnv* env, jobject obj, jstring anotherString) {
@@ -82,75 +73,45 @@ extern "C" {
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_String_fastSubstring(JNIEnv* env, jobject obj, jint start, jint length) {
-		auto this_ptr = sandvik::native::getString(obj);
-		const auto& str = this_ptr->str();
-
-		if (start < 0 || length < 0 || static_cast<size_t>(start + length) > str.size()) {
+		const auto str = sandvik::native::getString(obj)->str16();
+		if (start < 0 || length < 0 || static_cast<size_t>(start) + static_cast<size_t>(length) > str.size()) {
 			throw sandvik::IndexOutOfBoundsException("Invalid range in String.fastSubstring");
 		}
-
-		std::string substr = str.substr(static_cast<size_t>(start), static_cast<size_t>(length));
-		auto jenv = sandvik::native::getNativeInterface(env);
-		sandvik::ClassLoader& classloader = jenv->getClassLoader();
-		return (jobject)sandvik::Object::make(classloader, substr);
+		auto& classloader = sandvik::native::getNativeInterface(env)->getClassLoader();
+		return (jobject)sandvik::Object::make(classloader, str.substr(static_cast<size_t>(start), static_cast<size_t>(length)));
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_String_concat(JNIEnv* env, jobject obj, jobject strObj) {
-		auto this_ptr = sandvik::native::getString(obj);
-		auto arg_ptr = sandvik::native::getString(strObj);
-
-		if (!arg_ptr || arg_ptr->str().empty()) {
-			// If argument is null or empty, return this string
+		const auto str2 = sandvik::native::getString(strObj)->str16();
+		if (str2.empty()) {
 			return obj;
 		}
-
-		const auto& str1 = this_ptr->str();
-		const auto& str2 = arg_ptr->str();
-
-		std::string result = str1 + str2;
-		auto jenv = sandvik::native::getNativeInterface(env);
-		sandvik::ClassLoader& classloader = jenv->getClassLoader();
-		return (jobject)sandvik::Object::make(classloader, result);
+		auto& classloader = sandvik::native::getNativeInterface(env)->getClassLoader();
+		return (jobject)sandvik::Object::make(classloader, sandvik::native::getString(obj)->str16() + str2);
 	}
 
 	JNIEXPORT jobject JNICALL Java_java_lang_String_doReplace(JNIEnv* env, jobject obj, jchar oldChar, jchar newChar) {
-		auto this_ptr = sandvik::native::getString(obj);
-		const auto& str = this_ptr->str();
-
-		std::string replaced = str;
-		for (auto& ch : replaced) {
-			if (static_cast<jchar>(ch) == oldChar) {
-				ch = static_cast<char>(newChar);
-			}
-		}
-		auto jenv = sandvik::native::getNativeInterface(env);
-		sandvik::ClassLoader& classloader = jenv->getClassLoader();
+		auto replaced = sandvik::native::getString(obj)->str16();
+		std::replace(replaced.begin(), replaced.end(), static_cast<char16_t>(oldChar), static_cast<char16_t>(newChar));
+		auto& classloader = sandvik::native::getNativeInterface(env)->getClassLoader();
 		return (jobject)sandvik::Object::make(classloader, replaced);
 	}
 
 	JNIEXPORT jcharArray JNICALL Java_java_lang_String_toCharArray(JNIEnv* env, jobject obj) {
-		auto this_ptr = sandvik::native::getString(obj);
-		const auto& str = this_ptr->str();
-
-		jsize len = static_cast<jsize>(str.size());
+		const auto str = sandvik::native::getString(obj)->str16();
+		const auto len = static_cast<jsize>(str.size());
 		jcharArray result = env->NewCharArray(len);
 		if (!result) {
 			throw sandvik::OutOfMemoryError("Failed to allocate char array in String.toCharArray");
 		}
 		if (len > 0) {
-			std::vector<jchar> buf(len);
-			for (jsize i = 0; i < len; ++i) {
-				buf[i] = static_cast<jchar>(str[static_cast<size_t>(i)]);
-			}
-			env->SetCharArrayRegion(result, 0, len, buf.data());
+			env->SetCharArrayRegion(result, 0, len, reinterpret_cast<const jchar*>(str.data()));
 		}
 		return result;
 	}
 
 	JNIEXPORT jint JNICALL Java_java_lang_String_length(JNIEnv* env, jobject obj) {
-		auto this_ptr = sandvik::native::getString(obj);
-		const auto& str = this_ptr->str();
-		return static_cast<jint>(str.size());
+		return static_cast<jint>(sandvik::native::getString(obj)->str16().size());
 	}
 
 	JNIEXPORT jboolean JNICALL Java_java_lang_String_isEmpty(JNIEnv* env, jobject obj) {

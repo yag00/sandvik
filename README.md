@@ -196,7 +196,7 @@ With `--log=NONE` only `Hello, World!` is printed.
 The runtime JARs can also be given explicitly:
 
 ```bash
-LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --log=NONE --jar android/12.0.0/bin/core-oj.dex.jar --jar android/12.0.0/bin/core-libart.dex.jar --jar android/12.0.0/bin/icu-stubs.dex.jar --dex tests/java/hello/classes.dex --main HelloWorld
+LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --log=NONE --jar android/12.0.0/bin/core-oj.jar --jar android/12.0.0/bin/core-libart.jar --jar android/12.0.0/bin/icu-stubs.dex.jar --dex tests/java/hello/classes.dex --main HelloWorld
 ```
 
 Let's print instructions and calls :
@@ -242,6 +242,17 @@ or simply:
 ```
 
 The zygote preloads the framework then waits for fork requests on its command socket: it does not exit by itself, stop it with `Ctrl-C`. This is a work in progress, many natives are still stubs.
+
+### Android application (experimental)
+
+Sandvik can launch the main activity of an APK through the Android 12 `ActivityThread`, without `system_server`:
+
+```bash
+LD_LIBRARY_PATH=wbuild ./wbuild/sandvik --android-version=12.0.0 --apk tests/java/helloapk/hello.apk
+Hello World!
+```
+
+The activity is created (`onCreate`), its window is not displayed yet. See [doc/app-runtime.md](doc/app-runtime.md) for how the Android startup is mapped onto Sandvik (launcher, in-process system services, resources...).
 
 ## Contributing
 

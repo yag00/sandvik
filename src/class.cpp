@@ -64,6 +64,13 @@ Class::Class(ClassLoader& classloader_, const uint32_t dexIdx_, const dex::Class
       _fullname(class_.pretty_name()),
       _name(class_.name()),
       _dexIdx(dexIdx_),
+      _accessFlags([&class_]() {
+	      uint32_t flags = 0;
+	      for (const auto& flag : class_.access_flags()) {
+		      flags |= static_cast<uint32_t>(flag);
+	      }
+	      return flags;
+      }()),
       _isInterface(class_.has(dex::ACC_INTERFACE)),
       _isAbstract(class_.has(dex::ACC_ABSTRACT)),
       _hasSuperClass(class_.has_parent()),
@@ -150,6 +157,10 @@ void Class::setStaticInitialized() {
 
 uint32_t Class::getDexIdx() const {
 	return _dexIdx;
+}
+
+uint32_t Class::getAccessFlags() const {
+	return _accessFlags;
 }
 
 const std::string& Class::getName() const {
@@ -274,6 +285,25 @@ bool Class::hasMethod(const std::string& name_, const std::string& descriptor_) 
 	}
 	return false;
 }
+bool Class::isFinalizable() const {
+	auto finalizable = _finalizable.load();
+	if (finalizable < 0) {
+		finalizable = 0;
+		for (const Class* current = this; current->getFullname() != "java.lang.Object";) {
+			// as ART: Enum declares an empty final finalize() so that enums have no finalizer
+			if (current->getFullname() != "java.lang.Enum" && current->_methods.contains("finalize()V")) {
+				finalizable = 1;
+				break;
+			}
+			if (!current->hasSuperClass()) {
+				break;
+			}
+			current = &current->getSuperClass();
+		}
+		_finalizable = finalizable;
+	}
+	return finalizable == 1;
+}
 bool Class::hasMethod(uint32_t idx_) const {
 	for (const auto& [key, method] : _methods) {
 		if (method->getIndex() == idx_) {
@@ -348,6 +378,15 @@ Method* Class::getDeclaredMethod(const std::string& name_, const std::string& pa
 	return nullptr;
 }
 
+std::vector<Method*> Class::getDeclaredMethods() const {
+	std::vector<Method*> methods;
+	methods.reserve(_methods.size());
+	for (const auto& [key, method] : _methods) {
+		methods.push_back(method.get());
+	}
+	return methods;
+}
+
 Method& Class::getMethod(uint32_t idx_) {
 	for (const auto& [name, method] : _methods) {
 		if (method->getIndex() == idx_) {
@@ -403,6 +442,14 @@ Field& Class::getOwnField(const std::string& name_) const {
 		return *(it->second);
 	}
 	throw NoSuchFieldError(fmt::format("{}.{}", getFullname(), name_));
+}
+
+void Class::applyStaticInitialValues() {
+	for (auto& [name, field] : _fields) {
+		if (field->isStatic()) {
+			field->applyInitialValue(getClassLoader());
+		}
+	}
 }
 
 std::vector<std::string> Class::getFieldList() const {
@@ -488,6 +535,9 @@ void Class::monitorCheck() const {
 }
 
 void Class::visitReferences(const std::function<void(Object*)>& visitor_) const {
+	if (_classObject != nullptr) {
+		visitor_(_classObject);
+	}
 	for (const auto& [name, field] : _fields) {
 		if (field->isStatic()) {
 			field->visitReferences(visitor_);

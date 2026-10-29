@@ -83,10 +83,15 @@ namespace sandvik {
 			 * @return main activity class name
 			 */
 			std::string getMainActivity() const;
-			/** @brief Get main activity class
-			 * @return reference to main activity class
+			/** @brief Get the APK declaring the launcher activity
+			 * @return pointer to the APK, nullptr if none
 			 */
-			Class& getMainActivityClass();
+			const Apk* getMainApk() const;
+			/** @brief Check if an APK is loaded
+			 * @param path_ APK path (host filesystem)
+			 * @return true if an APK with the same canonical path is loaded
+			 */
+			bool isApkLoaded(const std::string& path_) const;
 			/** @brief Check if class is loaded
 			 * @param classname_ class name
 			 * @return true if class is loaded, false otherwise

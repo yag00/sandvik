@@ -556,7 +556,8 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 	auto obj = Object::make(cls);
 	// Call the constructor on the new object
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	auto sig = method.getSignature();
 	// @todo: check that the return type of is void (constructor should not return anything)
@@ -599,7 +600,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 			case '[':  // array
 			{
 				auto argobj = va_arg(args, jobject);
-				frame.setObjRegister(regidx++, native::getObject(argobj));
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
 				break;
 			}
 			default:
@@ -607,7 +608,7 @@ jobject NativeInterface::NewObject(JNIEnv *env, jclass clazz, jmethodID methodID
 		}
 	}
 	va_end(args);
-	thread.run(true);
+	call.run();
 	// return new object
 	return (jobject)obj;
 }
@@ -627,7 +628,8 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 	auto obj = Object::make(cls);
 	// Call the constructor on the new object
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	// @todo: check that the return type of is void (constructor should not return anything)
 	auto regidx = getIncomingRegisterStart(method, true);
@@ -667,7 +669,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 			case '[':  // array
 			{
 				auto argobj = va_arg(args, jobject);
-				frame.setObjRegister(regidx++, native::getObject(argobj));
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
 				break;
 			}
 			default:
@@ -675,7 +677,7 @@ jobject NativeInterface::NewObjectV(JNIEnv *env, jclass clazz, jmethodID methodI
 		}
 	}
 	va_end(args);
-	thread.run(true);
+	call.run();
 	// return new object
 	return (jobject)obj;
 }
@@ -695,7 +697,8 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 	auto obj = Object::make(cls);
 	// Call the constructor on the new object
 	Method &method = cls.getMethod((uint32_t)(uintptr_t)methodID);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	auto regidx = getIncomingRegisterStart(method, true);
 	frame.setObjRegister(regidx++, obj);  // this
@@ -730,13 +733,15 @@ jobject NativeInterface::NewObjectA(JNIEnv *env, jclass clazz, jmethodID methodI
 			}
 			case 'L':  // object
 			case '[':  // array
-				frame.setObjRegister(regidx++, native::getObject(args[argIndex++].l));
-				break;
+			{
+				jobject argobj = args[argIndex++].l;
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
+			} break;
 			default:
 				throw VmException(fmt::format("NewObjectA: unknown argument type '{}'", arg));
 		}
 	}
-	thread.run(true);
+	call.run();
 	return (jobject)obj;
 }
 
@@ -774,7 +779,7 @@ jmethodID NativeInterface::GetMethodID(JNIEnv *env, jclass clazz, const char *na
 }
 
 template <typename ArgFetcher>
-static JThread &invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
+static CallResult invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
 	if (obj == nullptr) {
 		throw NullPointerException(fmt::format("{} on null object", callerName));
 	}
@@ -798,7 +803,8 @@ static JThread &invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jme
 	}
 
 	Method &method = cls.getMethod(methodKey);
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls.getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 
 	auto regidx = getIncomingRegisterStart(method, true);
@@ -832,19 +838,20 @@ static JThread &invokeMethodInternal(JNIEnv *env, jobject obj, jclass clazz, jme
 			}
 			case 'L':  // object
 			case '[':  // array
-				frame.setObjRegister(regidx++, native::getObject(fetchArg.getObject()));
-				break;
+			{
+				jobject argobj = fetchArg.getObject();
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
+			} break;
 			default:
 				throw VmException(fmt::format("{}: unknown argument type '{}'", callerName, arg));
 		}
 	}
 
-	thread.run(true);
-	return thread;
+	return call.run();
 }
 
 template <typename ArgFetcher>
-static JThread &invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
+static CallResult invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID methodID, const char *callerName, ArgFetcher fetchArg) {
 	if (clazz == nullptr) {
 		throw NullPointerException(fmt::format("{}: clazz cannot be null for static invocation", callerName));
 	}
@@ -871,7 +878,8 @@ static JThread &invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID 
 		throw NoSuchMethodException(fmt::format("{}: method {} is not static in class {}", callerName, method.getName(), cls->getName()));
 	}
 
-	auto &thread = vm.newThread(fmt::format("{}.{}", cls->getFullname(), method.getName()));
+	NestedCall call(vm, fmt::format("{}.{}", cls->getFullname(), method.getName()));
+	auto &thread = call.thread();
 	auto &frame = thread.newFrame(method);
 	auto regidx = getIncomingRegisterStart(method, false);
 
@@ -903,15 +911,16 @@ static JThread &invokeStaticMethodInternal(JNIEnv *env, jclass clazz, jmethodID 
 			}
 			case 'L':  // object
 			case '[':  // array
-				frame.setObjRegister(regidx++, native::getObject(fetchArg.getObject()));
-				break;
+			{
+				jobject argobj = fetchArg.getObject();
+				frame.setObjRegister(regidx++, argobj == nullptr ? Object::makeNull() : native::getObject(argobj));
+			} break;
 			default:
 				throw VmException(fmt::format("{}: unknown argument type '{}'", callerName, arg));
 		}
 	}
 
-	thread.run(true);
-	return thread;
+	return call.run();
 }
 
 // -----------------------------------------------------------------------------
@@ -1423,7 +1432,7 @@ void NativeInterface::SetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID,
 		throw NoSuchFieldException(fmt::format("SetObjectField: fieldID {} not found in class {}", (size_t)fieldID, clazz.getName()));
 	}
 	auto &field = clazz.getField((uint32_t)(uintptr_t)fieldID);
-	jobj->setField(field.getName(), native::getObject(val));
+	jobj->setField(field.getName(), val == nullptr ? Object::makeNull() : native::getObject(val));
 }
 
 void NativeInterface::SetBooleanField(JNIEnv *env, jobject obj, jfieldID fieldID, jboolean val) {
@@ -1922,7 +1931,7 @@ void NativeInterface::SetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID f
 	if (!field.isStatic()) {
 		throw ClassCastException("SetStaticObjectField: field is not static");
 	}
-	field.setObjectValue(native::getObject(value));
+	field.setObjectValue(value == nullptr ? Object::makeNull() : native::getObject(value));
 }
 
 void NativeInterface::SetStaticBooleanField(JNIEnv *env, jclass clazz, jfieldID fieldID, jboolean value) {
@@ -2060,25 +2069,7 @@ jstring NativeInterface::NewString(JNIEnv *env, const jchar *unicode, jsize len)
 		throw NullPointerException("NewString: unicode is null");
 	}
 	auto jenv = static_cast<NativeInterface *>(env);
-	ClassLoader &classloader = jenv->getClassLoader();
-	std::u16string ustr(reinterpret_cast<const char16_t *>(unicode), len);
-	std::string utf8str;
-	// Convert UTF-16 to UTF-8
-	for (jsize i = 0; i < len; ++i) {
-		char16_t ch = ustr[i];
-		if (ch < 0x80) {
-			utf8str.push_back(static_cast<char>(ch));
-		} else if (ch < 0x800) {
-			utf8str.push_back(static_cast<char>(0xC0 | (ch >> 6)));
-			utf8str.push_back(static_cast<char>(0x80 | (ch & 0x3F)));
-		} else {
-			utf8str.push_back(static_cast<char>(0xE0 | (ch >> 12)));
-			utf8str.push_back(static_cast<char>(0x80 | ((ch >> 6) & 0x3F)));
-			utf8str.push_back(static_cast<char>(0x80 | (ch & 0x3F)));
-		}
-	}
-	auto strObj = Object::make(classloader, utf8str);
-	return (jstring)strObj;
+	return (jstring)Object::make(jenv->getClassLoader(), std::u16string(reinterpret_cast<const char16_t *>(unicode), len));
 }
 
 jsize NativeInterface::GetStringLength(JNIEnv *env, jstring str) {
@@ -2198,7 +2189,7 @@ void NativeInterface::SetObjectArrayElement(JNIEnv *env, jobjectArray array, jsi
 	if (index < 0 || (uint32_t)index >= arr.getArrayLength()) {
 		throw ArrayIndexOutOfBoundsException("SetObjectArrayElement: index out of bounds");
 	}
-	arr.setElement(index, native::getObject(val));
+	arr.setElement(index, val == nullptr ? Object::makeNull() : native::getObject(val));
 }
 
 jbooleanArray NativeInterface::NewBooleanArray(JNIEnv *env, jsize len) {
@@ -2331,7 +2322,7 @@ jlong *NativeInterface::GetLongArrayElements(JNIEnv *env, jlongArray array, jboo
 	jsize len = arr.getArrayLength();
 	jlong *elems = new jlong[len];
 	for (jsize i = 0; i < len; ++i) {
-		elems[i] = (jlong)arr.getElement(i)->getValue();
+		elems[i] = (jlong)arr.getElement(i)->getLongValue();
 	}
 	if (isCopy) *isCopy = JNI_TRUE;
 	return elems;
@@ -2343,7 +2334,7 @@ jfloat *NativeInterface::GetFloatArrayElements(JNIEnv *env, jfloatArray array, j
 	jsize len = arr.getArrayLength();
 	jfloat *elems = new jfloat[len];
 	for (jsize i = 0; i < len; ++i) {
-		elems[i] = (jfloat)arr.getElement(i)->getValue();
+		elems[i] = std::bit_cast<jfloat>(static_cast<uint32_t>(arr.getElement(i)->getValue()));
 	}
 	if (isCopy) *isCopy = JNI_TRUE;
 	return elems;
@@ -2355,7 +2346,7 @@ jdouble *NativeInterface::GetDoubleArrayElements(JNIEnv *env, jdoubleArray array
 	jsize len = arr.getArrayLength();
 	jdouble *elems = new jdouble[len];
 	for (jsize i = 0; i < len; ++i) {
-		elems[i] = (jdouble)arr.getElement(i)->getValue();
+		elems[i] = std::bit_cast<jdouble>(arr.getElement(i)->getLongValue());
 	}
 	if (isCopy) *isCopy = JNI_TRUE;
 	return elems;
@@ -2489,7 +2480,7 @@ void NativeInterface::GetLongArrayRegion(JNIEnv *env, jlongArray array, jsize st
 		throw NullPointerException("GetLongArrayRegion: buf is null");
 	}
 	for (jsize i = 0; i < len; ++i) {
-		buf[i] = (jlong)arr.getElement(start + i)->getValue();
+		buf[i] = (jlong)arr.getElement(start + i)->getLongValue();
 	}
 }
 
@@ -2503,7 +2494,7 @@ void NativeInterface::GetFloatArrayRegion(JNIEnv *env, jfloatArray array, jsize 
 		throw NullPointerException("GetFloatArrayRegion: buf is null");
 	}
 	for (jsize i = 0; i < len; ++i) {
-		buf[i] = (jfloat)arr.getElement(start + i)->getValue();
+		buf[i] = std::bit_cast<jfloat>(static_cast<uint32_t>(arr.getElement(start + i)->getValue()));
 	}
 }
 
@@ -2517,7 +2508,7 @@ void NativeInterface::GetDoubleArrayRegion(JNIEnv *env, jdoubleArray array, jsiz
 		throw NullPointerException("GetDoubleArrayRegion: buf is null");
 	}
 	for (jsize i = 0; i < len; ++i) {
-		buf[i] = (jdouble)arr.getElement(start + i)->getValue();
+		buf[i] = std::bit_cast<jdouble>(arr.getElement(start + i)->getLongValue());
 	}
 }
 
@@ -2731,13 +2722,27 @@ jboolean NativeInterface::ExceptionCheck(JNIEnv *env) {
 }
 
 jobject NativeInterface::NewDirectByteBuffer(JNIEnv *env, void *address, jlong capacity) {
-	throw VmException("NewDirectByteBuffer not implemented");
+	// Same as ART: wrap the memory with the DirectByteBuffer(long addr, int cap) constructor
+	jclass bufferClass = env->FindClass("java/nio/DirectByteBuffer");
+	jmethodID constructor = env->GetMethodID(bufferClass, "<init>", "(JI)V");
+	jvalue args[2];
+	args[0].j = static_cast<jlong>(reinterpret_cast<uintptr_t>(address));
+	args[1].i = static_cast<jint>(capacity);
+	return env->NewObjectA(bufferClass, constructor, args);
 }
 void *NativeInterface::GetDirectBufferAddress(JNIEnv *env, jobject buf) {
-	throw VmException("GetDirectBufferAddress not implemented");
+	if (buf == nullptr) {
+		return nullptr;
+	}
+	// java.nio.Buffer.address: 0 for a heap buffer
+	auto address = native::getObject(buf)->getField("address")->getLongValue();
+	return reinterpret_cast<void *>(static_cast<uintptr_t>(address));
 }
 jlong NativeInterface::GetDirectBufferCapacity(JNIEnv *env, jobject buf) {
-	throw VmException("GetDirectBufferCapacity not implemented");
+	if (buf == nullptr || GetDirectBufferAddress(env, buf) == nullptr) {
+		return -1;
+	}
+	return static_cast<jlong>(static_cast<jint>(native::getObject(buf)->getField("capacity")->getValue()));
 }
 
 jobjectRefType NativeInterface::GetObjectRefType(JNIEnv *env, jobject obj) {
